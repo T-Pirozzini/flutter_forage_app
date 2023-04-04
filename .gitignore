@@ -1,8 +1,10 @@
 # Ignore the AndroidManifest.xml file
 app/src/main/AndroidManifest.xml
+secrets.xml
 
 # Ignore the App Delegate file
 **/AppDelegate.*
+
 
 # Miscellaneous
 *.class

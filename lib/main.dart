@@ -32,7 +32,7 @@ class MyApp extends StatelessWidget {
 }
 
 class MapSample extends StatefulWidget {
-  const MapSample({Key? key}) : super(key: key);
+  const MapSample({Key? key}) : super(key: key);  
 
   @override
   State<MapSample> createState() => MapSampleState();
