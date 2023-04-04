@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_forager_app/components/map_style.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 void main() {
@@ -7,7 +8,7 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({Key? key}) : super(key: key);
 
   // This widget is the root of your application.
   @override
@@ -24,7 +25,7 @@ class MyApp extends StatelessWidget {
         // or simply save your changes to "hot reload" in a Flutter IDE).
         // Notice that the counter didn't reset back to zero; the application
         // is not restarted.
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.deepOrange,
       ),
       home: const MapSample(),
     );
@@ -32,7 +33,7 @@ class MyApp extends StatelessWidget {
 }
 
 class MapSample extends StatefulWidget {
-  const MapSample({Key? key}) : super(key: key);  
+  const MapSample({Key? key}) : super(key: key);
 
   @override
   State<MapSample> createState() => MapSampleState();
@@ -47,20 +48,37 @@ class MapSampleState extends State<MapSample> {
     zoom: 14.4746,
   );
 
+  static const Marker _kGooglePlexMarker = Marker(
+      markerId: MarkerId('_kGooglePlex'),
+      infoWindow: InfoWindow(title: 'Google Plex'),
+      icon: BitmapDescriptor.defaultMarker,
+      position: LatLng(37.42796133580664, -122.085749655962));
+
   static const CameraPosition _kLake = CameraPosition(
       bearing: 192.8334901395799,
       target: LatLng(37.43296265331129, -122.08832357078792),
       tilt: 59.440717697143555,
       zoom: 19.151926040649414);
 
+  static Marker _kLakeMarker = Marker(
+      markerId: MarkerId('_kLake'),
+      infoWindow: InfoWindow(title: 'Lake'),
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+      position: LatLng(37.43296265331129, -122.08832357078792));
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.deepOrange.shade300,
+      ),
       body: GoogleMap(
-        mapType: MapType.hybrid,
+        mapType: MapType.normal,
+        markers: {_kGooglePlexMarker, _kLakeMarker},
         initialCameraPosition: _kGooglePlex,
         onMapCreated: (GoogleMapController controller) {
           _controller.complete(controller);
+          controller.setMapStyle(mapstyle);
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
