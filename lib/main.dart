@@ -96,7 +96,7 @@ class MapSampleState extends State<MapSample> {
               ),
               IconButton(
                 onPressed: () {
-                  LocationService().getPlaceId(_searchController.text);
+                  LocationService().getPlace(_searchController.text);
                 },
                 icon: Icon(Icons.search),
               ),
@@ -121,6 +121,11 @@ class MapSampleState extends State<MapSample> {
         icon: const Icon(Icons.directions_boat),
       ),
     );
+  }
+
+  Future<void> _goToTheLake() async {
+    final GoogleMapController controller = await _controller.future;
+    controller.animateCamera(CameraUpdate.newCameraPosition(_kLake));
   }
 
   Future<void> _goToTheLake() async {
