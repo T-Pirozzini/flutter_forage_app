@@ -5,6 +5,7 @@ secrets.xml
 # Ignore the App Delegate file
 **/AppDelegate.*
 
+*.env
 
 # Miscellaneous
 *.class

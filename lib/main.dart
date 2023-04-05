@@ -1,14 +1,20 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/components/map_style.dart';
+import 'package:flutter_forager_app/services/location_service.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
+Future main() async {
+  await dotenv.load(fileName: ".env");
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
+
+  
+
 
   // This widget is the root of your application.
   @override
@@ -28,6 +34,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.deepOrange,
       ),
       home: const MapSample(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
@@ -40,8 +47,8 @@ class MapSample extends StatefulWidget {
 }
 
 class MapSampleState extends State<MapSample> {
-  final Completer<GoogleMapController> _controller =
-      Completer<GoogleMapController>();
+  Completer<GoogleMapController> _controller = Completer<GoogleMapController>();
+  TextEditingController _searchController = TextEditingController();
 
   static const CameraPosition _kGooglePlex = CameraPosition(
     target: LatLng(37.42796133580664, -122.085749655962),
@@ -68,18 +75,45 @@ class MapSampleState extends State<MapSample> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return new Scaffold(
       appBar: AppBar(
+        title: Text('Forager'),
         backgroundColor: Colors.deepOrange.shade300,
       ),
-      body: GoogleMap(
-        mapType: MapType.normal,
-        markers: {_kGooglePlexMarker, _kLakeMarker},
-        initialCameraPosition: _kGooglePlex,
-        onMapCreated: (GoogleMapController controller) {
-          _controller.complete(controller);
-          controller.setMapStyle(mapstyle);
-        },
+      body: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _searchController,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: InputDecoration(hintText: 'Search by City'),
+                  onChanged: (value) {
+                    print(value);
+                  },
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  LocationService().getPlaceId(_searchController.text);
+                },
+                icon: Icon(Icons.search),
+              ),
+            ],
+          ),
+          Expanded(
+            child: GoogleMap(
+              mapType: MapType.normal,
+              markers: {_kGooglePlexMarker, _kLakeMarker},
+              initialCameraPosition: _kGooglePlex,
+              onMapCreated: (GoogleMapController controller) {
+                _controller.complete(controller);
+                controller.setMapStyle(mapstyle);
+              },
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _goToTheLake,
