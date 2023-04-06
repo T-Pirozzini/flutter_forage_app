@@ -74,6 +74,7 @@ class MapPageState extends State<MapPage> {
                 _controller.complete(controller);
                 controller.setMapStyle(mapstyle);
               },
+              padding: const EdgeInsets.only(bottom: 60),
             ),
           ),
         ],
@@ -81,12 +82,14 @@ class MapPageState extends State<MapPage> {
       floatingActionButton: Stack(
         children: [
           Positioned(
-            left: 16.0,
-            bottom: 16.0,
-            child: FloatingActionButton.extended(
+            top: 80.0,
+            right: 5.0,
+            child: FloatingActionButton(
               onPressed: _determinePosition,
-              label: const Text('My Location'),
-              icon: const Icon(Icons.person_2_outlined),
+              shape: const RoundedRectangleBorder(),
+              mini: true,
+              backgroundColor: Colors.grey.shade800,
+              child: const Icon(Icons.my_location),
             ),
           ),
         ],
