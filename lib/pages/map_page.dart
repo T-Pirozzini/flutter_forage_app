@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/components/map_style.dart';
-import 'package:flutter_forager_app/services/location_service.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import '../components/search_field.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({Key? key}) : super(key: key);
@@ -15,7 +15,6 @@ class MapPage extends StatefulWidget {
 class MapPageState extends State<MapPage> {
   final Completer<GoogleMapController> _controller =
       Completer<GoogleMapController>();
-  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -98,39 +97,8 @@ class MapPageState extends State<MapPage> {
           Row(
             children: [
               Expanded(
-                child: TextFormField(
-                  controller: _searchController,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 12.0,
-                      horizontal: 16.0,
-                    ),
-                    hintText: 'Search by City',
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.zero,
-                      borderSide: BorderSide(
-                        color: Colors.grey.shade600,
-                        width: 2.0,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.zero,
-                      borderSide: BorderSide(
-                        color: Colors.grey.shade800,
-                        width: 2.0,
-                      ),
-                    ),
-                    suffixIcon: IconButton(
-                      onPressed: () async {
-                        var place = await LocationService()
-                            .getPlace(_searchController.text);
-                        _goToPlace(place);
-                      },
-                      icon: const Icon(Icons.search),
-                    ),
-                  ),
-                  onChanged: (value) {},
+                child: SearchField(
+                  onPlaceSelected: _goToPlace,
                 ),
               ),
             ],
