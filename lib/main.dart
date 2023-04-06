@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/pages/home_page.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 Future main() async {
   await dotenv.load(fileName: ".env");
@@ -15,8 +16,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: ThemeData(
-        primarySwatch: Colors.deepOrange,
-      ),
+          primarySwatch: Colors.deepOrange,
+          textTheme: GoogleFonts.alegreyaSansTextTheme()),
       home: const HomePage(),
       debugShowCheckedModeBanner: false,
     );

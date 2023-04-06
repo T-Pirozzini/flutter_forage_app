@@ -1,18 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:lottie/lottie.dart';
 
-class MarkerButtons extends StatelessWidget {
+class MarkerButtons extends StatefulWidget {
   const MarkerButtons({super.key});
 
+  @override
+  State<MarkerButtons> createState() => _MarkerButtonsState();
+}
+
+class _MarkerButtonsState extends State<MarkerButtons> {
   @override
   Widget build(BuildContext context) {
     return SpeedDial(
       icon: Icons.add,
       activeIcon: Icons.close,
-      spacing: 3,
+      spacing: 0,
       mini: false,
-      childPadding: const EdgeInsets.all(5),
-      spaceBetweenChildren: 4,
+      childrenButtonSize: const Size(70, 70),
+      spaceBetweenChildren: 3,
       foregroundColor: Colors.white,
       backgroundColor: Colors.grey.shade800,
       activeForegroundColor: Colors.black,
@@ -21,31 +27,45 @@ class MarkerButtons extends StatelessWidget {
       animationCurve: Curves.elasticInOut,
       isOpenOnStart: false,
       shape: const RoundedRectangleBorder(),
-      // childMargin: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       children: [
         SpeedDialChild(
-          child: const Icon(Icons.accessibility),
+          child: Lottie.network(
+            'https://assets9.lottiefiles.com/packages/lf20_WnTNaLqbIz.json',
+          ),
           backgroundColor: Colors.grey.shade800,
           foregroundColor: Colors.white,
-          label: 'First',
           onTap: () => {},
         ),
         SpeedDialChild(
-          child: const Icon(Icons.brush),
+          child: Lottie.network(
+            'https://assets2.lottiefiles.com/packages/lf20_o1Bpa0VeaC.json',
+          ),
           backgroundColor: Colors.grey.shade800,
           foregroundColor: Colors.white,
-          label: 'Second',
-          onTap: () => debugPrint('SECOND CHILD'),
+          onTap: () => {},
         ),
         SpeedDialChild(
-          child: const Icon(Icons.margin),
+            child: Lottie.network(
+              'https://assets4.lottiefiles.com/packages/lf20_flosnlcw.json',
+            ),
+            backgroundColor: Colors.grey.shade800,
+            foregroundColor: Colors.white,
+            onTap: () => {}),
+        SpeedDialChild(
+          child: Lottie.network(
+            'https://assets1.lottiefiles.com/packages/lf20_Wje5ae.json',
+          ),
           backgroundColor: Colors.grey.shade800,
           foregroundColor: Colors.white,
-          label: 'Show Snackbar',
-          visible: true,
-          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text(("Third Child Pressed")))),
-          onLongPress: () => debugPrint('THIRD CHILD LONG PRESS'),
+          onTap: () => {},
+        ),
+        SpeedDialChild(
+          child: Lottie.network(
+            'https://assets2.lottiefiles.com/packages/lf20_xd9ypluc.json',
+          ),
+          backgroundColor: Colors.grey.shade800,
+          foregroundColor: Colors.white,
+          onTap: () => {},
         ),
       ],
     );

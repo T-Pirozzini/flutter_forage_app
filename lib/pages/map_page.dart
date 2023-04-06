@@ -49,6 +49,7 @@ class MapPageState extends State<MapPage> {
     );
   }
 
+  bool _isPressed = false;
   Future<Position> _determinePosition() async {
     bool serviceEnabled;
     LocationPermission permission;
@@ -73,6 +74,9 @@ class MapPageState extends State<MapPage> {
     }
 
     final position = await Geolocator.getCurrentPosition();
+    setState(() {
+      _isPressed = false;
+    });
 
     final GoogleMapController controller = await _controller.future;
     controller.animateCamera(
@@ -153,11 +157,21 @@ class MapPageState extends State<MapPage> {
             top: 80.0,
             right: 5.0,
             child: FloatingActionButton(
-              onPressed: _determinePosition,
+              onPressed: () {
+                setState(
+                  () {
+                    _isPressed = true;
+                  },
+                );
+                _determinePosition();
+              },
               shape: const RoundedRectangleBorder(),
               mini: true,
               backgroundColor: Colors.grey.shade800,
-              child: const Icon(Icons.my_location),
+              child: Icon(
+                Icons.my_location,
+                color: _isPressed ? Colors.deepOrange.shade300 : Colors.white,
+              ),
             ),
           ),
         ],
