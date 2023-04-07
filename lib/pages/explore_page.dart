@@ -3,60 +3,51 @@ import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/components/map_style.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import '../components/search_field.dart';
 
-class MapPage extends StatefulWidget {
-  const MapPage({Key? key}) : super(key: key);
+class ExplorePage extends StatefulWidget {
+  const ExplorePage({Key? key}) : super(key: key);
 
   @override
-  State<MapPage> createState() => MapPageState();
+  State<ExplorePage> createState() => ExplorePageState();
 }
 
-class MapPageState extends State<MapPage> {
+class ExplorePageState extends State<ExplorePage> {
   final Completer<GoogleMapController> _controller =
       Completer<GoogleMapController>();
-  late StreamSubscription<Position> _positionStreamSubscription;
-  late Marker _currentPositionMarker;
 
-  @override
-  void initState() {
-    _currentPositionMarker = Marker(
-      markerId: const MarkerId('currentPosition'),
-      infoWindow: const InfoWindow(title: 'Current Position'),
-      position: const LatLng(0, 0),
-      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
-    );
-    _positionStreamSubscription =
-        Geolocator.getPositionStream().listen(_onPositionUpdate);
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    _positionStreamSubscription.cancel();
-    super.dispose();
-  }
-
-  void _onPositionUpdate(Position position) async {
-    final GoogleMapController controller = await _controller.future;
-    controller.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(
-          target: LatLng(position.latitude, position.longitude),
-          zoom: 16,
-        ),
-      ),
-    );
-    setState(() {
-      _currentPositionMarker = _currentPositionMarker.copyWith(
-        positionParam: LatLng(position.latitude, position.longitude),
-      );
-    });
-  }
-
-  static const CameraPosition _kGooglePlex = CameraPosition(
+  CameraPosition _initialCameraPosition = const CameraPosition(
     target: LatLng(37.42796133580664, -122.085749655962),
     zoom: 14,
   );
+
+  @override
+  void initState() {
+    super.initState();
+    _determinePosition();
+  }
+
+  // Future<void> _getCurrentLocation() async {
+  //   final position = await Geolocator.getCurrentPosition(
+  //       desiredAccuracy: LocationAccuracy.high);
+  //   setState(() {
+  //     _initialCameraPosition = CameraPosition(
+  //       target: LatLng(position.latitude, position.longitude),
+  //       zoom: 14.0,
+  //     );
+  //   });
+  // }
+
+  Future<void> _goToPlace(Map<String, dynamic> place) async {
+    final double lat = place['geometry']['location']['lat'];
+    final double lng = place['geometry']['location']['lng'];
+    final GoogleMapController controller = await _controller.future;
+    controller.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(target: LatLng(lat, lng), zoom: 14),
+      ),
+    );
+  }
 
   bool _isPressed = false;
   Future<Position> _determinePosition() async {
@@ -83,16 +74,24 @@ class MapPageState extends State<MapPage> {
     }
 
     final position = await Geolocator.getCurrentPosition();
-    setState(() {
-      _isPressed = false;
-    });
+    if (mounted) {
+      setState(
+        () {
+          _isPressed = false;
+          _initialCameraPosition = CameraPosition(
+            target: LatLng(position.latitude, position.longitude),
+            zoom: 14.0,
+          );
+        },
+      );
+    }
 
     final GoogleMapController controller = await _controller.future;
     controller.animateCamera(
       CameraUpdate.newCameraPosition(
         CameraPosition(
           target: LatLng(position.latitude, position.longitude),
-          zoom: 16,
+          zoom: 14,
         ),
       ),
     );
@@ -104,13 +103,20 @@ class MapPageState extends State<MapPage> {
     return Scaffold(
       body: Column(
         children: [
+          Row(
+            children: [
+              Expanded(
+                child: SearchField(
+                  onPlaceSelected: _goToPlace,
+                ),
+              ),
+            ],
+          ),
           Expanded(
             child: GoogleMap(
               mapType: MapType.normal,
-              markers: {
-                _currentPositionMarker,
-              },
-              initialCameraPosition: _kGooglePlex,
+              markers: {},
+              initialCameraPosition: _initialCameraPosition,
               onMapCreated: (GoogleMapController controller) {
                 _controller.complete(controller);
                 controller.setMapStyle(mapstyle);
@@ -123,7 +129,7 @@ class MapPageState extends State<MapPage> {
       floatingActionButton: Stack(
         children: [
           Positioned(
-            top: 30.0,
+            top: 80.0,
             right: 5.0,
             child: FloatingActionButton(
               onPressed: () {

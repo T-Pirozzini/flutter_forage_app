@@ -11,6 +11,7 @@ class SearchField extends StatefulWidget {
 
 class _SearchFieldState extends State<SearchField> {
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +43,8 @@ class _SearchFieldState extends State<SearchField> {
             var place =
                 await LocationService().getPlace(_searchController.text);
             widget.onPlaceSelected.call(place);
+            _searchController.text = '';
+            _searchFocusNode.unfocus();
           },
           icon: const Icon(Icons.search),
         ),
