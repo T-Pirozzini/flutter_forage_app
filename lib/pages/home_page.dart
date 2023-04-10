@@ -3,6 +3,7 @@ import 'package:floating_bottom_navigation_bar/floating_bottom_navigation_bar.da
 import 'package:flutter_forager_app/components/speed_dial.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'chat_page.dart';
+import 'explore_page.dart';
 import 'map_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -17,7 +18,7 @@ class _HomePageState extends State<HomePage> {
   int currentIndex = 0;
   final pages = [
     const MapPage(),
-    const MapPage(),
+    const ExplorePage(),
     const ChatPage(),
     const MapPage(),
   ];
@@ -34,7 +35,8 @@ class _HomePageState extends State<HomePage> {
       ),
       body: pages[currentIndex],
       floatingActionButtonLocation: FloatingActionButtonLocation.miniStartFloat,
-      floatingActionButton: const MarkerButtons(),
+      floatingActionButton:
+          pages[currentIndex] is MapPage ? const MarkerButtons() : null,
       extendBody: true,
       bottomNavigationBar: FloatingNavbar(
         onTap: (index) => setState(() => currentIndex = index),
