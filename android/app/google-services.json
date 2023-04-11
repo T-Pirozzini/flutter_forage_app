@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "472429059007",
+    "project_id": "forager-flutter",
+    "storage_bucket": "forager-flutter.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:472429059007:android:87c675b280d648d8b79f0a",
+        "android_client_info": {
+          "package_name": "com.example.flutter_forager_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "472429059007-v271do22ndmcvfsg1dmesq0midftea8o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBgqnwwBVXsFlQqMxvvTH4E3Q5d0ot1EHw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "472429059007-v271do22ndmcvfsg1dmesq0midftea8o.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
