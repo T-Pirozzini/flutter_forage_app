@@ -5,6 +5,10 @@ secrets.xml
 # Ignore the App Delegate file
 **/AppDelegate.*
 
+# Firebase
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+
 *.env
 
 # Miscellaneous
