@@ -4,6 +4,8 @@ import 'package:flutter_forager_app/components/map_style.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 
+import '../components/speed_dial.dart';
+
 class MapPage extends StatefulWidget {
   const MapPage({Key? key}) : super(key: key);
 
@@ -168,6 +170,13 @@ class MapPageState extends State<MapPage> {
                 Icons.person,
                 color: _followUser ? Colors.deepOrange.shade300 : Colors.white,
               ),
+            ),
+          ),
+          const Positioned(
+            bottom: 60.0,
+            left: 30.0,
+            child: MarkerButtons(
+              currentPosition: LatLng(37.42796133580664, -122.085749655962),
             ),
           ),
         ],

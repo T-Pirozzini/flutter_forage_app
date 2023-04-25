@@ -1,6 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:floating_bottom_navigation_bar/floating_bottom_navigation_bar.dart';
-import 'package:flutter_forager_app/components/speed_dial.dart';
+import 'package:flutter_forager_app/components/login_widget.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'chat_page.dart';
 import 'explore_page.dart';
@@ -14,6 +15,20 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  User? user;
+
+  @override
+  void initState() {
+    super.initState();
+    user = FirebaseAuth.instance.currentUser;
+  }
+
+  Future<void> _signIn() async {
+    setState(() {
+      user = FirebaseAuth.instance.currentUser;
+    });
+  }
+
   // bottom navigation bar
   int currentIndex = 0;
   final pages = [
@@ -27,16 +42,30 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('FORAGER'),
+        title: StreamBuilder<User?>(
+          stream: FirebaseAuth.instance.authStateChanges(),
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              return Text(snapshot.data!.email!);
+            } else {
+              return const Text('FORAGER');
+            }
+          },
+        ),
         titleTextStyle:
             GoogleFonts.philosopher(fontSize: 34, fontWeight: FontWeight.bold),
         centerTitle: true,
         backgroundColor: Colors.deepOrange.shade300,
       ),
-      body: pages[currentIndex],
-      floatingActionButtonLocation: FloatingActionButtonLocation.miniStartFloat,
-      floatingActionButton:
-          pages[currentIndex] is MapPage ? const MarkerButtons() : null,
+      body: Column(
+        children: [
+          if (user == null)
+            LoginWidget(onSignIn: _signIn)
+          else
+            const SizedBox.shrink(),
+          Expanded(child: pages[currentIndex]),
+        ],
+      ),
       extendBody: true,
       bottomNavigationBar: FloatingNavbar(
         onTap: (index) => setState(() => currentIndex = index),
