@@ -36,16 +36,19 @@ class MapPageState extends State<MapPage> {
     super.dispose();
   }
 
+  bool _followUser = true;
   void _onPositionUpdate(Position position) async {
     final GoogleMapController controller = await _controller.future;
-    controller.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(
-          target: LatLng(position.latitude, position.longitude),
-          zoom: 16,
+    if (_followUser) {
+      controller.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: LatLng(position.latitude, position.longitude),
+            zoom: 16,
+          ),
         ),
-      ),
-    );
+      );
+    }
     setState(() {
       _currentPositionMarker = _currentPositionMarker.copyWith(
         positionParam: LatLng(position.latitude, position.longitude),
@@ -132,7 +135,11 @@ class MapPageState extends State<MapPage> {
                     _isPressed = true;
                   },
                 );
-                _determinePosition();
+                _determinePosition().then((position) {
+                  setState(() {
+                    _isPressed = false;
+                  });
+                });
               },
               shape: const RoundedRectangleBorder(),
               mini: true,
@@ -140,6 +147,26 @@ class MapPageState extends State<MapPage> {
               child: Icon(
                 Icons.my_location,
                 color: _isPressed ? Colors.deepOrange.shade300 : Colors.white,
+              ),
+            ),
+          ),
+          Positioned(
+            top: 80.0,
+            right: 5.0,
+            child: FloatingActionButton(
+              onPressed: () {
+                setState(
+                  () {
+                    _followUser = !_followUser;
+                  },
+                );
+              },
+              shape: const RoundedRectangleBorder(),
+              mini: true,
+              backgroundColor: Colors.grey.shade800,
+              child: Icon(
+                Icons.person,
+                color: _followUser ? Colors.deepOrange.shade300 : Colors.white,
               ),
             ),
           ),
