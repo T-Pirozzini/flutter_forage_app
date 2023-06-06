@@ -1,13 +1,27 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
 class MarkerButtons extends StatefulWidget {
-  const MarkerButtons({super.key});
+  const MarkerButtons({
+    super.key,
+  });
 
   @override
-  State<MarkerButtons> createState() => _MarkerButtonsState();}
+  State<MarkerButtons> createState() => _MarkerButtonsState();
+}
 
 class _MarkerButtonsState extends State<MarkerButtons> {
+  void saveMarkerInfo(String currentPosition, String markerType,
+      String markerName, String markerDescription) {
+    FirebaseFirestore.instance.collection('markers').add({
+      'position': currentPosition,
+      'type': markerType,
+      'name': markerName,
+      'description': markerDescription,
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return SpeedDial(
@@ -30,7 +44,8 @@ class _MarkerButtonsState extends State<MarkerButtons> {
           child: Image.asset('lib/assets/images/fern.png', width: 40),
           backgroundColor: Colors.grey.shade800,
           foregroundColor: Colors.white,
-          onTap: () => {},
+          onTap: () => saveMarkerInfo(
+              'Vancouver', 'fern', 'Fern', 'This is a fern'),
         ),
         SpeedDialChild(
             child: Image.asset('lib/assets/images/berries.png', width: 40),
