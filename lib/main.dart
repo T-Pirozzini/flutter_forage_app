@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_forager_app/pages/home_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'auth/auth_page.dart';
 import 'firebase_options.dart';
@@ -24,7 +25,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
           primarySwatch: Colors.deepOrange,
           textTheme: GoogleFonts.alegreyaSansTextTheme()),
-      home: const AuthPage(),
+      home: const HomePage(),
       debugShowCheckedModeBanner: false,
     );
   }
