@@ -20,7 +20,7 @@ class _HomePageState extends State<HomePage> {
     const MapPage(),
     const ExplorePage(),
     const ChatPage(),
-    const MapPage(),
+    const ChatPage(),
   ];
 
   @override
@@ -48,7 +48,7 @@ class _HomePageState extends State<HomePage> {
         items: [
           FloatingNavbarItem(icon: Icons.home, title: 'Home'),
           FloatingNavbarItem(icon: Icons.explore, title: 'Explore'),
-          FloatingNavbarItem(icon: Icons.chat_bubble_outline, title: 'Chats'),
+          FloatingNavbarItem(icon: Icons.chat_bubble_outline, title: 'Chat'),
           FloatingNavbarItem(icon: Icons.settings, title: 'Settings'),
         ],
       ),
