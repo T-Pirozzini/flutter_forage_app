@@ -4,6 +4,8 @@ import 'package:flutter_forager_app/components/map_style.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 
+import '../components/speed_dial.dart';
+
 class MapPage extends StatefulWidget {
   const MapPage({Key? key}) : super(key: key);
 
@@ -36,16 +38,19 @@ class MapPageState extends State<MapPage> {
     super.dispose();
   }
 
+  bool _followUser = true;
   void _onPositionUpdate(Position position) async {
     final GoogleMapController controller = await _controller.future;
-    controller.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(
-          target: LatLng(position.latitude, position.longitude),
-          zoom: 16,
+    if (_followUser) {
+      controller.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: LatLng(position.latitude, position.longitude),
+            zoom: 16,
+          ),
         ),
-      ),
-    );
+      );
+    }
     setState(() {
       _currentPositionMarker = _currentPositionMarker.copyWith(
         positionParam: LatLng(position.latitude, position.longitude),
@@ -132,7 +137,11 @@ class MapPageState extends State<MapPage> {
                     _isPressed = true;
                   },
                 );
-                _determinePosition();
+                _determinePosition().then((position) {
+                  setState(() {
+                    _isPressed = false;
+                  });
+                });
               },
               shape: const RoundedRectangleBorder(),
               mini: true,
@@ -143,6 +152,33 @@ class MapPageState extends State<MapPage> {
               ),
             ),
           ),
+          Positioned(
+            top: 80.0,
+            right: 5.0,
+            child: FloatingActionButton(
+              onPressed: () {
+                setState(
+                  () {
+                    _followUser = !_followUser;
+                  },
+                );
+              },
+              shape: const RoundedRectangleBorder(),
+              mini: true,
+              backgroundColor: Colors.grey.shade800,
+              child: Icon(
+                Icons.person,
+                color: _followUser ? Colors.deepOrange.shade300 : Colors.white,
+              ),
+            ),
+          ),
+          // const Positioned(
+          //   bottom: 60.0,
+          //   left: 30.0,
+          //   child: MarkerButtons(
+          //     currentPosition: LatLng(37.42796133580664, -122.085749655962),
+          //   ),
+          // ),
         ],
       ),
     );
