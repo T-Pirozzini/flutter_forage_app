@@ -1,33 +1,33 @@
 {
   "project_info": {
-    "project_number": "472429059007",
-    "project_id": "forager-flutter",
-    "storage_bucket": "forager-flutter.appspot.com"
+    "project_number": "628799344593",
+    "project_id": "flutter-forager-app",
+    "storage_bucket": "flutter-forager-app.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:472429059007:android:87c675b280d648d8b79f0a",
+        "mobilesdk_app_id": "1:628799344593:android:b1105320c55bf33b53daf0",
         "android_client_info": {
           "package_name": "com.example.flutter_forager_app"
         }
       },
       "oauth_client": [
         {
-          "client_id": "472429059007-v271do22ndmcvfsg1dmesq0midftea8o.apps.googleusercontent.com",
+          "client_id": "628799344593-f7kbo962ockj3ec1anmiajop0m8dfulp.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBCZV5cf-RHWtpFc5o55-AMLcLSqpMp-D4"
+          "current_key": "AIzaSyArjEK3Kfv6o7LYzwOEIl2i77BKSNbxcWI"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "472429059007-v271do22ndmcvfsg1dmesq0midftea8o.apps.googleusercontent.com",
+              "client_id": "628799344593-f7kbo962ockj3ec1anmiajop0m8dfulp.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

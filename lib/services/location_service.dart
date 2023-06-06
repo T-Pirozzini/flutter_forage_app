@@ -12,10 +12,14 @@ class LocationService {
     var response = await http.get(Uri.parse(url));
 
     var json = convert.jsonDecode(response.body);
+    print(json);
 
-    var placeId = json['candidates'][0]['place_id'] as String;    
-
-    return placeId;
+    if (json['candidates'] != null && json['candidates'].isNotEmpty) {
+      var placeId = json['candidates'][0]['place_id'] as String;
+      return placeId;
+    } else {
+      throw Exception('Place ID not found');
+    }
   }
 
   Future<Map<String, dynamic>> getPlace(String input) async {
@@ -28,7 +32,7 @@ class LocationService {
     var json = convert.jsonDecode(response.body);
 
     var results = json['result'] as Map<String, dynamic>;
-    
+
     return results;
   }
 }
