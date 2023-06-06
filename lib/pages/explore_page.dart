@@ -27,25 +27,16 @@ class ExplorePageState extends State<ExplorePage> {
     _determinePosition();
   }
 
-  // Future<void> _getCurrentLocation() async {
-  //   final position = await Geolocator.getCurrentPosition(
-  //       desiredAccuracy: LocationAccuracy.high);
-  //   setState(() {
-  //     _initialCameraPosition = CameraPosition(
-  //       target: LatLng(position.latitude, position.longitude),
-  //       zoom: 14.0,
-  //     );
-  //   });
-  // }
-
   Future<void> _goToPlace(Map<String, dynamic> place) async {
     final double lat = place['geometry']['location']['lat'];
     final double lng = place['geometry']['location']['lng'];
     final GoogleMapController controller = await _controller.future;
+    final newCameraPosition = CameraPosition(
+      target: LatLng(lat, lng),
+      zoom: 14,
+    );
     controller.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(target: LatLng(lat, lng), zoom: 14),
-      ),
+      CameraUpdate.newCameraPosition(newCameraPosition),
     );
   }
 

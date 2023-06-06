@@ -59,48 +59,7 @@ class MapPageState extends State<MapPage> {
   static const CameraPosition _kGooglePlex = CameraPosition(
     target: LatLng(37.42796133580664, -122.085749655962),
     zoom: 14,
-  );
-
-  // bool _isPressed = false;
-  // Future<Position> _determinePosition() async {
-  //   bool serviceEnabled;
-  //   LocationPermission permission;
-
-  //   // Test if location services are enabled.
-  //   serviceEnabled = await Geolocator.isLocationServiceEnabled();
-  //   if (!serviceEnabled) {
-  //     return Future.error('Location services are disabled.');
-  //   }
-
-  //   permission = await Geolocator.checkPermission();
-  //   if (permission == LocationPermission.denied) {
-  //     permission = await Geolocator.requestPermission();
-  //     if (permission == LocationPermission.denied) {
-  //       return Future.error('Location permissions are denied');
-  //     }
-  //   }
-
-  //   if (permission == LocationPermission.deniedForever) {
-  //     return Future.error(
-  //         'Location permissions are permanently denied, we cannot request permissions.');
-  //   }
-
-  //   final position = await Geolocator.getCurrentPosition();
-  //   setState(() {
-  //     _isPressed = false;
-  //   });
-
-  //   final GoogleMapController controller = await _controller.future;
-  //   controller.animateCamera(
-  //     CameraUpdate.newCameraPosition(
-  //       CameraPosition(
-  //         target: LatLng(position.latitude, position.longitude),
-  //         zoom: 16,
-  //       ),
-  //     ),
-  //   );
-  //   return position;
-  // }
+  );  
 
   @override
   Widget build(BuildContext context) {
