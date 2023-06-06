@@ -11,8 +11,7 @@ class LocationService {
 
     var response = await http.get(Uri.parse(url));
 
-    var json = convert.jsonDecode(response.body);
-    print(json);
+    var json = convert.jsonDecode(response.body);    
 
     if (json['candidates'] != null && json['candidates'].isNotEmpty) {
       var placeId = json['candidates'][0]['place_id'] as String;

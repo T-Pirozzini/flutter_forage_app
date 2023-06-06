@@ -4,8 +4,6 @@ import 'package:flutter_forager_app/components/map_style.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 
-import '../components/speed_dial.dart';
-
 class MapPage extends StatefulWidget {
   const MapPage({Key? key}) : super(key: key);
 
