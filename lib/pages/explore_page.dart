@@ -115,7 +115,7 @@ class ExplorePageState extends State<ExplorePage> {
           Expanded(
             child: GoogleMap(
               mapType: MapType.normal,
-              markers: {},
+              markers: const {},
               initialCameraPosition: _initialCameraPosition,
               onMapCreated: (GoogleMapController controller) {
                 _controller.complete(controller);

@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_forager_app/pages/home_page.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_forager_app/auth/login_or_register.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import 'auth/auth_page.dart';
 
 Future main() async {
   await dotenv.load(fileName: ".env");
@@ -21,7 +23,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
           primarySwatch: Colors.deepOrange,
           textTheme: GoogleFonts.alegreyaSansTextTheme()),
-      home: const HomePage(),
+      home: const LoginOrRegister(),
       debugShowCheckedModeBanner: false,
     );
   }
