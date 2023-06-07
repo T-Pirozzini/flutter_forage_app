@@ -18,7 +18,7 @@ class _MarkerButtonsState extends State<MarkerButtons> {
       'position': currentPosition,
       'type': markerType,
       'name': markerName,
-      'description': markerDescription,
+      'description': markerDescription,      
     });
   }
 

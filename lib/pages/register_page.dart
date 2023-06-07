@@ -36,7 +36,7 @@ class _RegisterPageState extends State<RegisterPage> {
       UserCredential userCredential =
           await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: emailTextController.text,
-        password: passwordTextController.text,
+        password: passwordTextController.text,        
       );
       // after creating the user, create a new document in firestore called Users
       FirebaseFirestore.instance
@@ -51,7 +51,7 @@ class _RegisterPageState extends State<RegisterPage> {
         'friendRequests': [],
         'sentFriendRequests': [],
         'posts': [],
-      });
+      });      
 
       // pop loading circle
       if (context.mounted) Navigator.pop(context);
