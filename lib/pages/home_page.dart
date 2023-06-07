@@ -1,7 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:floating_bottom_navigation_bar/floating_bottom_navigation_bar.dart';
 import 'package:flutter_forager_app/components/speed_dial.dart';
+import 'package:flutter_forager_app/pages/profile_page.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../components/drawer.dart';
 import 'chat_page.dart';
 import 'explore_page.dart';
 import 'map_page.dart';
@@ -23,6 +26,24 @@ class _HomePageState extends State<HomePage> {
     const ChatPage(),
   ];
 
+  // navigate to profile page
+  void goToProfilePage() {
+    // pop menu drawer
+    Navigator.pop(context);
+    // go to new page
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ProfilePage(),
+      ),
+    );
+  }
+
+  // sign user out
+  void signOut() async {
+    await FirebaseAuth.instance.signOut();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -32,6 +53,10 @@ class _HomePageState extends State<HomePage> {
             GoogleFonts.philosopher(fontSize: 34, fontWeight: FontWeight.bold),
         centerTitle: true,
         backgroundColor: Colors.deepOrange.shade300,
+      ),
+      drawer: CustomDrawer(
+        onProfileTap: goToProfilePage,
+        onSignOutTap: signOut,
       ),
       body: pages[currentIndex],
       floatingActionButtonLocation: FloatingActionButtonLocation.miniStartFloat,
