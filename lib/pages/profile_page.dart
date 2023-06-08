@@ -20,7 +20,7 @@ class _ProfilePageState extends State<ProfilePage> {
         .collection('Users')
         .doc(currentUser.email)
         .collection('Markers')
-        .doc('Xm4y8z86g8qbTfatyDY7')
+        .doc('Qse0JD1kiTRlHJiEOxJK')
         .get();
 
     final markersData = markersSnapshot.data();
@@ -85,11 +85,11 @@ class _ProfilePageState extends State<ProfilePage> {
                 else
                   Text(userData['posts'].toString()),
                 Image.network(_imagePath2),
-                // Image.network(_imagePath),
+                Image.network('http:/$_imagePath'),
                 // Image.network('https://assetsio.reedpopcdn.com/dnd-5e-strixhaven-curriculum-of-chaos-artwork-3.jpg?width=1200&height=1200&fit=bounds&quality=70&format=jpg&auto=webp'),
                 // Image.asset('/storage/emulated/0/Download/sweet_tooth_2.jpg'),
                 // Image.asset('/documents/msf:1000000033'),
-                Text('Image Path: $_imagePath'),
+                Text('http:/$_imagePath'),
                 // /data/user/0/com.example.flutter_forager_app/cache/4e3b3267-133e-4d58-a06b-f3fb8656a87b/sweet_tooth_2.jpg
                 GestureDetector(
                   onTap: goHome,
