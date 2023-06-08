@@ -54,6 +54,9 @@ dependencies:
   firebase_auth: ^4.6.1
   cloud_firestore: ^4.7.1
 
+  # Speedial deps
+  image_picker: ^0.8.7+5
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
