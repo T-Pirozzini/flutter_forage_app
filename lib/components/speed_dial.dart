@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 class MarkerButtons extends StatefulWidget {
   const MarkerButtons({
@@ -12,13 +15,133 @@ class MarkerButtons extends StatefulWidget {
 }
 
 class _MarkerButtonsState extends State<MarkerButtons> {
-  void saveMarkerInfo(String currentPosition, String markerType,
-      String markerName, String markerDescription) {
-    FirebaseFirestore.instance.collection('markers').add({
-      'position': currentPosition,
-      'type': markerType,
+  // text controller
+  final _nameTextController = TextEditingController();
+  final _descriptionTextController = TextEditingController();
+
+  // get current user
+  final currentUser = FirebaseAuth.instance.currentUser?.email;
+
+  // image picker
+  File? _selectedImage;
+  Future<void> _getImage(ImageSource source) async {
+    final picker = ImagePicker();
+    final pickedImage = await picker.pickImage(source: source);
+
+    if (pickedImage != null) {
+      setState(() {
+        _selectedImage = File(pickedImage.path);
+      });
+    }
+  }
+
+  void displayDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add Forage Location'),
+        content: Column(
+          children: [
+            TextField(
+              controller: _nameTextController,
+              decoration: const InputDecoration(
+                hintText: 'Name your location...',
+              ),
+            ),
+            TextField(
+              controller: _descriptionTextController,
+              decoration: const InputDecoration(
+                hintText: 'Describe your location...',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          // cancel button
+          Column(
+            children: [
+              // if (_selectedImage != null)
+              // Image.file(_selectedImage!),
+              ElevatedButton(
+                child: Text('im a child'),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: Text('Select Image Source'),
+                      content: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              _getImage(ImageSource.camera);
+                              Navigator.pop(context);
+                            },
+                            icon: Icon(Icons.camera),
+                            label: Text('Camera'),
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              _getImage(ImageSource.gallery);
+                              Navigator.pop(context);
+                            },
+                            icon: Icon(Icons.photo_library),
+                            label: Text('Gallery'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+              TextButton(
+                child: const Text('Cancel'),
+                onPressed: () {
+                  Navigator.pop(context);
+                  _nameTextController.clear();
+                  _descriptionTextController.clear();
+                },
+              ),
+              ElevatedButton(
+                onPressed: () => saveMarkerInfo(_nameTextController.text, _descriptionTextController.text,
+                    'Fern', _selectedImage?.path, 'location', 10),
+                child: const Text('Save Marker'),
+              )
+            ],
+          ),
+
+          // // save button
+          // TextButton(
+          //   child: const Text('Post'),
+          //   onPressed: () {
+          //     addComment(_commentTextController.text);
+          //     Navigator.pop(context);
+          //     _commentTextController.clear();
+          //   },
+          // ),
+        ],
+      ),
+    );
+  }
+
+  void saveMarkerInfo(
+      String markerName,
+      String markerDescription,
+      String markerType,
+      String? markerImagePath,
+      String currentPosition,
+      int timestamp) {
+    FirebaseFirestore.instance
+        .collection('Users')
+        .doc(currentUser)
+        .collection('Markers')
+        .add({
       'name': markerName,
-      'description': markerDescription,      
+      'description': markerDescription,
+      'type': markerType,
+      'image': markerImagePath,
+      'location': currentPosition,
+      'timestamp': timestamp,
     });
   }
 
@@ -44,14 +167,14 @@ class _MarkerButtonsState extends State<MarkerButtons> {
           child: Image.asset('lib/assets/images/fern.png', width: 40),
           backgroundColor: Colors.grey.shade800,
           foregroundColor: Colors.white,
-          onTap: () => saveMarkerInfo(
-              'Vancouver', 'fern', 'Fern', 'This is a fern'),
+          onTap: () => saveMarkerInfo('Vancouver', 'description', 'Fern',
+              _selectedImage?.path, 'location', 10),
         ),
         SpeedDialChild(
             child: Image.asset('lib/assets/images/berries.png', width: 40),
             backgroundColor: Colors.grey.shade800,
             foregroundColor: Colors.white,
-            onTap: () => {}),
+            onTap: displayDialog),
         SpeedDialChild(
           child: Image.asset('lib/assets/images/mushroom.png', width: 40),
           backgroundColor: Colors.grey.shade800,
