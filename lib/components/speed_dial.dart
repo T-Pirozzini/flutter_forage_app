@@ -44,7 +44,7 @@ class _MarkerButtonsState extends State<MarkerButtons> {
     return location;
   }
 
-  void displayDialog() {
+  void displayDialog(_markerType) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -63,6 +63,7 @@ class _MarkerButtonsState extends State<MarkerButtons> {
                 hintText: 'Describe your location...',
               ),
             ),
+            Text('Marker Type: $_markerType')
           ],
         ),
         actions: [
@@ -117,10 +118,10 @@ class _MarkerButtonsState extends State<MarkerButtons> {
                   saveMarkerInfo(
                     _nameTextController.text,
                     _descriptionTextController.text,
-                    'Fern',
+                    _markerType,
                     _selectedImage?.path,
                     currentPosition,
-                    10,
+                    DateTime.now(),
                   );
                 },
                 child: const Text('Save Marker'),
@@ -148,7 +149,7 @@ class _MarkerButtonsState extends State<MarkerButtons> {
       String markerType,
       String? markerImagePath,
       Position currentPosition,
-      int timestamp) {
+      DateTime timestamp) {
     FirebaseFirestore.instance
         .collection('Users')
         .doc(currentUser)
@@ -188,13 +189,13 @@ class _MarkerButtonsState extends State<MarkerButtons> {
           child: Image.asset('lib/assets/images/fern.png', width: 40),
           backgroundColor: Colors.grey.shade800,
           foregroundColor: Colors.white,
-          onTap: displayDialog,
+          onTap: () => displayDialog('Fern'),
         ),
         SpeedDialChild(
             child: Image.asset('lib/assets/images/berries.png', width: 40),
             backgroundColor: Colors.grey.shade800,
             foregroundColor: Colors.white,
-            onTap: displayDialog),
+            onTap: () => displayDialog('Berries')),
         SpeedDialChild(
           child: Image.asset('lib/assets/images/mushroom.png', width: 40),
           backgroundColor: Colors.grey.shade800,
