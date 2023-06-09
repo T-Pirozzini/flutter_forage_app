@@ -17,6 +17,8 @@ class MapPageState extends State<MapPage> {
   late StreamSubscription<Position> _positionStreamSubscription;
   late Marker _currentPositionMarker;
 
+  Position? currentLocation;
+
   @override
   void initState() {
     _currentPositionMarker = Marker(
@@ -27,6 +29,8 @@ class MapPageState extends State<MapPage> {
     );
     _positionStreamSubscription =
         Geolocator.getPositionStream().listen(_onPositionUpdate);
+    // get position
+    _getCurrentPosition();
     super.initState();
   }
 
@@ -59,7 +63,18 @@ class MapPageState extends State<MapPage> {
   static const CameraPosition _kGooglePlex = CameraPosition(
     target: LatLng(37.42796133580664, -122.085749655962),
     zoom: 14,
-  );  
+  );
+
+  // get current position
+  Future<Position> _getCurrentPosition() async {
+    final location = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+    setState(() {
+      currentLocation = location;
+    });
+    return location;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,10 +95,20 @@ class MapPageState extends State<MapPage> {
               padding: const EdgeInsets.only(bottom: 60),
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 200.0),
+            child: Text(
+              'Current location: $currentLocation',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
         ],
       ),
       floatingActionButton: Stack(
-        children: [          
+        children: [
           Positioned(
             top: 30.0,
             right: 0.0,
@@ -104,6 +129,7 @@ class MapPageState extends State<MapPage> {
               ),
             ),
           ),
+
           // const Positioned(
           //   bottom: 60.0,
           //   left: 30.0,
