@@ -44,7 +44,7 @@ class _MarkerButtonsState extends State<MarkerButtons> {
     return location;
   }
 
-  void displayDialog(_markerType) {
+  void displayDialog(markerType) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -63,7 +63,7 @@ class _MarkerButtonsState extends State<MarkerButtons> {
                 hintText: 'Describe your location...',
               ),
             ),
-            Text('Marker Type: $_markerType')
+            Text('Marker Type: $markerType')
           ],
         ),
         actions: [
@@ -118,7 +118,7 @@ class _MarkerButtonsState extends State<MarkerButtons> {
                   saveMarkerInfo(
                     _nameTextController.text,
                     _descriptionTextController.text,
-                    _markerType,
+                    markerType,
                     _selectedImage?.path,
                     currentPosition,
                     DateTime.now(),
