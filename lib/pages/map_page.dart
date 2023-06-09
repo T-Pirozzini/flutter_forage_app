@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/components/map_style.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -17,6 +19,14 @@ class MapPageState extends State<MapPage> {
   late StreamSubscription<Position> _positionStreamSubscription;
   late Marker _currentPositionMarker;
 
+  // get current user
+  final currentUser = FirebaseAuth.instance.currentUser!;
+
+  // create set of markers
+  final Set<Marker> _markers = {};
+
+  Position? currentLocation;
+
   @override
   void initState() {
     _currentPositionMarker = Marker(
@@ -25,8 +35,12 @@ class MapPageState extends State<MapPage> {
       position: const LatLng(0, 0),
       icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
     );
+    _markers.add(_currentPositionMarker);
     _positionStreamSubscription =
         Geolocator.getPositionStream().listen(_onPositionUpdate);
+    // get position
+    _getCurrentPosition();
+    fetchMarkerData();
     super.initState();
   }
 
@@ -59,7 +73,76 @@ class MapPageState extends State<MapPage> {
   static const CameraPosition _kGooglePlex = CameraPosition(
     target: LatLng(37.42796133580664, -122.085749655962),
     zoom: 14,
-  );  
+  );
+
+  // get current position
+  Future<Position> _getCurrentPosition() async {
+    final location = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+    setState(() {
+      currentLocation = location;
+    });
+    return location;
+  }
+
+  // get current users marker data
+  void fetchMarkerData() async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('Users')
+        .doc(currentUser.email)
+        .collection('Markers')
+        .get();
+
+    final docs = snapshot.docs;
+
+    // // Process each document and add markers
+    for (final doc in docs) {
+      final data = doc.data();
+      final name = data['name'] as String;
+      final description = data['description'] as String;
+      final latitude = data['location']['latitude'] as double;
+      final longitude = data['location']['longitude'] as double;
+      final type = data['type'] as String;
+
+      addMarker(
+        name: name,
+        description: description,
+        location: LatLng(latitude, longitude),
+        type: type,
+      );
+    }
+  }
+
+  // add markers
+  Future<void> addMarker({
+    required String name,
+    required String description,
+    required LatLng location,
+    required String type,
+  }) async {
+    final markerId = MarkerId(name);
+    final marker = Marker(
+      markerId: markerId,
+      infoWindow: InfoWindow(title: name, snippet: description),
+      position: location,
+      icon: await getMarkerIcon(type),      
+    );
+
+    setState(() {
+      _markers.add(marker);
+    });
+  }
+
+  // get marker icon
+  Future<BitmapDescriptor> getMarkerIcon(String type) async {
+    const double markerSize = 2.0;
+    return BitmapDescriptor.fromAssetImage(
+      const ImageConfiguration(size: Size(markerSize, markerSize)),
+      'lib/assets/images/${type.toLowerCase()}_marker.png',
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -69,9 +152,7 @@ class MapPageState extends State<MapPage> {
           Expanded(
             child: GoogleMap(
               mapType: MapType.normal,
-              markers: {
-                _currentPositionMarker,
-              },
+              markers: _markers,
               initialCameraPosition: _kGooglePlex,
               onMapCreated: (GoogleMapController controller) {
                 _controller.complete(controller);
@@ -80,10 +161,20 @@ class MapPageState extends State<MapPage> {
               padding: const EdgeInsets.only(bottom: 60),
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 200.0),
+            child: Text(
+              'Current location: $currentLocation',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
         ],
       ),
       floatingActionButton: Stack(
-        children: [          
+        children: [
           Positioned(
             top: 30.0,
             right: 0.0,
@@ -104,6 +195,7 @@ class MapPageState extends State<MapPage> {
               ),
             ),
           ),
+
           // const Positioned(
           //   bottom: 60.0,
           //   left: 30.0,

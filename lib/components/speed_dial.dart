@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:geolocator/geolocator.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 
@@ -35,7 +36,15 @@ class _MarkerButtonsState extends State<MarkerButtons> {
     }
   }
 
-  void displayDialog() {
+  // get current position
+  Future<Position> _getCurrentPosition() async {
+    final location = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+    return location;
+  }
+
+  void displayDialog(markerType) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -54,6 +63,7 @@ class _MarkerButtonsState extends State<MarkerButtons> {
                 hintText: 'Describe your location...',
               ),
             ),
+            Text('Marker Type: $markerType')
           ],
         ),
         actions: [
@@ -103,8 +113,17 @@ class _MarkerButtonsState extends State<MarkerButtons> {
                 },
               ),
               ElevatedButton(
-                onPressed: () => saveMarkerInfo(_nameTextController.text, _descriptionTextController.text,
-                    'Fern', _selectedImage?.path, 'location', 10),
+                onPressed: () async {
+                  final currentPosition = await _getCurrentPosition();
+                  saveMarkerInfo(
+                    _nameTextController.text,
+                    _descriptionTextController.text,
+                    markerType,
+                    _selectedImage?.path,
+                    currentPosition,
+                    DateTime.now(),
+                  );
+                },
                 child: const Text('Save Marker'),
               )
             ],
@@ -129,8 +148,8 @@ class _MarkerButtonsState extends State<MarkerButtons> {
       String markerDescription,
       String markerType,
       String? markerImagePath,
-      String currentPosition,
-      int timestamp) {
+      Position currentPosition,
+      DateTime timestamp) {
     FirebaseFirestore.instance
         .collection('Users')
         .doc(currentUser)
@@ -140,7 +159,10 @@ class _MarkerButtonsState extends State<MarkerButtons> {
       'description': markerDescription,
       'type': markerType,
       'image': markerImagePath,
-      'location': currentPosition,
+      'location': {
+        'latitude': currentPosition.latitude,
+        'longitude': currentPosition.longitude,
+      },
       'timestamp': timestamp,
     });
   }
@@ -167,14 +189,13 @@ class _MarkerButtonsState extends State<MarkerButtons> {
           child: Image.asset('lib/assets/images/fern.png', width: 40),
           backgroundColor: Colors.grey.shade800,
           foregroundColor: Colors.white,
-          onTap: () => saveMarkerInfo('Vancouver', 'description', 'Fern',
-              _selectedImage?.path, 'location', 10),
+          onTap: () => displayDialog('Fern'),
         ),
         SpeedDialChild(
             child: Image.asset('lib/assets/images/berries.png', width: 40),
             backgroundColor: Colors.grey.shade800,
             foregroundColor: Colors.white,
-            onTap: displayDialog),
+            onTap: () => displayDialog('Berries')),
         SpeedDialChild(
           child: Image.asset('lib/assets/images/mushroom.png', width: 40),
           backgroundColor: Colors.grey.shade800,
