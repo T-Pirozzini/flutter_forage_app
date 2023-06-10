@@ -64,10 +64,18 @@ class MapPageState extends State<MapPage> {
         ),
       );
     }
+    final updatedMarker = Marker(
+      markerId: _currentPositionMarker.markerId,
+      infoWindow: _currentPositionMarker.infoWindow,
+      position: LatLng(position.latitude, position.longitude),
+      icon: _currentPositionMarker.icon,
+      zIndex: 100.0,
+    );
+
     setState(() {
-      _currentPositionMarker = _currentPositionMarker.copyWith(
-        positionParam: LatLng(position.latitude, position.longitude),
-      );
+      _markers.remove(_currentPositionMarker);
+      _markers.add(updatedMarker);
+      _currentPositionMarker = updatedMarker;
     });
   }
 
@@ -152,7 +160,7 @@ class MapPageState extends State<MapPage> {
       markerId: markerId,
       infoWindow: InfoWindow(title: name, snippet: description),
       position: location,
-      icon: await getMarkerIcon(type),      
+      icon: await getMarkerIcon(type),
     );
 
     setState(() {
@@ -186,16 +194,6 @@ class MapPageState extends State<MapPage> {
               padding: const EdgeInsets.only(bottom: 60),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 200.0),
-            child: Text(
-              'Current location: $currentLocation',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
         ],
       ),
       floatingActionButton: Stack(
@@ -220,14 +218,6 @@ class MapPageState extends State<MapPage> {
               ),
             ),
           ),
-
-          // const Positioned(
-          //   bottom: 60.0,
-          //   left: 30.0,
-          //   child: MarkerButtons(
-          //     currentPosition: LatLng(37.42796133580664, -122.085749655962),
-          //   ),
-          // ),
         ],
       ),
     );
