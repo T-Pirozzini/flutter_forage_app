@@ -40,6 +40,7 @@ class MapPageState extends State<MapPage> {
         Geolocator.getPositionStream().listen(_onPositionUpdate);
     // get position
     _getCurrentPosition();
+    // fetch initial marker data
     fetchMarkerData();
     super.initState();
   }
@@ -112,6 +113,31 @@ class MapPageState extends State<MapPage> {
         type: type,
       );
     }
+
+    // Subscribe to collection changes for real-time updates
+    FirebaseFirestore.instance
+        .collection('Users')
+        .doc(currentUser.email)
+        .collection('Markers')
+        .snapshots()
+        .listen((snapshot) {
+      _markers.clear(); // Clear existing markers
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final name = data['name'] as String;
+        final description = data['description'] as String;
+        final latitude = data['location']['latitude'] as double;
+        final longitude = data['location']['longitude'] as double;
+        final type = data['type'] as String;
+
+        addMarker(
+          name: name,
+          description: description,
+          location: LatLng(latitude, longitude),
+          type: type,
+        );
+      }
+    });
   }
 
   // add markers
@@ -142,7 +168,6 @@ class MapPageState extends State<MapPage> {
       'lib/assets/images/${type.toLowerCase()}_marker.png',
     );
   }
-
 
   @override
   Widget build(BuildContext context) {

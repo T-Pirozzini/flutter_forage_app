@@ -44,7 +44,7 @@ class _MarkerButtonsState extends State<MarkerButtons> {
     return location;
   }
 
-  void displayDialog(markerType) {
+  void displayDialog(String markerType) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -66,12 +66,10 @@ class _MarkerButtonsState extends State<MarkerButtons> {
             Text('Marker Type: $markerType')
           ],
         ),
-        actions: [
-          // cancel button
+        actions: [          
           Column(
-            children: [
-              // if (_selectedImage != null)
-              // Image.file(_selectedImage!),
+            children: [ 
+              // image picker             
               ElevatedButton(
                 child: Text('im a child'),
                 onPressed: () {
@@ -104,6 +102,7 @@ class _MarkerButtonsState extends State<MarkerButtons> {
                   );
                 },
               ),
+              // cancel button
               TextButton(
                 child: const Text('Cancel'),
                 onPressed: () {
@@ -112,6 +111,7 @@ class _MarkerButtonsState extends State<MarkerButtons> {
                   _descriptionTextController.clear();
                 },
               ),
+              // Save Forage Location
               ElevatedButton(
                 onPressed: () async {
                   final currentPosition = await _getCurrentPosition();
@@ -122,22 +122,15 @@ class _MarkerButtonsState extends State<MarkerButtons> {
                     _selectedImage?.path,
                     currentPosition,
                     DateTime.now(),
-                  );
+                  );                  
+                  Navigator.pop(context);
+                  _nameTextController.clear();
+                  _descriptionTextController.clear();
                 },
-                child: const Text('Save Marker'),
+                child: const Text('Save Forage Location'),
               )
             ],
-          ),
-
-          // // save button
-          // TextButton(
-          //   child: const Text('Post'),
-          //   onPressed: () {
-          //     addComment(_commentTextController.text);
-          //     Navigator.pop(context);
-          //     _commentTextController.clear();
-          //   },
-          // ),
+          ),          
         ],
       ),
     );
@@ -186,33 +179,34 @@ class _MarkerButtonsState extends State<MarkerButtons> {
       shape: const RoundedRectangleBorder(),
       children: [
         SpeedDialChild(
-          child: Image.asset('lib/assets/images/fern.png', width: 40),
+          child: Image.asset('lib/assets/images/plant.png', width: 40),
           backgroundColor: Colors.grey.shade800,
           foregroundColor: Colors.white,
-          onTap: () => displayDialog('Fern'),
+          onTap: () => displayDialog('Plant'),
         ),
         SpeedDialChild(
-            child: Image.asset('lib/assets/images/berries.png', width: 40),
-            backgroundColor: Colors.grey.shade800,
-            foregroundColor: Colors.white,
-            onTap: () => displayDialog('Berries')),
+          child: Image.asset('lib/assets/images/berries.png', width: 40),
+          backgroundColor: Colors.grey.shade800,
+          foregroundColor: Colors.white,
+          onTap: () => displayDialog('Berries'),
+        ),
         SpeedDialChild(
           child: Image.asset('lib/assets/images/mushroom.png', width: 40),
           backgroundColor: Colors.grey.shade800,
           foregroundColor: Colors.white,
-          onTap: () => {},
+          onTap: () => displayDialog('Mushroom'),
         ),
         SpeedDialChild(
           child: Image.asset('lib/assets/images/tree.png', width: 40),
           backgroundColor: Colors.grey.shade800,
           foregroundColor: Colors.white,
-          onTap: () => {},
+          onTap: () => displayDialog('Tree'),
         ),
         SpeedDialChild(
           child: Image.asset('lib/assets/images/fish.png', width: 40),
           backgroundColor: Colors.grey.shade800,
           foregroundColor: Colors.white,
-          onTap: () => {},
+          onTap: () => displayDialog('Fish'),
         ),
       ],
     );
