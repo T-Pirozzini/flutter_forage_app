@@ -47,91 +47,163 @@ class _MarkerButtonsState extends State<MarkerButtons> {
   void displayDialog(String markerType) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Forage Location'),
-        content: Column(
-          children: [
-            TextField(
-              controller: _nameTextController,
-              decoration: const InputDecoration(
-                hintText: 'Name your location...',
-              ),
+      builder: (context) => Container(
+        alignment: Alignment.center,
+        width: 450, // Set desired width
+        height: 300, // Set desired height
+        child: SingleChildScrollView(
+          child: AlertDialog(
+            title: const Text(
+              'Add Forage Location',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
-            TextField(
-              controller: _descriptionTextController,
-              decoration: const InputDecoration(
-                hintText: 'Describe your location...',
-              ),
-            ),
-            Text('Marker Type: $markerType')
-          ],
-        ),
-        actions: [          
-          Column(
-            children: [ 
-              // image picker             
-              ElevatedButton(
-                child: Text('im a child'),
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (_) => AlertDialog(
-                      title: Text('Select Image Source'),
-                      content: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              _getImage(ImageSource.camera);
-                              Navigator.pop(context);
-                            },
-                            icon: Icon(Icons.camera),
-                            label: Text('Camera'),
-                          ),
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              _getImage(ImageSource.gallery);
-                              Navigator.pop(context);
-                            },
-                            icon: Icon(Icons.photo_library),
-                            label: Text('Gallery'),
-                          ),
-                        ],
-                      ),
+            content: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      'Marker Type: ',
+                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
-                  );
-                },
+                    Text(
+                      markerType,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _nameTextController,
+                  decoration: const InputDecoration(
+                    hintText: 'Name your location...',
+                    border: OutlineInputBorder(borderSide: BorderSide()),
+                    focusColor: Color(0xFFE65100),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: 400,
+                  child: TextField(
+                    controller: _descriptionTextController,
+                    decoration: const InputDecoration(
+                      hintText: 'Describe your location...',
+                      border: OutlineInputBorder(borderSide: BorderSide()),
+                      focusColor: Color(0xFFE65100),
+                    ),
+                    textInputAction: TextInputAction.newline,
+                    maxLines: null,
+                    maxLength: 150,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+// image picker
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Would you like to add an image to your location? (optional)',
+                    textAlign: TextAlign.center,
+                  ),
+                  ElevatedButton(
+                    child: const Text('+ Add Image'),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          title: const Text(
+                            'Select Image Source',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                                fontSize: 24, fontWeight: FontWeight.bold),
+                          ),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  ElevatedButton.icon(
+                                    onPressed: () {
+                                      _getImage(ImageSource.camera);
+                                      Navigator.pop(context);
+                                    },
+                                    icon: const Icon(Icons.camera_alt),
+                                    label: const Text('Camera'),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  ElevatedButton.icon(
+                                    onPressed: () {
+                                      _getImage(ImageSource.gallery);
+                                      Navigator.pop(context);
+                                    },
+                                    icon: const Icon(Icons.photo_library),
+                                    label: const Text('Gallery'),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 5),
+                              // cancel button
+                              Column(
+                                children: [
+                                  TextButton(
+                                    child: const Text('Cancel'),
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
-              // cancel button
-              TextButton(
-                child: const Text('Cancel'),
-                onPressed: () {
-                  Navigator.pop(context);
-                  _nameTextController.clear();
-                  _descriptionTextController.clear();
-                },
+              const SizedBox(height: 25),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // cancel button
+                  TextButton(
+                    child: const Text('Cancel'),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _nameTextController.clear();
+                      _descriptionTextController.clear();
+                    },
+                  ),
+                  // Save Forage Location
+                  ElevatedButton(
+                    onPressed: () async {
+                      final currentPosition = await _getCurrentPosition();
+                      saveMarkerInfo(
+                        _nameTextController.text,
+                        _descriptionTextController.text,
+                        markerType,
+                        _selectedImage?.path,
+                        currentPosition,
+                        DateTime.now(),
+                      );
+                      // ignore: use_build_context_synchronously
+                      Navigator.pop(context);
+                      _nameTextController.clear();
+                      _descriptionTextController.clear();
+                    },
+                    child: const Text(
+                      'Save Location',
+                      style: TextStyle(fontSize: 24),
+                    ),
+                  )
+                ],
               ),
-              // Save Forage Location
-              ElevatedButton(
-                onPressed: () async {
-                  final currentPosition = await _getCurrentPosition();
-                  saveMarkerInfo(
-                    _nameTextController.text,
-                    _descriptionTextController.text,
-                    markerType,
-                    _selectedImage?.path,
-                    currentPosition,
-                    DateTime.now(),
-                  );                  
-                  Navigator.pop(context);
-                  _nameTextController.clear();
-                  _descriptionTextController.clear();
-                },
-                child: const Text('Save Forage Location'),
-              )
             ],
-          ),          
-        ],
+          ),
+        ),
       ),
     );
   }
