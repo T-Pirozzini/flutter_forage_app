@@ -40,6 +40,7 @@ class MapPageState extends State<MapPage> {
         Geolocator.getPositionStream().listen(_onPositionUpdate);
     // get position
     _getCurrentPosition();
+    // fetch initial marker data
     fetchMarkerData();
     super.initState();
   }
@@ -63,10 +64,18 @@ class MapPageState extends State<MapPage> {
         ),
       );
     }
+    final updatedMarker = Marker(
+      markerId: _currentPositionMarker.markerId,
+      infoWindow: _currentPositionMarker.infoWindow,
+      position: LatLng(position.latitude, position.longitude),
+      icon: _currentPositionMarker.icon,
+      zIndex: 100.0,
+    );
+
     setState(() {
-      _currentPositionMarker = _currentPositionMarker.copyWith(
-        positionParam: LatLng(position.latitude, position.longitude),
-      );
+      _markers.remove(_currentPositionMarker);
+      _markers.add(updatedMarker);
+      _currentPositionMarker = updatedMarker;
     });
   }
 
@@ -112,6 +121,31 @@ class MapPageState extends State<MapPage> {
         type: type,
       );
     }
+
+    // Subscribe to collection changes for real-time updates
+    FirebaseFirestore.instance
+        .collection('Users')
+        .doc(currentUser.email)
+        .collection('Markers')
+        .snapshots()
+        .listen((snapshot) {
+      _markers.clear(); // Clear existing markers
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final name = data['name'] as String;
+        final description = data['description'] as String;
+        final latitude = data['location']['latitude'] as double;
+        final longitude = data['location']['longitude'] as double;
+        final type = data['type'] as String;
+
+        addMarker(
+          name: name,
+          description: description,
+          location: LatLng(latitude, longitude),
+          type: type,
+        );
+      }
+    });
   }
 
   // add markers
@@ -126,7 +160,7 @@ class MapPageState extends State<MapPage> {
       markerId: markerId,
       infoWindow: InfoWindow(title: name, snippet: description),
       position: location,
-      icon: await getMarkerIcon(type),      
+      icon: await getMarkerIcon(type),
     );
 
     setState(() {
@@ -143,7 +177,6 @@ class MapPageState extends State<MapPage> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -159,16 +192,6 @@ class MapPageState extends State<MapPage> {
                 controller.setMapStyle(mapstyle);
               },
               padding: const EdgeInsets.only(bottom: 60),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 200.0),
-            child: Text(
-              'Current location: $currentLocation',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
             ),
           ),
         ],
@@ -195,14 +218,6 @@ class MapPageState extends State<MapPage> {
               ),
             ),
           ),
-
-          // const Positioned(
-          //   bottom: 60.0,
-          //   left: 30.0,
-          //   child: MarkerButtons(
-          //     currentPosition: LatLng(37.42796133580664, -122.085749655962),
-          //   ),
-          // ),
         ],
       ),
     );
