@@ -45,7 +45,8 @@ class _RegisterPageState extends State<RegisterPage> {
           .set({
         'username': emailTextController.text.split('@')[0],
         'bio': 'Fill in your bio here ...',
-        'profilePic': 'https://i.stack.imgur.com/l60Hf.png',
+        'profilePic': '',
+        'profileBackground': '',
         'email': emailTextController.text,
         'friends': [],
         'friendRequests': [],

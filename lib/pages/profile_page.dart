@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -42,6 +41,90 @@ class _ProfilePageState extends State<ProfilePage> {
           onChanged: (value) {
             newValue = value;
           },
+        ),
+        actions: [
+          // cancel button
+          TextButton(
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.white),
+            ),
+            onPressed: () => Navigator.pop(context),
+          ),
+
+          // save button
+          TextButton(
+            child: const Text(
+              'Save',
+              style: TextStyle(color: Colors.white),
+            ),
+            onPressed: () => Navigator.of(context).pop(newValue),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // background image options
+  List<String> imageBackgroundOptions = [
+    'backgroundProfileImage1.jpg',
+    'backgroundProfileImage2.jpg',
+    'backgroundProfileImage3.jpg',
+    'backgroundProfileImage4.jpg',
+    'backgroundProfileImage5.jpg',
+    'backgroundProfileImage6.jpg',
+  ];
+
+  // initial background image
+  String selectedBackgroundOption = 'backgroundProfileImage1.jpg';
+
+  // edit profile background image
+  Future<void> editProfileBackground(String field) async {
+    String newValue = "";
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Text(
+          "Edit $field",
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: SizedBox(
+          height: 420,
+          width: 300,
+          child: GridView.builder(
+            shrinkWrap: true,
+            itemCount: imageBackgroundOptions.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 1.0,
+            ),
+            itemBuilder: (context, index) {
+              final option = imageBackgroundOptions[index];
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    selectedBackgroundOption = option;
+                    Navigator.pop(context);
+                  });
+                },
+                child: Container(
+                  height: 20,
+                  width: 20,
+                  margin: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    image: DecorationImage(
+                      image: AssetImage('lib/assets/images/$option'),
+                      fit: BoxFit.cover,
+                    ),
+                    border: selectedBackgroundOption == option
+                        ? Border.all(color: Colors.deepOrange, width: 4)
+                        : null,
+                  ),
+                ),
+              );
+            },
+          ),
         ),
         actions: [
           // cancel button
@@ -234,38 +317,70 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                             const Divider(
                               thickness: 2,
+                              indent: 15,
+                              endIndent: 15,
+                              color: Colors.white,
                             ),
                             if (userData['friendRequests'].length < 1)
                               const Text('You don\'t have any friend requests.')
                             else
                               Text(userData['friendRequests'].toString()),
-                            const Divider(),
+                            const Divider(
+                              thickness: 2,
+                              indent: 15,
+                              endIndent: 15,
+                              color: Colors.white,
+                            ),
                             if (userData['sentFriendRequests'].length < 1)
                               const Text(
                                   'You haven\'t sent any friend requests.')
                             else
                               Text(userData['sentFriendRequests'].toString()),
-                            const Divider(),
+                            const Divider(
+                              thickness: 2,
+                              indent: 15,
+                              endIndent: 15,
+                              color: Colors.white,
+                            ),
                             if (userData['posts'].length < 1)
                               const Text('You haven\'t posted anything yet.')
                             else
                               Text(userData['posts'].toString()),
-                            const Divider(),
-                            const SizedBox(height: 50),
-                            GestureDetector(
-                              onTap: goHome,
-                              child: Column(
-                                children: const [
-                                  Icon(
-                                    Icons.map,
-                                    size: 50,
-                                    color: Colors.deepOrange,
-                                  ),
-                                  Text(
-                                    'Let\'s forage!',
-                                    style: TextStyle(fontSize: 24),
+                            const Divider(
+                              thickness: 2,
+                              indent: 15,
+                              endIndent: 15,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(height: 30),
+                            Container(
+                              width: 120,
+                              height: 120,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 3),
                                   ),
                                 ],
+                              ),
+                              child: GestureDetector(
+                                onTap: goHome,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Image.asset('lib/assets/images/forage.png',
+                                        width: 50, color: Colors.deepOrange),
+                                    const Text(
+                                      'Let\'s forage!',
+                                      style: TextStyle(fontSize: 20),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
@@ -288,7 +403,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget buildTop() {
     final top = coverHeight - profileHeight / 2 - 25;
-
     return Stack(
       clipBehavior: Clip.none,
       alignment: Alignment.center,
@@ -300,6 +414,17 @@ class _ProfilePageState extends State<ProfilePage> {
           top: top,
           child: buildProfileImage(),
         ),
+        Positioned(
+          top: top,
+          right: 10,
+          child: IconButton(
+            onPressed: () => editProfileBackground('profileBackground'),
+            icon: const Icon(
+              Icons.edit,
+              color: Colors.deepOrange,
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -308,8 +433,8 @@ class _ProfilePageState extends State<ProfilePage> {
         clipper: _BottomCurveClipper(),
         child: Container(
           color: Colors.white,
-          child: Image.network(
-            'https://images.unsplash.com/photo-1602664719969-5cb83870efb3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1112&q=80',
+          child: Image.asset(
+            'lib/assets/images/$selectedBackgroundOption',
             width: double.infinity,
             height: coverHeight,
             fit: BoxFit.cover,
@@ -317,22 +442,36 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       );
 
-  Widget buildProfileImage() => Container(
-        padding: const EdgeInsets.all(8.0), // Add padding around the circle
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: Colors.white,
-            width: 4.0,
+  Widget buildProfileImage() => Stack(
+        alignment: Alignment.bottomRight,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8.0), // Add padding around the circle
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white,
+                width: 4.0,
+              ),
+            ),
+            child: CircleAvatar(
+              radius: profileHeight / 2,
+              backgroundColor: Colors.grey.shade800,
+              backgroundImage: const NetworkImage(
+                'https://i.scdn.co/image/ab67616d00001e0240e57e25851e7c9cf4275084',
+              ),
+            ),
           ),
-        ),
-        child: CircleAvatar(
-          radius: profileHeight / 2,
-          backgroundColor: Colors.grey.shade800,
-          backgroundImage: const NetworkImage(
-            'https://i.scdn.co/image/ab67616d00001e0240e57e25851e7c9cf4275084',
+          Positioned(
+            child: IconButton(
+              onPressed: () => editField('profilePic'),
+              icon: const Icon(
+                Icons.edit,
+                color: Colors.purple,
+              ),
+            ),
           ),
-        ),
+        ],
       );
 }
 
