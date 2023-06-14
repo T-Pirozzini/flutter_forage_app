@@ -115,7 +115,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.deepOrange.shade200,
+      backgroundColor: Colors.deepOrange.shade100,
       body: Column(
         children: [
           buildTop(),
@@ -129,60 +129,149 @@ class _ProfilePageState extends State<ProfilePage> {
                 if (snapshot.hasData) {
                   final userData =
                       snapshot.data!.data() as Map<String, dynamic>;
-                  return ListView(
-                    children: [
-                      Column(
-                        children: [
-                          Text(
-                            userData['username'],
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 32),
-                          ),
-                          const SizedBox(height: 8.0),
-                          Text(
-                            userData['email'],
-                            style: const TextStyle(
-                                fontSize: 24, color: Colors.black87),
-                          ),
-                        ],
+                  return Center(
+                    child: ListView(
+                      padding: const EdgeInsets.only(
+                        top: 20,
                       ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(userData['bio']),
-                          IconButton(
-                            onPressed: () => editField('bio'),
-                            icon: const Icon(Icons.edit),
-                          ),
-                        ],
-                      ),
-                      if (userData['friends'].length < 1)
-                        const Text('You don\'t have any friends yet!')
-                      else
-                        Text(userData['friends'].toString()),
-                      if (userData['friendRequests'].length < 1)
-                        const Text('You don\'t have any friend requests.')
-                      else
-                        Text(userData['friendRequests'].toString()),
-                      if (userData['sentFriendRequests'].length < 1)
-                        const Text('You haven\'t sent any friend requests.')
-                      else
-                        Text(userData['sentFriendRequests'].toString()),
-                      if (userData['posts'].length < 1)
-                        const Text('You haven\'t posted anything yet.')
-                      else
-                        Text(userData['posts'].toString()),
-                      Image.network(_imagePath2),
-                      GestureDetector(
-                        onTap: goHome,
-                        child: Column(
-                          children: const [
-                            Icon(Icons.home, size: 100),
-                            Text('Go home'),
+                      children: [
+                        Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 40.0),
+                                  child: Text(
+                                    userData['username'],
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 32,
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  onPressed: () => editField('username'),
+                                  icon: const Icon(
+                                    Icons.edit,
+                                    color: Colors.deepOrange,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8.0),
+                            Text(
+                              userData['email'],
+                              style: const TextStyle(
+                                fontSize: 24,
+                                color: Colors.black87,
+                              ),
+                            ),
                           ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 25),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 10.0),
+                          child: Text(
+                            'Bio:',
+                            style: TextStyle(
+                              fontSize: 18,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          height: 100,
+                          margin: const EdgeInsets.all(8.0),
+                          padding: const EdgeInsets.all(8.0),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.black),
+                            borderRadius: BorderRadius.circular(10),
+                            color: Colors.white,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  userData['bio'],
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () => editField('bio'),
+                                icon: const Icon(
+                                  Icons.edit,
+                                  color: Colors.deepOrange,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Image.asset('lib/assets/images/friends.png',
+                                      width: 40, color: Colors.deepOrange),
+                                  const SizedBox(width: 10),
+                                  if (userData['friends'].length < 1)
+                                    const Text(
+                                      'You don\'t have any friends yet!',
+                                      style: TextStyle(fontSize: 18),
+                                    )
+                                  else
+                                    Text(
+                                      userData['friends'].toString(),
+                                      style: const TextStyle(fontSize: 18),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            const Divider(
+                              thickness: 2,
+                            ),
+                            if (userData['friendRequests'].length < 1)
+                              const Text('You don\'t have any friend requests.')
+                            else
+                              Text(userData['friendRequests'].toString()),
+                            const Divider(),
+                            if (userData['sentFriendRequests'].length < 1)
+                              const Text(
+                                  'You haven\'t sent any friend requests.')
+                            else
+                              Text(userData['sentFriendRequests'].toString()),
+                            const Divider(),
+                            if (userData['posts'].length < 1)
+                              const Text('You haven\'t posted anything yet.')
+                            else
+                              Text(userData['posts'].toString()),
+                            const Divider(),
+                            const SizedBox(height: 50),
+                            GestureDetector(
+                              onTap: goHome,
+                              child: Column(
+                                children: const [
+                                  Icon(
+                                    Icons.map,
+                                    size: 50,
+                                    color: Colors.deepOrange,
+                                  ),
+                                  Text(
+                                    'Let\'s forage!',
+                                    style: TextStyle(fontSize: 24),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   );
                 } else {
                   return const Center(
@@ -198,8 +287,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget buildTop() {
-    final bottom = profileHeight / 2;
-    final top = coverHeight - profileHeight / 2;
+    final top = coverHeight - profileHeight / 2 - 25;
 
     return Stack(
       clipBehavior: Clip.none,
@@ -219,7 +307,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget buildCoverImage() => ClipPath(
         clipper: _BottomCurveClipper(),
         child: Container(
-          color: Colors.grey,
+          color: Colors.white,
           child: Image.network(
             'https://images.unsplash.com/photo-1602664719969-5cb83870efb3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1112&q=80',
             width: double.infinity,
@@ -255,7 +343,7 @@ class _BottomCurveClipper extends CustomClipper<Path> {
     final path = Path();
     path.lineTo(0, size.height - 80);
     path.quadraticBezierTo(
-        size.width / 2, size.height * 1.2, size.width, size.height - 80);
+        size.width / 2, size.height * 1.3, size.width, size.height - 80);
     path.lineTo(size.width, 0);
     path.close();
     return path;
