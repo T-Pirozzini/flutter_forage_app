@@ -36,7 +36,7 @@ class _RegisterPageState extends State<RegisterPage> {
       UserCredential userCredential =
           await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: emailTextController.text,
-        password: passwordTextController.text,        
+        password: passwordTextController.text,
       );
       // after creating the user, create a new document in firestore called Users
       FirebaseFirestore.instance
@@ -45,16 +45,17 @@ class _RegisterPageState extends State<RegisterPage> {
           .set({
         'username': emailTextController.text.split('@')[0],
         'bio': 'Fill in your bio here ...',
-        'profilePic': 'https://i.stack.imgur.com/l60Hf.png',
+        'profilePic': '',
+        'profileBackground': '',
         'email': emailTextController.text,
         'friends': [],
         'friendRequests': [],
         'sentFriendRequests': [],
         'posts': [],
-      });      
+      });
 
       // pop loading circle
-      if (context.mounted) Navigator.pop(context);
+      if (mounted) Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {
         Navigator.pop(context);
