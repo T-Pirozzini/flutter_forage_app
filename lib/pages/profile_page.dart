@@ -11,7 +11,7 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   // current user
-  final currentUser = FirebaseAuth.instance.currentUser!;
+  final currentUser = FirebaseAuth.instance.currentUser!;  
 
   // all users
   final usersCollection = FirebaseFirestore.instance.collection('Users');
@@ -105,7 +105,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 onTap: () {
                   setState(() {
                     selectedBackgroundOption = option;
-                    Navigator.pop(context);
+                    newValue = option;
                   });
                 },
                 child: Container(
@@ -159,35 +159,98 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  // image paths
-  late String _imagePath = '';
-  final String _imagePath2 =
-      'https://assetsio.reedpopcdn.com/dnd-5e-strixhaven-curriculum-of-chaos-artwork-3.jpg?width=1200&height=1200&fit=bounds&quality=70&format=jpg&auto=webp';
+  // Profile image options
+  List<String> imageProfileOptions = [
+    'profileImage1.jpg',
+    'profileImage2.jpg',
+    'profileImage3.jpg',
+    'profileImage4.jpg',
+    'profileImage5.jpg',
+    'profileImage6.jpg',
+  ];
 
-  Future<void> getImage() async {
-    final markersSnapshot = await FirebaseFirestore.instance
-        .collection('Users')
-        .doc(currentUser.email)
-        .collection('Markers')
-        .doc('Qse0JD1kiTRlHJiEOxJK')
-        .get();
+  // initial profile image
+  String selectedProfileOption = 'profileImage1.jpg';
 
-    final markersData = markersSnapshot.data();
+  // edit profile image
+  Future<void> editProfileImage(String field) async {
+    String newValue = "";
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Text(
+          "Edit $field",
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: SizedBox(
+          height: 420,
+          width: 300,
+          child: GridView.builder(
+            shrinkWrap: true,
+            itemCount: imageProfileOptions.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 1.0,
+            ),
+            itemBuilder: (context, index) {
+              final option = imageProfileOptions[index];
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    selectedProfileOption = option;
+                    newValue = option;
+                  });
+                },
+                child: Container(
+                  height: 20,
+                  width: 20,
+                  margin: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    image: DecorationImage(
+                      image: AssetImage('lib/assets/images/$option'),
+                      fit: BoxFit.cover,
+                    ),
+                    border: selectedProfileOption == option
+                        ? Border.all(color: Colors.deepOrange, width: 4)
+                        : null,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          // cancel button
+          TextButton(
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.white),
+            ),
+            onPressed: () => Navigator.pop(context),
+          ),
 
-    if (markersData != null) {
-      final imagePath = markersData['image'] as String?;
-      if (imagePath != null) {
-        setState(() {
-          _imagePath = imagePath;
-        });
-      }
+          // save button
+          TextButton(
+            child: const Text(
+              'Save',
+              style: TextStyle(color: Colors.white),
+            ),
+            onPressed: () => Navigator.of(context).pop(newValue),
+          ),
+        ],
+      ),
+    );
+
+    // update in Firestore
+    if (newValue.trim().isNotEmpty) {
+      // only update if there is something in the textfield
+      await usersCollection.doc(currentUser.email).update(
+        {
+          field: newValue,
+        },
+      );
     }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    // getImage();
   }
 
   // back to main page
@@ -454,20 +517,23 @@ class _ProfilePageState extends State<ProfilePage> {
                 width: 4.0,
               ),
             ),
-            child: CircleAvatar(
-              radius: profileHeight / 2,
-              backgroundColor: Colors.grey.shade800,
-              backgroundImage: const NetworkImage(
-                'https://i.scdn.co/image/ab67616d00001e0240e57e25851e7c9cf4275084',
-              ),
-            ),
-          ),
+            child: ClipOval(
+        child: Image.asset(
+          'lib/assets/images/$selectedProfileOption',
+          width: profileHeight,
+          height: profileHeight,
+          fit: BoxFit.cover,
+        ),
+      ),
+    ),
           Positioned(
+            top: 25,
+            right: 15,
             child: IconButton(
-              onPressed: () => editField('profilePic'),
+              onPressed: () => editProfileImage('profilePic'),
               icon: const Icon(
                 Icons.edit,
-                color: Colors.purple,
+                color: Colors.deepOrange,
               ),
             ),
           ),
