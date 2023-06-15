@@ -3,9 +3,10 @@ import 'list_tile.dart';
 
 class CustomDrawer extends StatelessWidget {
   final void Function()? onProfileTap;
+  final void Function()? onForageLocationsTap;
   final void Function()? onSignOutTap;
   const CustomDrawer(
-      {super.key, required this.onProfileTap, required this.onSignOutTap});
+      {super.key, required this.onProfileTap, required this.onSignOutTap, required this.onForageLocationsTap});
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +27,7 @@ class CustomDrawer extends StatelessWidget {
                 CustomListTile(
                   icon: Icons.hotel_class_sharp,
                   text: 'M Y   F O R A G E   L O C A T I O N S',
-                  onTap: () => Navigator.pop(context),
+                  onTap: onForageLocationsTap,
                 ),
                 // profile list tile
                 CustomListTile(
