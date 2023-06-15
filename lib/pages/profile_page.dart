@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -11,7 +12,7 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   // current user
-  final currentUser = FirebaseAuth.instance.currentUser!;  
+  final currentUser = FirebaseAuth.instance.currentUser!;
 
   // all users
   final usersCollection = FirebaseFirestore.instance.collection('Users');
@@ -20,7 +21,7 @@ class _ProfilePageState extends State<ProfilePage> {
   final double coverHeight = 280.0;
   final double profileHeight = 144.0;
 
-  // edit field
+  // edit text field - generic
   Future<void> editField(String field) async {
     String newValue = "";
     await showDialog(
@@ -63,6 +64,15 @@ class _ProfilePageState extends State<ProfilePage> {
         ],
       ),
     );
+    // update in Firestore
+    if (newValue.trim().isNotEmpty) {
+      // only update if there is something in the textfield
+      await usersCollection.doc(currentUser.email).update(
+        {
+          field: newValue,
+        },
+      );
+    }
   }
 
   // background image options
@@ -262,6 +272,13 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.deepOrange.shade100,
+      appBar: AppBar(
+        title: const Text('Profile'),
+        titleTextStyle:
+            GoogleFonts.philosopher(fontSize: 24, fontWeight: FontWeight.bold),
+        centerTitle: true,
+        backgroundColor: Colors.deepOrange.shade300,
+      ),
       body: Column(
         children: [
           buildTop(),
@@ -275,6 +292,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 if (snapshot.hasData) {
                   final userData =
                       snapshot.data!.data() as Map<String, dynamic>;
+                  selectedBackgroundOption =
+                      userData['profileBackground'] ?? selectedBackgroundOption;
+                  selectedProfileOption =
+                      userData['profilePic'] ?? selectedProfileOption;
                   return Center(
                     child: ListView(
                       padding: const EdgeInsets.only(
@@ -315,18 +336,9 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 25),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 10.0),
-                          child: Text(
-                            'Bio:',
-                            style: TextStyle(
-                              fontSize: 18,
-                            ),
-                          ),
-                        ),
+                        const SizedBox(height: 15),
                         Container(
-                          height: 100,
+                          height: 80,
                           margin: const EdgeInsets.all(8.0),
                           padding: const EdgeInsets.all(8.0),
                           decoration: BoxDecoration(
@@ -415,10 +427,10 @@ class _ProfilePageState extends State<ProfilePage> {
                               endIndent: 15,
                               color: Colors.white,
                             ),
-                            const SizedBox(height: 30),
+                            const SizedBox(height: 15),
                             Container(
-                              width: 120,
-                              height: 120,
+                              width: 100,
+                              height: 100,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: Colors.white,
@@ -437,10 +449,10 @@ class _ProfilePageState extends State<ProfilePage> {
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     Image.asset('lib/assets/images/forage.png',
-                                        width: 50, color: Colors.deepOrange),
+                                        width: 40, color: Colors.deepOrange),
                                     const Text(
                                       'Let\'s forage!',
-                                      style: TextStyle(fontSize: 20),
+                                      style: TextStyle(fontSize: 18),
                                     ),
                                   ],
                                 ),
@@ -518,14 +530,14 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
             child: ClipOval(
-        child: Image.asset(
-          'lib/assets/images/$selectedProfileOption',
-          width: profileHeight,
-          height: profileHeight,
-          fit: BoxFit.cover,
-        ),
-      ),
-    ),
+              child: Image.asset(
+                'lib/assets/images/$selectedProfileOption',
+                width: profileHeight,
+                height: profileHeight,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
           Positioned(
             top: 25,
             right: 15,

@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:floating_bottom_navigation_bar/floating_bottom_navigation_bar.dart';
 import 'package:flutter_forager_app/components/speed_dial.dart';
+import 'package:flutter_forager_app/pages/forage_locations_page.dart';
 import 'package:flutter_forager_app/pages/profile_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../components/drawer.dart';
@@ -39,6 +40,19 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // navigate to forage locations page
+  void goToForageLocationsPage() {
+    // pop menu drawer
+    Navigator.pop(context);
+    // go to new page
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ForageLocations(),
+      ),
+    );
+  }
+
   // sign user out
   void signOut() async {
     await FirebaseAuth.instance.signOut();
@@ -57,6 +71,7 @@ class _HomePageState extends State<HomePage> {
       drawer: CustomDrawer(
         onProfileTap: goToProfilePage,
         onSignOutTap: signOut,
+        onForageLocationsTap: goToForageLocationsPage,
       ),
       body: pages[currentIndex],
       floatingActionButtonLocation: FloatingActionButtonLocation.miniStartFloat,
