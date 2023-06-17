@@ -1,7 +1,4 @@
 import 'dart:io';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class ForageLocationInfo extends StatefulWidget {
@@ -28,66 +25,101 @@ class ForageLocationInfo extends StatefulWidget {
 }
 
 class _ForageLocationInfoState extends State<ForageLocationInfo> {
-  // current user
-  final currentUser = FirebaseAuth.instance.currentUser!;
-
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.asset(
-              'lib/assets/images/${widget.type.toLowerCase()}_marker.png',
-              width: 50),
-
-          SizedBox(width: 8), // Adjust the spacing between the icon and text
-          Text(widget.name.toUpperCase(),
-              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
-        ],
+      scrollable: false,
+      title: Expanded(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            children: [
+              Image.asset(
+                  'lib/assets/images/${widget.type.toLowerCase()}_marker.png',
+                  width: 50),
+              const SizedBox(width: 10),
+              Text(
+                widget.name.toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 1,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
       ),
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: SizedBox(
-              height: 200,
-              width: 400,
-              child: Image.file(
-                File(widget.image),
+      content: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: SizedBox(
+                height: 200,
+                width: 400,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.file(
+                    File(widget.image),
+                    fit: BoxFit.cover,
+                  ),
+                ),
               ),
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Description: ',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              Text(widget.description),
-            ],
-          ),
-          SizedBox(height: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Date/Time: ',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              Text(widget.timestamp),
-            ],
-          ),
-          SizedBox(height: 10),
-          Row(
-            children: [
-              Text('Lat: ', style: TextStyle(fontWeight: FontWeight.bold)),
-              Text(widget.lat.toStringAsFixed(2)),
-              SizedBox(width: 10),
-              Text('Lng: ', style: TextStyle(fontWeight: FontWeight.bold)),
-              Text(widget.lng.toStringAsFixed(2)),
-            ],
-          ),
-        ],
+            const SizedBox(height: 20),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: const [
+                    Icon(Icons.info_outline_rounded),
+                    Text('Description: ',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                Text(widget.description),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: const [
+                    Icon(Icons.calendar_month_rounded),
+                    Text(
+                      'Date/Time: ',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                Text(widget.timestamp),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: const [
+                Icon(Icons.pin_drop_outlined),
+                Text('Location: ',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            ),
+            Row(
+              children: [
+                const Text('Lat: ',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(widget.lat.toStringAsFixed(2)),
+                const SizedBox(width: 10),
+                const Text('Lng: ',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(widget.lng.toStringAsFixed(2)),
+              ],
+            ),
+          ],
+        ),
       ),
       actions: [
         TextButton(
