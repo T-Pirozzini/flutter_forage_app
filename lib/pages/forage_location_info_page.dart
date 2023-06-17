@@ -34,13 +34,58 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.name),
-      content: Column(
+      title: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SizedBox(
-            height: 200,
-            width: 200,
-            child: Image.file(File(widget.image),),
+          Image.asset(
+              'lib/assets/images/${widget.type.toLowerCase()}_marker.png',
+              width: 50),
+
+          SizedBox(width: 8), // Adjust the spacing between the icon and text
+          Text(widget.name.toUpperCase(),
+              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+        ],
+      ),
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: SizedBox(
+              height: 200,
+              width: 400,
+              child: Image.file(
+                File(widget.image),
+              ),
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Description: ',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(widget.description),
+            ],
+          ),
+          SizedBox(height: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Date/Time: ',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(widget.timestamp),
+            ],
+          ),
+          SizedBox(height: 10),
+          Row(
+            children: [
+              Text('Lat: ', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(widget.lat.toStringAsFixed(2)),
+              SizedBox(width: 10),
+              Text('Lng: ', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(widget.lng.toStringAsFixed(2)),
+            ],
           ),
         ],
       ),
