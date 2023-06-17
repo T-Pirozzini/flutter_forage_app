@@ -110,8 +110,11 @@ class MapPageState extends State<MapPage> {
       final data = doc.data();
       final name = data['name'] as String;
       final description = data['description'] as String;
-      final latitude = data['location']['latitude'] as double;
-      final longitude = data['location']['longitude'] as double;
+
+      // Retrieve the latitude and longitude as doubles
+      final location = data['location'] as Map<String, dynamic>;
+      final latitude = location['latitude'] as double;
+      final longitude = location['longitude'] as double;
       final type = data['type'] as String;
 
       addMarker(
