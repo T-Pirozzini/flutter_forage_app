@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_forager_app/pages/friend_request_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -396,10 +397,32 @@ class _ProfilePageState extends State<ProfilePage> {
                               endIndent: 15,
                               color: Colors.white,
                             ),
-                            if (userData['friendRequests'].length < 1)
-                              const Text('You don\'t have any friend requests.')
-                            else
-                              Text(userData['friendRequests'].toString()),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Text('You have '),
+                                Text(
+                                  userData['friendRequests'].length.toString(),
+                                  style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                const Text(' pending friend requests.'),
+                                IconButton(
+                                  onPressed: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const FriendRequestPage(),
+                                    ),
+                                  ),
+                                  icon: const Icon(
+                                    Icons.arrow_forward_ios,
+                                    color: Colors.deepOrange,
+                                  ),
+                                ),
+                              ],
+                            ),
                             const Divider(
                               thickness: 2,
                               indent: 15,
@@ -410,7 +433,34 @@ class _ProfilePageState extends State<ProfilePage> {
                               const Text(
                                   'You haven\'t sent any friend requests.')
                             else
-                              Text(userData['sentFriendRequests'].toString()),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Text('You have sent '),
+                                  Text(
+                                    userData['sentFriendRequests']
+                                        .length
+                                        .toString(),
+                                    style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                  const Text(' friend requests.'),
+                                  IconButton(
+                                    onPressed: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const FriendRequestPage(),
+                                      ),
+                                    ),
+                                    icon: const Icon(
+                                      Icons.arrow_forward_ios,
+                                      color: Colors.deepOrange,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             const Divider(
                               thickness: 2,
                               indent: 15,
