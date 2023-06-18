@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_forager_app/pages/forage_location_info_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
@@ -54,23 +55,33 @@ class _ForageLocationsState extends State<ForageLocations> {
                       final formattedDate = dateFormat.format(dateTime);
                       return Column(
                         children: [
-                          ListTile(
-                            title: Text(markerData['name']),
-                            leading: ImageIcon(
-                              AssetImage(
-                                  'lib/assets/images/${markerData['type'].toLowerCase()}_marker.png'),
-                              size: 38,
-                            ),
-                            subtitle: Text(markerData['description']),
-                            trailing: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                    'Latitude: ${markerData['location']['latitude'].toStringAsFixed(2)}'),
-                                Text(
-                                    'Longitude: ${markerData['location']['longitude'].toStringAsFixed(2)}'),
-                                Text('Time: $formattedDate'),
-                              ],
+                          GestureDetector(
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) {
+                                  return ForageLocationInfo(name: markerData['name'], description: markerData['description'], type: markerData['type'], lat: markerData['location']['latitude'], lng: markerData['location']['longitude'], timestamp: formattedDate, image: markerData['image']);
+                                },
+                              );
+                            },
+                            child: ListTile(
+                              title: Text(markerData['name']),
+                              leading: ImageIcon(
+                                AssetImage(
+                                    'lib/assets/images/${markerData['type'].toLowerCase()}_marker.png'),
+                                size: 38,
+                              ),
+                              subtitle: Text(markerData['description']),
+                              trailing: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                      'Latitude: ${markerData['location']['latitude'].toStringAsFixed(2)}'),
+                                  Text(
+                                      'Longitude: ${markerData['location']['longitude'].toStringAsFixed(2)}'),
+                                  Text('Time: $formattedDate'),
+                                ],
+                              ),
                             ),
                           ),
                           Divider(

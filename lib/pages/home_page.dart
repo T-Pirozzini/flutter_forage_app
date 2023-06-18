@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:floating_bottom_navigation_bar/floating_bottom_navigation_bar.dart';
 import 'package:flutter_forager_app/components/speed_dial.dart';
 import 'package:flutter_forager_app/pages/forage_locations_page.dart';
+import 'package:flutter_forager_app/pages/friends_page.dart';
 import 'package:flutter_forager_app/pages/profile_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../components/drawer.dart';
@@ -11,7 +12,15 @@ import 'explore_page.dart';
 import 'map_page.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final double lat;
+  final double lng;
+  final int currentIndex;
+
+  const HomePage(
+      {super.key,
+      required this.lat,
+      required this.lng,
+      required this.currentIndex});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -20,10 +29,17 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   // bottom navigation bar
   int currentIndex = 0;
+
+  @override
+  void initState() {
+    currentIndex = widget.currentIndex;
+    super.initState();
+  }
+
   final pages = [
     const MapPage(),
-    const ExplorePage(),
-    const ChatPage(),
+    const ExplorePage(lat: 37.42, lng: -122.08),
+    const FriendsPage(),
     const ChatPage(),
   ];
 
@@ -86,10 +102,10 @@ class _HomePageState extends State<HomePage> {
         selectedBackgroundColor: Colors.deepOrange.shade300,
         unselectedItemColor: Colors.white,
         items: [
-          FloatingNavbarItem(icon: Icons.home, title: 'Home'),
+          FloatingNavbarItem(icon: Icons.map, title: 'Forage'),
           FloatingNavbarItem(icon: Icons.explore, title: 'Explore'),
-          FloatingNavbarItem(icon: Icons.chat_bubble_outline, title: 'Chat'),
-          FloatingNavbarItem(icon: Icons.settings, title: 'Settings'),
+          FloatingNavbarItem(icon: Icons.group, title: 'Friends'),
+          FloatingNavbarItem(icon: Icons.forum, title: 'Community'),
         ],
       ),
     );
