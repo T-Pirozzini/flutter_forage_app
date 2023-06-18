@@ -58,6 +58,47 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
                                 userData['friendRequests'][index];
                             return ListTile(
                               title: Text(friendRequest),
+                              leading: IconButton(
+                                onPressed: () {
+                                  // Add friend to friends list
+                                  final currentUserEmail =
+                                      FirebaseAuth.instance.currentUser!.email!;
+                                  final usersCollection = FirebaseFirestore
+                                      .instance
+                                      .collection('Users');
+
+                                  // Add friend to current user's friends list
+                                  usersCollection.doc(currentUserEmail).update({
+                                    'friends':
+                                        FieldValue.arrayUnion([friendRequest])
+                                  }).then((_) {
+                                    // remove friend from current user's friend requests list
+                                    usersCollection
+                                        .doc(currentUserEmail)
+                                        .update({
+                                      'friendRequests': FieldValue.arrayRemove(
+                                          [friendRequest])
+                                    });
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                            'Friend added to current user\'s friends list'),
+                                        duration: Duration(seconds: 2),
+                                      ),
+                                    );
+                                  }).catchError((error) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                            'Failed to add friend to current user\'s friends list: $error'),
+                                        duration: const Duration(seconds: 2),
+                                      ),
+                                    );
+                                  });
+                                },
+                                icon: const Icon(Icons.person_add),
+                                color: Colors.deepOrange,
+                              ),
                               // Add any additional widgets or functionality for pending friend requests
                             );
                           },
@@ -72,7 +113,7 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
                                 userData['sentFriendRequests'][index];
                             return ListTile(
                               title: Text(sentFriendRequest),
-                              // Add any additional widgets or functionality for pending friend requests
+                              leading: const Icon(Icons.person_add_disabled),
                             );
                           },
                         ),

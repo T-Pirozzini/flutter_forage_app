@@ -1,10 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 class FriendsPage extends StatefulWidget {
-  const FriendsPage({super.key});
+  const FriendsPage({Key? key}) : super(key: key);
 
   @override
   State<FriendsPage> createState() => _FriendsPageState();
@@ -13,6 +12,7 @@ class FriendsPage extends StatefulWidget {
 class _FriendsPageState extends State<FriendsPage> {
   late final TextEditingController _searchController;
   List<Map<String, dynamic>> _searchResults = [];
+  final currentUser = FirebaseAuth.instance.currentUser!;
 
   @override
   void initState() {
@@ -29,9 +29,8 @@ class _FriendsPageState extends State<FriendsPage> {
   // search for users
   Future<void> _searchUsers(String searchTerm) async {
     final usersCollection = FirebaseFirestore.instance.collection('Users');
-    final querySnapshot = await usersCollection
-        .where('email', isEqualTo: searchTerm)
-        .get(); 
+    final querySnapshot =
+        await usersCollection.where('email', isEqualTo: searchTerm).get();
 
     setState(() {
       _searchResults = querySnapshot.docs.map((doc) => doc.data()).toList();
@@ -83,6 +82,59 @@ class _FriendsPageState extends State<FriendsPage> {
                     onPressed: () => _sendFriendRequest(user['email']),
                   ),
                 );
+              },
+            ),
+          ),
+          Expanded(
+            child: StreamBuilder<DocumentSnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('Users')
+                  .doc(currentUser.email)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  final userData =
+                      snapshot.data!.data() as Map<String, dynamic>;
+                  return Column(
+                    children: [
+                      const Text('Your Friends'),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: userData['friends'].length,
+                          itemBuilder: (context, index) {
+                            final friendId = userData['friends'][index];
+                            return StreamBuilder<DocumentSnapshot>(
+                              stream: FirebaseFirestore.instance
+                                  .collection('Users')
+                                  .doc(friendId)
+                                  .snapshots(),
+                              builder: (context, snapshot) {
+                                if (snapshot.hasData) {
+                                  final friendData = snapshot.data!.data()
+                                      as Map<String, dynamic>;
+                                  final friendEmail = friendData['email'];
+                                  final friendUsername = friendData['username'];
+                                  final friendProfilePic =
+                                      friendData['profilePic'];
+
+                                  return ListTile(
+                                    title: Text(friendUsername),
+                                    subtitle: Text(friendEmail),
+                                    leading: const Icon(Icons.person),
+                                  );
+                                } else {
+                                  return const CircularProgressIndicator();
+                                }
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  );
+                } else {
+                  return const CircularProgressIndicator();
+                }
               },
             ),
           ),

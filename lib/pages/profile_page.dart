@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/pages/friend_request_page.dart';
+import 'package:flutter_forager_app/pages/friends_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -378,16 +379,32 @@ class _ProfilePageState extends State<ProfilePage> {
                                   Image.asset('lib/assets/images/friends.png',
                                       width: 40, color: Colors.deepOrange),
                                   const SizedBox(width: 10),
-                                  if (userData['friends'].length < 1)
-                                    const Text(
-                                      'You don\'t have any friends yet!',
-                                      style: TextStyle(fontSize: 18),
-                                    )
-                                  else
-                                    Text(
-                                      userData['friends'].toString(),
-                                      style: const TextStyle(fontSize: 18),
-                                    ),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Text('You have '),
+                                      Text(
+                                        userData['friends'].length.toString(),
+                                        style: const TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                      const Text(' friend(s).'),
+                                      IconButton(
+                                        onPressed: () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                const FriendsPage(),
+                                          ),
+                                        ),
+                                        icon: const Icon(
+                                          Icons.arrow_forward_ios,
+                                          color: Colors.deepOrange,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ],
                               ),
                             ),
