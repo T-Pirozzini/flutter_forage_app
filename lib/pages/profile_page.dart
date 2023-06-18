@@ -18,8 +18,8 @@ class _ProfilePageState extends State<ProfilePage> {
   final usersCollection = FirebaseFirestore.instance.collection('Users');
 
   // profile UI
-  final double coverHeight = 280.0;
-  final double profileHeight = 144.0;
+  final double coverHeight = 200.0;
+  final double profileHeight = 100.0;
 
   // edit text field - generic
   Future<void> editField(String field) async {

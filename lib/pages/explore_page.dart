@@ -6,7 +6,10 @@ import 'package:geolocator/geolocator.dart';
 import '../components/search_field.dart';
 
 class ExplorePage extends StatefulWidget {
-  const ExplorePage({Key? key}) : super(key: key);
+  final double lat;
+  final double lng;
+
+  const ExplorePage({super.key, required this.lat, required this.lng});
 
   @override
   State<ExplorePage> createState() => ExplorePageState();
@@ -16,14 +19,15 @@ class ExplorePageState extends State<ExplorePage> {
   final Completer<GoogleMapController> _controller =
       Completer<GoogleMapController>();
 
-  CameraPosition _initialCameraPosition = const CameraPosition(
-    target: LatLng(37.42796133580664, -122.085749655962),
-    zoom: 14,
-  );
+  late CameraPosition _initialCameraPosition;
 
   @override
   void initState() {
     super.initState();
+    _initialCameraPosition = CameraPosition(
+      target: LatLng(widget.lat, widget.lng),
+      zoom: 14.0,
+    );
     _determinePosition();
   }
 

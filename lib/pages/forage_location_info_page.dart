@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 
+import 'home_page.dart';
+
 class ForageLocationInfo extends StatefulWidget {
   final String name;
   final String description;
@@ -125,8 +127,37 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
         TextButton(
           onPressed: () {
             Navigator.of(context).pop();
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => HomePage(
+                  lat: widget.lat,
+                  lng: widget.lng,
+                  currentIndex: 1,
+                ),
+              ),
+            );            
           },
-          child: const Text('OK'),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Icon(Icons.map_outlined, color: Colors.deepOrange),
+              Text('Go to Location', style: TextStyle(fontSize: 18)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Icon(Icons.close, color: Colors.deepOrange),
+              Text('Close'),
+            ],
+          ),
         ),
       ],
     );

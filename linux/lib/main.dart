@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
           primarySwatch: Colors.deepOrange,
           textTheme: GoogleFonts.alegreyaSansTextTheme()),
-      home: const HomePage(),
+      home: const HomePage(lat: 37.42, lng: -122.08, currentIndex: 0),
       debugShowCheckedModeBanner: false,
     );
   }
