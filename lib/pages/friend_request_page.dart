@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -11,6 +13,8 @@ class FriendRequestPage extends StatefulWidget {
 class _FriendRequestPageState extends State<FriendRequestPage> {
   List<String> pendingFriendRequests = []; // List of pending friend requests
   List<String> sentFriendRequests = []; // List of sent friend requests
+  // current user
+  final currentUser = FirebaseAuth.instance.currentUser!;
 
   @override
   void initState() {
@@ -33,47 +37,53 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              'Pending Friend Requests',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
           Expanded(
-            child: ListView.builder(
-              itemCount: pendingFriendRequests.length,
-              itemBuilder: (context, index) {
-                final friendRequest = pendingFriendRequests[index];
-                return ListTile(
-                  title: Text(friendRequest),
-                  // Add any additional widgets or functionality for pending friend requests
-                );
-              },
-            ),
-          ),
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              'Sent Friend Requests',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: sentFriendRequests.length,
-              itemBuilder: (context, index) {
-                final friendRequest = sentFriendRequests[index];
-                return ListTile(
-                  title: Text(friendRequest),
-                  // Add any additional widgets or functionality for sent friend requests
-                );
+            child: StreamBuilder<DocumentSnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('Users')
+                  .doc(currentUser.email)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  final userData =
+                      snapshot.data!.data() as Map<String, dynamic>;
+                  return Column(
+                    children: [
+                      const Text('Pending Friend Requests'),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: userData['friendRequests'].length,
+                          itemBuilder: (context, index) {
+                            final friendRequest =
+                                userData['friendRequests'][index];
+                            return ListTile(
+                              title: Text(friendRequest),
+                              // Add any additional widgets or functionality for pending friend requests
+                            );
+                          },
+                        ),
+                      ),
+                      const Text('Sent Friend Requests'),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: userData['sentFriendRequests'].length,
+                          itemBuilder: (context, index) {
+                            final sentFriendRequest =
+                                userData['sentFriendRequests'][index];
+                            return ListTile(
+                              title: Text(sentFriendRequest),
+                              // Add any additional widgets or functionality for pending friend requests
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  );
+                } else {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
               },
             ),
           ),
