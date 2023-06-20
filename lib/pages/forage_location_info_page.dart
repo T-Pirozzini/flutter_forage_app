@@ -133,7 +133,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                 builder: (context) => HomePage(
                   lat: widget.lat,
                   lng: widget.lng,
-                  currentIndex: 1,
+                  followUser: false,
                 ),
               ),
             );            

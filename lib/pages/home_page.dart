@@ -14,13 +14,13 @@ import 'map_page.dart';
 class HomePage extends StatefulWidget {
   final double lat;
   final double lng;
-  final int currentIndex;
+  final bool followUser;
 
   const HomePage(
       {super.key,
       required this.lat,
       required this.lng,
-      required this.currentIndex});
+      required this.followUser});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -30,20 +30,18 @@ class _HomePageState extends State<HomePage> {
   // get current user id
   final currentUserId = FirebaseAuth.instance.currentUser!.uid;
   // bottom navigation bar
+  late bool followUser;
   int currentIndex = 0;
+  double lat = 0;
+  double lng = 0;
 
   @override
   void initState() {
-    currentIndex = widget.currentIndex;
     super.initState();
+    followUser = widget.followUser;
+    lat = widget.lat;
+    lng = widget.lng;
   }
-
-  final pages = [
-    const MapPage(),
-    const ExplorePage(lat: 37.42, lng: -122.08),
-    const FriendsPage(),
-    const ChatPage(),
-  ];
 
   // navigate to profile page
   void goToProfilePage() {
@@ -78,6 +76,13 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final pages = [
+      MapPage(lat: lat, lng: lng, followUser: followUser),
+      const ExplorePage(),
+      const FriendsPage(),
+      const ChatPage(),
+    ];
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('FORAGER'),

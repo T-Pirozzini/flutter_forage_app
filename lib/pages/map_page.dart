@@ -7,8 +7,14 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 
 class MapPage extends StatefulWidget {
-  
-  const MapPage({super.key});
+  final double lat;
+  final double lng;
+  final bool followUser;
+  const MapPage(
+      {super.key,
+      required this.lat,
+      required this.lng,
+      required this.followUser});
 
   @override
   State<MapPage> createState() => MapPageState();
@@ -27,6 +33,8 @@ class MapPageState extends State<MapPage> {
   final Set<Marker> _markers = {};
 
   Position? currentLocation;
+  late CameraPosition _kGooglePlex;
+  bool followUser = false;
 
   @override
   void initState() {
@@ -43,6 +51,11 @@ class MapPageState extends State<MapPage> {
     _getCurrentPosition();
     // fetch initial marker data
     fetchMarkerData();
+    _kGooglePlex = CameraPosition(
+      target: LatLng(widget.lat, widget.lng),
+      zoom: 14,
+    );
+    followUser = widget.followUser;
     super.initState();
   }
 
@@ -52,10 +65,10 @@ class MapPageState extends State<MapPage> {
     super.dispose();
   }
 
-  bool _followUser = true;
   void _onPositionUpdate(Position position) async {
+    if (!mounted) return;
     final GoogleMapController controller = await _controller.future;
-    if (_followUser) {
+    if (followUser) {
       controller.animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(
@@ -80,10 +93,10 @@ class MapPageState extends State<MapPage> {
     });
   }
 
-  static const CameraPosition _kGooglePlex = CameraPosition(
-    target: LatLng(37.42796133580664, -122.085749655962),
-    zoom: 14,
-  );
+  // final CameraPosition _kGooglePlex = CameraPosition(
+  //   target: LatLng(lat, lng),
+  //   zoom: 14,
+  // );
 
   // get current position
   Future<Position> _getCurrentPosition() async {
@@ -183,6 +196,8 @@ class MapPageState extends State<MapPage> {
 
   @override
   Widget build(BuildContext context) {
+    bool _followUser = followUser;
+
     return Scaffold(
       body: Column(
         children: [
@@ -209,7 +224,7 @@ class MapPageState extends State<MapPage> {
               onPressed: () {
                 setState(
                   () {
-                    _followUser = !_followUser;
+                    followUser = !followUser;
                   },
                 );
               },
