@@ -6,7 +6,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 class ForageLocations extends StatefulWidget {
-  const ForageLocations({super.key});
+  final String userId;
+  const ForageLocations({Key? key, required this.userId}) : super(key: key);
 
   @override
   State<ForageLocations> createState() => _ForageLocationsState();
@@ -35,7 +36,7 @@ class _ForageLocationsState extends State<ForageLocations> {
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('Users')
-                  .doc(currentUser.email)
+                  .doc(widget.userId)
                   .collection('Markers')
                   .snapshots(),
               builder: (context, snapshot) {
@@ -60,7 +61,14 @@ class _ForageLocationsState extends State<ForageLocations> {
                               showDialog(
                                 context: context,
                                 builder: (context) {
-                                  return ForageLocationInfo(name: markerData['name'], description: markerData['description'], type: markerData['type'], lat: markerData['location']['latitude'], lng: markerData['location']['longitude'], timestamp: formattedDate, image: markerData['image']);
+                                  return ForageLocationInfo(
+                                      name: markerData['name'],
+                                      description: markerData['description'],
+                                      type: markerData['type'],
+                                      lat: markerData['location']['latitude'],
+                                      lng: markerData['location']['longitude'],
+                                      timestamp: formattedDate,
+                                      image: markerData['image']);
                                 },
                               );
                             },

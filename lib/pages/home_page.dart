@@ -27,6 +27,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  // get current user id
+  final currentUserId = FirebaseAuth.instance.currentUser!.uid;
   // bottom navigation bar
   int currentIndex = 0;
 
@@ -64,7 +66,7 @@ class _HomePageState extends State<HomePage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const ForageLocations(),
+        builder: (context) => ForageLocations(userId: currentUserId),
       ),
     );
   }

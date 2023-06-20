@@ -2,8 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import 'forage_locations_page.dart';
+
 class FriendsPage extends StatefulWidget {
-  const FriendsPage({Key? key}) : super(key: key);
+  const FriendsPage({super.key});
 
   @override
   State<FriendsPage> createState() => _FriendsPageState();
@@ -52,6 +54,19 @@ class _FriendsPageState extends State<FriendsPage> {
     });
 
     // Perform any additional UI updates or show a success message
+  }
+
+  // navigate to forage locations page
+  void goToForageLocationsPage(String friendId) {
+    // pop menu drawer
+    Navigator.pop(context);
+    // go to new page
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ForageLocations(userId: friendId),
+      ),
+    );
   }
 
   @override
@@ -117,10 +132,13 @@ class _FriendsPageState extends State<FriendsPage> {
                                   final friendProfilePic =
                                       friendData['profilePic'];
 
-                                  return ListTile(
-                                    title: Text(friendUsername),
-                                    subtitle: Text(friendEmail),
-                                    leading: const Icon(Icons.person),
+                                  return GestureDetector(
+                                    onTap: () => goToForageLocationsPage(friendId),
+                                    child: ListTile(
+                                      title: Text(friendUsername),
+                                      subtitle: Text(friendEmail),
+                                      leading: const Icon(Icons.person),
+                                    ),
                                   );
                                 } else {
                                   return const CircularProgressIndicator();
