@@ -23,8 +23,8 @@ class ExplorePageState extends State<ExplorePage> {
   void initState() {
     super.initState();    
     _determinePosition();
-    _initialCameraPosition = CameraPosition(
-      target: const LatLng(0, 0),
+    _initialCameraPosition = const CameraPosition(
+      target: LatLng(0, 0),
       zoom: 14.0,
     );
   }

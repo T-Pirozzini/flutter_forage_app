@@ -14,13 +14,15 @@ import 'map_page.dart';
 class HomePage extends StatefulWidget {
   final double lat;
   final double lng;
+  final int currentIndex;
   final bool followUser;
 
   const HomePage(
       {super.key,
       required this.lat,
       required this.lng,
-      required this.followUser});
+      required this.followUser,
+      required this.currentIndex});
 
   @override
   State<HomePage> createState() => _HomePageState();

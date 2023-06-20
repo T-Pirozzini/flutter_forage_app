@@ -196,7 +196,7 @@ class MapPageState extends State<MapPage> {
 
   @override
   Widget build(BuildContext context) {
-    bool _followUser = followUser;
+    // bool _followUser = followUser;
 
     return Scaffold(
       body: Column(
@@ -233,7 +233,7 @@ class MapPageState extends State<MapPage> {
               backgroundColor: Colors.grey.shade800,
               child: Icon(
                 Icons.my_location,
-                color: _followUser ? Colors.deepOrange.shade300 : Colors.white,
+                color: followUser ? Colors.deepOrange.shade300 : Colors.white,
               ),
             ),
           ),

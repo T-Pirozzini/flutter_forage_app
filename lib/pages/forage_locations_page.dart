@@ -5,6 +5,8 @@ import 'package:flutter_forager_app/pages/forage_location_info_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import 'home_page.dart';
+
 class ForageLocations extends StatefulWidget {
   final String userId;
   const ForageLocations({Key? key, required this.userId}) : super(key: key);
@@ -29,6 +31,17 @@ class _ForageLocationsState extends State<ForageLocations> {
             GoogleFonts.philosopher(fontSize: 24, fontWeight: FontWeight.bold),
         centerTitle: true,
         backgroundColor: Colors.deepOrange.shade300,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const HomePage(lat: 0, lng: 0, followUser: true, currentIndex: 0,),
+              ),
+            );
+          },
+        ),
       ),
       body: Column(
         children: [

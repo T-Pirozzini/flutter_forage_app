@@ -134,6 +134,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                   lat: widget.lat,
                   lng: widget.lng,
                   followUser: false,
+                  currentIndex: 2,
                 ),
               ),
             );            
