@@ -5,11 +5,9 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import '../components/search_field.dart';
 
-class ExplorePage extends StatefulWidget {
-  final double lat;
-  final double lng;
+class ExplorePage extends StatefulWidget {  
 
-  const ExplorePage({super.key, required this.lat, required this.lng});
+  const ExplorePage({super.key});
 
   @override
   State<ExplorePage> createState() => ExplorePageState();
@@ -23,12 +21,12 @@ class ExplorePageState extends State<ExplorePage> {
 
   @override
   void initState() {
-    super.initState();
-    _initialCameraPosition = CameraPosition(
-      target: LatLng(widget.lat, widget.lng),
+    super.initState();    
+    _determinePosition();
+    _initialCameraPosition = const CameraPosition(
+      target: LatLng(0, 0),
       zoom: 14.0,
     );
-    _determinePosition();
   }
 
   Future<void> _goToPlace(Map<String, dynamic> place) async {

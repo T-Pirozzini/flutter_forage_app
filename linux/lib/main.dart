@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_forager_app/pages/home_page.dart';
+import 'package:flutter_forager_app/auth/auth_page.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
           primarySwatch: Colors.deepOrange,
           textTheme: GoogleFonts.alegreyaSansTextTheme()),
-      home: const HomePage(lat: 37.42, lng: -122.08, currentIndex: 0),
+      home: const AuthPage(),
       debugShowCheckedModeBanner: false,
     );
   }

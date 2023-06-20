@@ -5,8 +5,11 @@ import 'package:flutter_forager_app/pages/forage_location_info_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import 'home_page.dart';
+
 class ForageLocations extends StatefulWidget {
-  const ForageLocations({super.key});
+  final String userId;
+  const ForageLocations({Key? key, required this.userId}) : super(key: key);
 
   @override
   State<ForageLocations> createState() => _ForageLocationsState();
@@ -28,6 +31,17 @@ class _ForageLocationsState extends State<ForageLocations> {
             GoogleFonts.philosopher(fontSize: 24, fontWeight: FontWeight.bold),
         centerTitle: true,
         backgroundColor: Colors.deepOrange.shade300,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const HomePage(lat: 0, lng: 0, followUser: true, currentIndex: 0,),
+              ),
+            );
+          },
+        ),
       ),
       body: Column(
         children: [
@@ -35,7 +49,7 @@ class _ForageLocationsState extends State<ForageLocations> {
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('Users')
-                  .doc(currentUser.email)
+                  .doc(widget.userId)
                   .collection('Markers')
                   .snapshots(),
               builder: (context, snapshot) {
@@ -60,7 +74,14 @@ class _ForageLocationsState extends State<ForageLocations> {
                               showDialog(
                                 context: context,
                                 builder: (context) {
-                                  return ForageLocationInfo(name: markerData['name'], description: markerData['description'], type: markerData['type'], lat: markerData['location']['latitude'], lng: markerData['location']['longitude'], timestamp: formattedDate, image: markerData['image']);
+                                  return ForageLocationInfo(
+                                      name: markerData['name'],
+                                      description: markerData['description'],
+                                      type: markerData['type'],
+                                      lat: markerData['location']['latitude'],
+                                      lng: markerData['location']['longitude'],
+                                      timestamp: formattedDate,
+                                      image: markerData['image']);
                                 },
                               );
                             },
