@@ -7,6 +7,8 @@ import 'package:flutter_forager_app/pages/friends_page.dart';
 import 'package:flutter_forager_app/pages/profile_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../components/drawer.dart';
+import 'about_page.dart';
+import 'about_us_page.dart';
 import 'chat_page.dart';
 import 'map_page.dart';
 
@@ -59,6 +61,32 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // navigate to profile page
+  void goToAboutPage() {
+    // pop menu drawer
+    Navigator.pop(context);
+    // go to new page
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const AboutPage(),
+      ),
+    );
+  }
+
+  // navigate to profile page
+  void goAboutUsPage() {
+    // pop menu drawer
+    Navigator.pop(context);
+    // go to new page
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const AboutUsPage(),
+      ),
+    );
+  }
+
   // navigate to forage locations page
   void goToForageLocationsPage() {
     // pop menu drawer
@@ -98,6 +126,8 @@ class _HomePageState extends State<HomePage> {
         onProfileTap: goToProfilePage,
         onSignOutTap: signOut,
         onForageLocationsTap: goToForageLocationsPage,
+        onAboutTap: goToAboutPage,
+        onAboutUsTap: goAboutUsPage,
       ),
       body: pages[currentIndex],       
       floatingActionButtonLocation: FloatingActionButtonLocation.miniStartFloat,
