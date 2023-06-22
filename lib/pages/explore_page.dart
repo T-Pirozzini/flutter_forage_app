@@ -5,8 +5,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import '../components/search_field.dart';
 
-class ExplorePage extends StatefulWidget {  
-
+class ExplorePage extends StatefulWidget {
   const ExplorePage({super.key});
 
   @override
@@ -21,7 +20,7 @@ class ExplorePageState extends State<ExplorePage> {
 
   @override
   void initState() {
-    super.initState();    
+    super.initState();
     _determinePosition();
     _initialCameraPosition = const CameraPosition(
       target: LatLng(0, 0),

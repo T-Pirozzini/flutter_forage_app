@@ -99,10 +99,10 @@ class _HomePageState extends State<HomePage> {
         onSignOutTap: signOut,
         onForageLocationsTap: goToForageLocationsPage,
       ),
-      body: pages[currentIndex],
+      body: pages[currentIndex],       
       floatingActionButtonLocation: FloatingActionButtonLocation.miniStartFloat,
       floatingActionButton:
-          pages[currentIndex] is MapPage ? const MarkerButtons() : null,
+          pages[currentIndex] is MapPage ? const MarkerButtons() : null,      
       extendBody: true,
       bottomNavigationBar: FloatingNavbar(
         onTap: (index) => setState(() => currentIndex = index),

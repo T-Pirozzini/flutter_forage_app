@@ -6,6 +6,8 @@ import 'package:flutter_forager_app/components/map_style.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 
+import '../components/search_field.dart';
+
 class MapPage extends StatefulWidget {
   final double lat;
   final double lng;
@@ -194,6 +196,20 @@ class MapPageState extends State<MapPage> {
     );
   }
 
+  // go to place
+  Future<void> _goToPlace(Map<String, dynamic> place) async {
+    final double lat = place['geometry']['location']['lat'];
+    final double lng = place['geometry']['location']['lng'];
+    final GoogleMapController controller = await _controller.future;
+    final newCameraPosition = CameraPosition(
+      target: LatLng(lat, lng),
+      zoom: 14,
+    );
+    controller.animateCamera(
+      CameraUpdate.newCameraPosition(newCameraPosition),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // bool _followUser = followUser;
@@ -218,8 +234,8 @@ class MapPageState extends State<MapPage> {
       floatingActionButton: Stack(
         children: [
           Positioned(
-            top: 30.0,
-            right: 0.0,
+            bottom: 140.0,
+            right: -8.0,
             child: FloatingActionButton(
               onPressed: () {
                 setState(
@@ -234,6 +250,23 @@ class MapPageState extends State<MapPage> {
               child: Icon(
                 Icons.my_location,
                 color: followUser ? Colors.deepOrange.shade300 : Colors.white,
+              ),
+            ),
+          ),
+          Positioned(
+            top: 20,
+            left: 20,
+            right: -50,
+            child: Container(
+              margin: const EdgeInsets.only(right: 150),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SearchField(
+                      onPlaceSelected: _goToPlace,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

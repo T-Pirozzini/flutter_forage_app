@@ -18,6 +18,8 @@ class _SearchFieldState extends State<SearchField> {
       controller: _searchController,
       textCapitalization: TextCapitalization.words,
       decoration: InputDecoration(
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.8),
         contentPadding: const EdgeInsets.symmetric(
           vertical: 12.0,
           horizontal: 16.0,
