@@ -30,14 +30,19 @@ class _ForageLocationsState extends State<ForageLocations> {
         titleTextStyle:
             GoogleFonts.philosopher(fontSize: 24, fontWeight: FontWeight.bold),
         centerTitle: true,
-        backgroundColor: Colors.deepOrange.shade300,
+        backgroundColor: Colors.deepOrange.shade400,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const HomePage(lat: 0, lng: 0, followUser: true, currentIndex: 0,),
+                builder: (context) => const HomePage(
+                  lat: 0,
+                  lng: 0,
+                  followUser: true,
+                  currentIndex: 0,
+                ),
               ),
             );
           },
@@ -75,13 +80,14 @@ class _ForageLocationsState extends State<ForageLocations> {
                                 context: context,
                                 builder: (context) {
                                   return ForageLocationInfo(
-                                      name: markerData['name'],
-                                      description: markerData['description'],
-                                      type: markerData['type'],
-                                      lat: markerData['location']['latitude'],
-                                      lng: markerData['location']['longitude'],
-                                      timestamp: formattedDate,
-                                      image: markerData['image']);
+                                    name: markerData['name'],
+                                    description: markerData['description'],
+                                    type: markerData['type'],
+                                    lat: markerData['location']['latitude'],
+                                    lng: markerData['location']['longitude'],
+                                    timestamp: formattedDate,
+                                    image: markerData['image'],
+                                  );
                                 },
                               );
                             },

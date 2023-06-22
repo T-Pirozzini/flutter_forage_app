@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'forage_locations_page.dart';
 
@@ -73,7 +74,11 @@ class _FriendsPageState extends State<FriendsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Friends Page'),
+        title: const Text('FRIENDS'),
+        titleTextStyle:
+            GoogleFonts.philosopher(fontSize: 24, fontWeight: FontWeight.bold),
+        centerTitle: true,
+        backgroundColor: Colors.deepOrange.shade400,
       ),
       body: Column(
         children: [
@@ -133,7 +138,8 @@ class _FriendsPageState extends State<FriendsPage> {
                                       friendData['profilePic'];
 
                                   return GestureDetector(
-                                    onTap: () => goToForageLocationsPage(friendId),
+                                    onTap: () =>
+                                        goToForageLocationsPage(friendId),
                                     child: ListTile(
                                       title: Text(friendUsername),
                                       subtitle: Text(friendEmail),
