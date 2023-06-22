@@ -8,7 +8,6 @@ import 'package:flutter_forager_app/pages/profile_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../components/drawer.dart';
 import 'chat_page.dart';
-import 'explore_page.dart';
 import 'map_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -31,6 +30,8 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   // get current user id
   final currentUserId = FirebaseAuth.instance.currentUser!.uid;
+  // get current user
+  final currentUser = FirebaseAuth.instance.currentUser!;
   // bottom navigation bar
   late bool followUser;
   int currentIndex = 0;
@@ -66,7 +67,7 @@ class _HomePageState extends State<HomePage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ForageLocations(userId: currentUserId),
+        builder: (context) => ForageLocations(userId: currentUser.email!),
       ),
     );
   }
@@ -80,7 +81,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final pages = [
       MapPage(lat: lat, lng: lng, followUser: followUser),
-      const ExplorePage(),
+      ForageLocations(userId: currentUser.email!),
       const FriendsPage(),
       const ChatPage(),
     ];
@@ -112,7 +113,7 @@ class _HomePageState extends State<HomePage> {
         unselectedItemColor: Colors.white,
         items: [
           FloatingNavbarItem(icon: Icons.map, title: 'Forage'),
-          FloatingNavbarItem(icon: Icons.explore, title: 'Explore'),
+          FloatingNavbarItem(icon: Icons.hotel_class_sharp, title: 'Locations'),
           FloatingNavbarItem(icon: Icons.group, title: 'Friends'),
           FloatingNavbarItem(icon: Icons.forum, title: 'Community'),
         ],

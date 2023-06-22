@@ -6,7 +6,7 @@ import 'home_page.dart';
 class ForageLocationInfo extends StatefulWidget {
   final String name;
   final String description;
-  final String image;
+  final String? image;
   final double lat;
   final double lng;
   final String timestamp;
@@ -16,9 +16,9 @@ class ForageLocationInfo extends StatefulWidget {
       {super.key,
       required this.name,
       required this.description,
-      required this.image,
       required this.lat,
       required this.lng,
+      this.image,
       required this.timestamp,
       required this.type});
 
@@ -64,10 +64,15 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                 width: 400,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child: Image.file(
-                    File(widget.image),
-                    fit: BoxFit.cover,
-                  ),
+                  child: widget.image != null
+                      ? Image.file(
+                          File(widget.image!),
+                          fit: BoxFit.cover,
+                        )
+                      : Image.asset(
+                          'lib/assets/images/friends.png',
+                          fit: BoxFit.cover,
+                        ),
                 ),
               ),
             ),
@@ -137,7 +142,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                   currentIndex: 2,
                 ),
               ),
-            );            
+            );
           },
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
