@@ -218,6 +218,8 @@ class MapPageState extends State<MapPage> {
       body: Column(
         children: [
           Expanded(
+            // Container(
+            // padding: EdgeInsets.zero,
             child: GoogleMap(
               mapType: MapType.normal,
               markers: _markers,
@@ -226,7 +228,7 @@ class MapPageState extends State<MapPage> {
                 _controller.complete(controller);
                 controller.setMapStyle(mapstyle);
               },
-              padding: const EdgeInsets.only(bottom: 60),
+              padding: const EdgeInsets.only(bottom: 60, left: 10),
             ),
           ),
         ],
@@ -234,8 +236,8 @@ class MapPageState extends State<MapPage> {
       floatingActionButton: Stack(
         children: [
           Positioned(
-            bottom: 140.0,
-            right: -8.0,
+            bottom: 145.0,
+            right: 18.0,
             child: FloatingActionButton(
               onPressed: () {
                 setState(
@@ -272,6 +274,8 @@ class MapPageState extends State<MapPage> {
           ),
         ],
       ),
+      // this line prevents compass cutoff
+      floatingActionButtonLocation: FloatingActionButtonLocation.miniStartFloat,
     );
   }
 }
