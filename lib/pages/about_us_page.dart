@@ -37,7 +37,7 @@ class _AboutUsPageState extends State<AboutUsPage> {
         ),
       ),
       body: Container(
-        color: Colors.green.withOpacity(0.5),
+        color: Colors.green.withOpacity(0.7),
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: const Center(
           child: Text(

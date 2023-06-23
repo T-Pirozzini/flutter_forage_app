@@ -37,11 +37,11 @@ class _AboutPageState extends State<AboutPage> {
         ),
       ),
       body: Container(
-        color: Colors.green.withOpacity(0.5),
+        color: Colors.blue.withOpacity(0.5),
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: const Center(
           child: Text(
-            'This mobile app allows you to mark locations of fish, trees, berries, ferns, and mushrooms on to your map. You\'re allowed allowed to save up to 10 locations with markers per account. Once you are friends with someone, you can view each other\'s saved locations.',
+            'This mobile app allows you to mark locations of fish, trees, berries, ferns, and mushrooms on to your map. You\'re allowed allowed to save up to 10 locations per account with the custom markers inside the speed dial switch on the map page. Once you are friends with someone, you can view each other\'s saved locations.',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
