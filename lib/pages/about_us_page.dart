@@ -36,6 +36,20 @@ class _AboutUsPageState extends State<AboutUsPage> {
           },
         ),
       ),
+      body: Container(
+        color: Colors.green.withOpacity(0.5),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: const Center(
+          child: Text(
+            'This project is created by the developers Travis Pirozzini and Richard Au.',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
     );
   }
 }
