@@ -30,23 +30,23 @@ class _LoginPageState extends State<LoginPage> {
         password: passwordTextController.text,
       );
       // pop loading circle
-      if (context.mounted) Navigator.pop(context);
+      if (mounted) Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {
         // pop loading circle
-      if (context.mounted) Navigator.pop(context);
+        if (context.mounted) Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('No user found for that email.')),
         );
       } else if (e.code == 'wrong-password') {
         // pop loading circle
-      if (context.mounted) Navigator.pop(context);
+        if (context.mounted) Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Wrong password provided.')),
         );
       } else {
         // pop loading circle
-      if (context.mounted) Navigator.pop(context);
+        if (context.mounted) Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('The email is formatted incorrectly.')),
         );
