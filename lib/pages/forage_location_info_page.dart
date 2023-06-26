@@ -80,8 +80,8 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
-                  children: [
+                Row(
+                  children: const [
                     Icon(Icons.info_outline_rounded),
                     Text('Description: ',
                         style: TextStyle(fontWeight: FontWeight.bold)),
@@ -94,8 +94,8 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
-                  children: [
+                Row(
+                  children: const [
                     Icon(Icons.calendar_month_rounded),
                     Text(
                       'Date/Time: ',
@@ -107,8 +107,8 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
               ],
             ),
             const SizedBox(height: 10),
-            const Row(
-              children: [
+            Row(
+              children: const [
                 Icon(Icons.pin_drop_outlined),
                 Text('Location: ',
                     style: TextStyle(fontWeight: FontWeight.bold)),
@@ -144,9 +144,9 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
               ),
             );
           },
-          child: const Row(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+            children: const [
               Icon(Icons.map_outlined, color: Colors.deepOrange),
               Text('Go to Location', style: TextStyle(fontSize: 18)),
             ],
@@ -157,9 +157,9 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
           onPressed: () {
             Navigator.of(context).pop();
           },
-          child: const Row(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+            children: const [
               Icon(Icons.close, color: Colors.deepOrange),
               Text('Close'),
             ],
