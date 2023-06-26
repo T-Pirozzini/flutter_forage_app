@@ -27,31 +27,64 @@ class ForageLocationInfo extends StatefulWidget {
 }
 
 class _ForageLocationInfoState extends State<ForageLocationInfo> {
+  Future<bool> loadImage() async {
+    if (widget.image != null && await File(widget.image!).exists()) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  Widget buildImage() {
+    return FutureBuilder<bool>(
+      future: loadImage(),
+      builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const CircularProgressIndicator();
+        } else if (snapshot.hasError) {
+          print('Error loading image: ${snapshot.error}');
+          return Image.asset(
+            'lib/assets/images/friends.png',
+            fit: BoxFit.cover,
+          );
+        } else if (snapshot.data == true) {
+          return Image.file(
+            File(widget.image!),
+            fit: BoxFit.cover,
+          );
+        } else {
+          return Image.asset(
+            'lib/assets/images/missing_image.png',
+            fit: BoxFit.contain,
+          );
+        }
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       scrollable: false,
-      title: Expanded(
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Row(
-            children: [
-              Image.asset(
-                  'lib/assets/images/${widget.type.toLowerCase()}_marker.png',
-                  width: 50),
-              const SizedBox(width: 10),
-              Text(
-                widget.name.toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                ),
-                maxLines: 1,
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
+      title: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          children: [
+            Image.asset(
+                'lib/assets/images/${widget.type.toLowerCase()}_marker.png',
+                width: 50),
+            const SizedBox(width: 10),
+            Text(
+              widget.name.toUpperCase(),
+              style: const TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
               ),
-            ],
-          ),
+              maxLines: 1,
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
       ),
       content: SingleChildScrollView(
@@ -64,15 +97,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                 width: 400,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child: widget.image != null
-                      ? Image.file(
-                          File(widget.image!),
-                          fit: BoxFit.cover,
-                        )
-                      : Image.asset(
-                          'lib/assets/images/friends.png',
-                          fit: BoxFit.cover,
-                        ),
+                  child: buildImage(),
                 ),
               ),
             ),
