@@ -58,14 +58,17 @@ class _FriendsPageState extends State<FriendsPage> {
   }
 
   // navigate to forage locations page
-  void goToForageLocationsPage(String friendId) {
+  void goToForageLocationsPage(String friendId, String friendName) {
     // pop menu drawer
     Navigator.pop(context);
     // go to new page
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ForageLocations(userId: friendId),
+        builder: (context) => ForageLocations(
+          userId: friendId,
+          userName: friendName,
+        ),
       ),
     );
   }
@@ -146,8 +149,8 @@ class _FriendsPageState extends State<FriendsPage> {
                                       friendData['profilePic'];
 
                                   return GestureDetector(
-                                    onTap: () =>
-                                        goToForageLocationsPage(friendId),
+                                    onTap: () => goToForageLocationsPage(
+                                        friendId, friendUsername),
                                     child: ListTile(
                                       title: Text(friendUsername),
                                       subtitle: Text(friendEmail),
