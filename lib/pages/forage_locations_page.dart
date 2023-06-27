@@ -9,7 +9,11 @@ import 'home_page.dart';
 
 class ForageLocations extends StatefulWidget {
   final String userId;
-  const ForageLocations({Key? key, required this.userId}) : super(key: key);
+  final String userName;
+
+  const ForageLocations(
+      {Key? key, required this.userId, required this.userName})
+      : super(key: key);
 
   @override
   State<ForageLocations> createState() => _ForageLocationsState();
@@ -26,7 +30,7 @@ class _ForageLocationsState extends State<ForageLocations> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('MY FORAGE LOCATIONS'),
+        title: Text('${widget.userName}: LOCATIONS'),
         titleTextStyle:
             GoogleFonts.philosopher(fontSize: 24, fontWeight: FontWeight.bold),
         centerTitle: true,
