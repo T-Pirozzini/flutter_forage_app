@@ -82,14 +82,19 @@ class _FriendsPageState extends State<FriendsPage> {
       ),
       body: Column(
         children: [
-          TextField(
-            controller: _searchController,
-            onChanged: (value) => _searchUsers(value),
-            decoration: const InputDecoration(
-              hintText: 'Search users...',
+          SizedBox(
+            height: 50,
+            child: TextField(
+              controller: _searchController,
+              onChanged: (value) => _searchUsers(value),
+              decoration: const InputDecoration(
+                hintText: 'Search users...',
+                contentPadding: EdgeInsets.all(8),
+              ),
             ),
           ),
-          Expanded(
+          SizedBox(
+            height: 100,
             child: ListView.builder(
               itemCount: _searchResults.length,
               itemBuilder: (context, index) {
@@ -117,7 +122,10 @@ class _FriendsPageState extends State<FriendsPage> {
                       snapshot.data!.data() as Map<String, dynamic>;
                   return Column(
                     children: [
-                      const Text('Your Friends'),
+                      const Text(
+                        'Your Friends',
+                        style: TextStyle(fontSize: 24),
+                      ),
                       Expanded(
                         child: ListView.builder(
                           itemCount: userData['friends'].length,
