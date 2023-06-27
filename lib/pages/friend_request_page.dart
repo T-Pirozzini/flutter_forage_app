@@ -108,6 +108,7 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
                                         duration: Duration(seconds: 2),
                                       ),
                                     );
+                                    setState(() {});
                                   }).catchError((error) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
