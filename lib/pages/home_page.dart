@@ -95,7 +95,10 @@ class _HomePageState extends State<HomePage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ForageLocations(userId: currentUser.email!),
+        builder: (context) => ForageLocations(
+          userId: currentUser.email!,
+          userName: currentUser.email!.split("@")[0],
+        ),
       ),
     );
   }
@@ -109,7 +112,9 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final pages = [
       MapPage(lat: lat, lng: lng, followUser: followUser),
-      ForageLocations(userId: currentUser.email!),
+      ForageLocations(
+          userId: currentUser.email!,
+          userName: currentUser.email!.split("@")[0]),
       const FriendsPage(),
       const ChatPage(),
     ];
@@ -129,10 +134,10 @@ class _HomePageState extends State<HomePage> {
         onAboutTap: goToAboutPage,
         onAboutUsTap: goAboutUsPage,
       ),
-      body: pages[currentIndex],       
+      body: pages[currentIndex],
       floatingActionButtonLocation: FloatingActionButtonLocation.miniStartFloat,
       floatingActionButton:
-          pages[currentIndex] is MapPage ? const MarkerButtons() : null,      
+          pages[currentIndex] is MapPage ? const MarkerButtons() : null,
       extendBody: true,
       bottomNavigationBar: FloatingNavbar(
         onTap: (index) => setState(() => currentIndex = index),
