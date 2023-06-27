@@ -11,8 +11,10 @@ class FriendRequestPage extends StatefulWidget {
 }
 
 class _FriendRequestPageState extends State<FriendRequestPage> {
-  List<String> pendingFriendRequests = []; // List of pending friend requests
-  List<String> sentFriendRequests = []; // List of sent friend requests
+  List<Map<String, dynamic>> pendingFriendRequests =
+      []; // List of pending friend requests
+  List<Map<String, dynamic>> sentFriendRequests =
+      []; // List of sent friend requests
   // current user
   final currentUser = FirebaseAuth.instance.currentUser!;
 
@@ -20,8 +22,8 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
   void initState() {
     super.initState();
     // Initialize pendingFriendRequests and sentFriendRequests lists
-    pendingFriendRequests = ['friend1', 'friend2'];
-    sentFriendRequests = ['friend3', 'friend4'];
+    pendingFriendRequests = [];
+    sentFriendRequests = [];
   }
 
   @override
@@ -47,17 +49,30 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
                 if (snapshot.hasData) {
                   final userData =
                       snapshot.data!.data() as Map<String, dynamic>;
+                  final friendRequests =
+                      userData['friendRequests'] as List<dynamic>;
+                  final pendingFriendRequests = friendRequests
+                      .map((request) => {
+                            'email': request['email'],
+                            'timestamp': request['timestamp'].toDate(),
+                          })
+                      .toList();
                   return Column(
                     children: [
-                      const Text('Pending Friend Requests'),
+                      const Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Text(
+                          'Accept Friend Request?',
+                          style: TextStyle(fontSize: 24),
+                        ),
+                      ),
                       Expanded(
                         child: ListView.builder(
-                          itemCount: userData['friendRequests'].length,
+                          itemCount: pendingFriendRequests.length,
                           itemBuilder: (context, index) {
-                            final friendRequest =
-                                userData['friendRequests'][index];
+                            final friendRequest = pendingFriendRequests[index];
                             return ListTile(
-                              title: Text(friendRequest),
+                              title: Text(friendRequest['email']),
                               leading: IconButton(
                                 onPressed: () {
                                   // Add friend to friends list
@@ -67,12 +82,19 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
                                       .instance
                                       .collection('Users');
 
+                                  // Generate the timestamp
+                                  final timestamp = Timestamp.now();
+
                                   // Add friend to current user's friends list
                                   usersCollection.doc(currentUserEmail).update({
-                                    'friends':
-                                        FieldValue.arrayUnion([friendRequest])
+                                    'friends': FieldValue.arrayUnion([
+                                      {
+                                        'email': friendRequest['email'],
+                                        'timestamp': timestamp
+                                      }
+                                    ])
                                   }).then((_) {
-                                    // remove friend from current user's friend requests list
+                                    // Remove friend from current user's friend requests list
                                     usersCollection
                                         .doc(currentUserEmail)
                                         .update({
@@ -104,16 +126,25 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
                           },
                         ),
                       ),
-                      const Text('Sent Friend Requests'),
+                      const Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Text(
+                          'Sent Friend Requests',
+                          style: TextStyle(fontSize: 24),
+                        ),
+                      ),
                       Expanded(
                         child: ListView.builder(
                           itemCount: userData['sentFriendRequests'].length,
                           itemBuilder: (context, index) {
                             final sentFriendRequest =
                                 userData['sentFriendRequests'][index];
+                            final sentDate = sentFriendRequest['timestamp'];
+                            final daysAgo = calculateDaysAgo(sentDate);
                             return ListTile(
-                              title: Text(sentFriendRequest),
-                              leading: const Icon(Icons.person_add_disabled),
+                              title: Text(sentFriendRequest['email']),
+                              leading: const Icon(Icons.person),
+                              trailing: Text(daysAgo),
                             );
                           },
                         ),
@@ -131,5 +162,12 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
         ],
       ),
     );
+  }
+
+  String calculateDaysAgo(Timestamp timestamp) {
+    final now = Timestamp.now().toDate();
+    final sentDate = timestamp.toDate();
+    final difference = now.difference(sentDate).inDays;
+    return '$difference days ago';
   }
 }

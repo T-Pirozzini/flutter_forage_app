@@ -43,18 +43,21 @@ class _FriendsPageState extends State<FriendsPage> {
   Future<void> _sendFriendRequest(String userEmail) async {
     final currentUserEmail = FirebaseAuth.instance.currentUser!.email!;
     final usersCollection = FirebaseFirestore.instance.collection('Users');
+    final timeSent = Timestamp.now();
 
     // Add the friend request to the selected user's list
     await usersCollection.doc(userEmail).update({
-      'friendRequests': FieldValue.arrayUnion([currentUserEmail]),
+      'friendRequests': FieldValue.arrayUnion([
+        {'email': currentUserEmail, 'timestamp': timeSent}
+      ]),
     });
 
     // Add the selected user to the current user's sent friend requests list
     await usersCollection.doc(currentUserEmail).update({
-      'sentFriendRequests': FieldValue.arrayUnion([userEmail]),
+      'sentFriendRequests': FieldValue.arrayUnion([
+        {'email': currentUserEmail, 'timestamp': timeSent},
+      ]),
     });
-
-    // Perform any additional UI updates or show a success message
   }
 
   // navigate to forage locations page
@@ -133,7 +136,9 @@ class _FriendsPageState extends State<FriendsPage> {
                         child: ListView.builder(
                           itemCount: userData['friends'].length,
                           itemBuilder: (context, index) {
-                            final friendId = userData['friends'][index];
+                            final friendObject = userData['friends'][index]
+                                as Map<String, dynamic>;
+                            final friendId = friendObject['email'];
                             return FutureBuilder<DocumentSnapshot>(
                               future: FirebaseFirestore.instance
                                   .collection('Users')
@@ -141,36 +146,39 @@ class _FriendsPageState extends State<FriendsPage> {
                                   .get(),
                               builder: (context, snapshot) {
                                 if (snapshot.hasData) {
-                                  final friendData = snapshot.data!.data()
-                                      as Map<String, dynamic>;
-                                  final friendEmail = friendData['email'];
-                                  final friendUsername = friendData['username'];
-                                  final friendProfilePic =
-                                      friendData['profilePic'];
+                                  final friendData = snapshot.data!.data();
+                                  if (friendData != null &&
+                                      friendData is Map<String, dynamic>) {
+                                    final friendEmail = friendData['email'];
+                                    final friendUsername =
+                                        friendData['username'];
+                                    final friendProfilePic =
+                                        friendData['profilePic'];
 
-                                  return GestureDetector(
-                                    onTap: () => goToForageLocationsPage(
-                                        friendId, friendUsername),
-                                    child: ListTile(
-                                      title: Text(friendUsername),
-                                      subtitle: Text(friendEmail),
-                                      leading: CircleAvatar(
-                                        backgroundImage: friendProfilePic !=
-                                                null
-                                            ? AssetImage(
-                                                'lib/assets/images/$friendProfilePic')
-                                            : null,
-                                        child: friendProfilePic == null
-                                            ? const Icon(Icons.person)
-                                            : null,
+                                    return GestureDetector(
+                                      onTap: () => goToForageLocationsPage(
+                                          friendId, friendUsername),
+                                      child: ListTile(
+                                        title: Text(friendUsername),
+                                        subtitle: Text(friendEmail),
+                                        leading: CircleAvatar(
+                                          backgroundImage: friendProfilePic !=
+                                                  null
+                                              ? AssetImage(
+                                                  'lib/assets/images/$friendProfilePic')
+                                              : null,
+                                          child: friendProfilePic == null
+                                              ? const Icon(Icons.person)
+                                              : null,
+                                        ),
+                                        trailing:
+                                            const Icon(Icons.double_arrow),
+                                        iconColor: Colors.deepOrange.shade400,
                                       ),
-                                      trailing: const Icon(Icons.double_arrow),
-                                      iconColor: Colors.deepOrange.shade400,
-                                    ),
-                                  );
-                                } else {
-                                  return const CircularProgressIndicator();
+                                    );
+                                  }
                                 }
+                                return const CircularProgressIndicator();
                               },
                             );
                           },
