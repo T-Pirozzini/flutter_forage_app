@@ -106,11 +106,11 @@ class _FriendsPageState extends State<FriendsPage> {
             ),
           ),
           Expanded(
-            child: StreamBuilder<DocumentSnapshot>(
-              stream: FirebaseFirestore.instance
+            child: FutureBuilder<DocumentSnapshot>(
+              future: FirebaseFirestore.instance
                   .collection('Users')
                   .doc(currentUser.email)
-                  .snapshots(),
+                  .get(),
               builder: (context, snapshot) {
                 if (snapshot.hasData) {
                   final userData =
@@ -123,11 +123,11 @@ class _FriendsPageState extends State<FriendsPage> {
                           itemCount: userData['friends'].length,
                           itemBuilder: (context, index) {
                             final friendId = userData['friends'][index];
-                            return StreamBuilder<DocumentSnapshot>(
-                              stream: FirebaseFirestore.instance
+                            return FutureBuilder<DocumentSnapshot>(
+                              future: FirebaseFirestore.instance
                                   .collection('Users')
                                   .doc(friendId)
-                                  .snapshots(),
+                                  .get(),
                               builder: (context, snapshot) {
                                 if (snapshot.hasData) {
                                   final friendData = snapshot.data!.data()
@@ -143,7 +143,18 @@ class _FriendsPageState extends State<FriendsPage> {
                                     child: ListTile(
                                       title: Text(friendUsername),
                                       subtitle: Text(friendEmail),
-                                      leading: const Icon(Icons.person),
+                                      leading: CircleAvatar(
+                                        backgroundImage: friendProfilePic !=
+                                                null
+                                            ? AssetImage(
+                                                'lib/assets/images/$friendProfilePic')
+                                            : null,
+                                        child: friendProfilePic == null
+                                            ? const Icon(Icons.person)
+                                            : null,
+                                      ),
+                                      trailing: const Icon(Icons.double_arrow),
+                                      iconColor: Colors.deepOrange.shade400,
                                     ),
                                   );
                                 } else {
