@@ -1,12 +1,12 @@
-import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
 import 'home_page.dart';
 
 class ForageLocationInfo extends StatefulWidget {
   final String name;
   final String description;
-  final String? image;
+  final String imageUrl;
   final double lat;
   final double lng;
   final String timestamp;
@@ -18,7 +18,7 @@ class ForageLocationInfo extends StatefulWidget {
       required this.description,
       required this.lat,
       required this.lng,
-      this.image,
+      required this.imageUrl,
       required this.timestamp,
       required this.type});
 
@@ -27,39 +27,55 @@ class ForageLocationInfo extends StatefulWidget {
 }
 
 class _ForageLocationInfoState extends State<ForageLocationInfo> {
-  Future<bool> loadImage() async {
-    if (widget.image != null && await File(widget.image!).exists()) {
-      return true;
-    } else {
-      return false;
-    }
-  }
+  final GlobalKey<ScaffoldMessengerState> _scaffoldKey =
+      GlobalKey<ScaffoldMessengerState>();  
+  
+  // current user
+  final currentUser = FirebaseAuth.instance.currentUser!;
 
-  Widget buildImage() {
-    return FutureBuilder<bool>(
-      future: loadImage(),
-      builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const CircularProgressIndicator();
-        } else if (snapshot.hasError) {
-          print('Error loading image: ${snapshot.error}');
-          return Image.asset(
-            'lib/assets/images/friends.png',
-            fit: BoxFit.cover,
-          );
-        } else if (snapshot.data == true) {
-          return Image.file(
-            File(widget.image!),
-            fit: BoxFit.cover,
-          );
-        } else {
-          return Image.asset(
-            'lib/assets/images/missing_image.png',
-            fit: BoxFit.contain,
-          );
-        }
-      },
-    );
+  void postToCommunity() async {
+    final postsCollection = FirebaseFirestore.instance.collection('Posts');
+
+    try {
+      // Create a new post document
+      final newPost = await postsCollection.add({
+        'name': widget.name,
+        'description': widget.description,
+        'timestamp': widget.timestamp,
+        'latitude': widget.lat,
+        'longitude': widget.lng,
+        'type': widget.type,
+        'imageUrl': widget.imageUrl,
+        'user': currentUser.email,
+        'likeCount': 0,
+        'saveCount': 0,
+        'commentCount': 0,
+        'postTimestamp': DateTime.now().toString(),
+      });
+
+      if (newPost.id.isNotEmpty) {        
+        final snackBar = SnackBar(
+          content: Text('New post added with ID: ${newPost.id}'),
+          duration: const Duration(seconds: 2),
+        );
+        _scaffoldKey.currentState?.showSnackBar(snackBar);
+        // Success! You can perform any additional actions here.
+      } else {        
+        final snackBar = SnackBar(
+          content: Text('Failed to add new post.'),
+          duration: Duration(seconds: 2),
+        );
+        _scaffoldKey.currentState?.showSnackBar(snackBar);
+        // Handle the failure scenario here.
+      }
+    } catch (e) {      
+      final snackBar = SnackBar(
+        content: Text('Error adding new post: $e'),
+        duration: const Duration(seconds: 2),
+      );
+      _scaffoldKey.currentState?.showSnackBar(snackBar);
+      // Handle the error here.
+    }
   }
 
   @override
@@ -97,7 +113,9 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                 width: 400,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child: buildImage(),
+                  child: Center(
+                    child: Image.network(widget.imageUrl, fit: BoxFit.cover),
+                  ),
                 ),
               ),
             ),
@@ -181,11 +199,25 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
         TextButton(
           onPressed: () {
             Navigator.of(context).pop();
+            postToCommunity();
           },
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: const [
-              Icon(Icons.close, color: Colors.deepOrange),
+              Icon(Icons.directions_outlined, color: Colors.deepOrange),
+              Text('Share with Community', style: TextStyle(fontSize: 18)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Icon(Icons.close, color: Color.fromRGBO(255, 87, 34, 1)),
               Text('Close'),
             ],
           ),
