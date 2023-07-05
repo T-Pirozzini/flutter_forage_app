@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:geolocator/geolocator.dart';
@@ -222,8 +221,7 @@ class _MarkerButtonsState extends State<MarkerButtons> {
       await ref.putFile(_selectedImage!, metadata);
       final imageUrl = await ref.getDownloadURL();
       return imageUrl;
-    } catch (e) {
-      print('Error uploading image: $e');
+    } catch (e) {      
       return null;
     }
   }

@@ -9,7 +9,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../components/drawer.dart';
 import 'about_page.dart';
 import 'about_us_page.dart';
-import 'chat_page.dart';
 import 'community_page.dart';
 import 'map_page.dart';
 

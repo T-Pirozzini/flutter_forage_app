@@ -42,7 +42,6 @@ class _CommunityPageState extends State<CommunityPage> {
                       final likeCount = post['likeCount'] ?? 0;
                       final saveCount = post['saveCount'] ?? 0;
                       final commentCount = post['commentCount'] ?? 0;
-                      final postOrder = post['postTimestamp'];
 
                       return Card(
                         child: Column(
@@ -61,13 +60,21 @@ class _CommunityPageState extends State<CommunityPage> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   IconButton(
-                                    icon: Icon(Icons.favorite),
+                                    icon: const Icon(Icons.favorite),
                                     onPressed: () {
                                       // Handle like button tap
                                       // Increment likeCount and update Firestore
                                     },
                                   ),
-                                  // Text('$likeCount'),
+                                  Text('$likeCount'),
+                                  IconButton(
+                                    icon: const Icon(Icons.bookmark_add),
+                                    onPressed: () {
+                                      // Handle like button tap
+                                      // Increment likeCount and update Firestore
+                                    },
+                                  ),
+                                  Text('$saveCount'),
                                 ],
                               ),
                             ),
@@ -76,7 +83,8 @@ class _CommunityPageState extends State<CommunityPage> {
                                   const EdgeInsets.symmetric(horizontal: 16.0),
                               child: Text(
                                 'Comments ($commentCount)',
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
                               ),
                             ),
                             // Add your comment section here

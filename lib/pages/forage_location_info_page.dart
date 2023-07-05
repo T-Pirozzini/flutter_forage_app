@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -54,25 +53,22 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
         'postTimestamp': DateTime.now().toString(),
       });
 
-      if (newPost.id.isNotEmpty) {
-        print('New post added with ID: ${newPost.id}');
+      if (newPost.id.isNotEmpty) {        
         final snackBar = SnackBar(
           content: Text('New post added with ID: ${newPost.id}'),
           duration: const Duration(seconds: 2),
         );
         _scaffoldKey.currentState?.showSnackBar(snackBar);
         // Success! You can perform any additional actions here.
-      } else {
-        print('Failed to add new post.');
+      } else {        
         final snackBar = SnackBar(
-          content: const Text('Failed to add new post.'),
-          duration: const Duration(seconds: 2),
+          content: Text('Failed to add new post.'),
+          duration: Duration(seconds: 2),
         );
         _scaffoldKey.currentState?.showSnackBar(snackBar);
         // Handle the failure scenario here.
       }
-    } catch (e) {
-      print('Error adding new post: $e');
+    } catch (e) {      
       final snackBar = SnackBar(
         content: Text('Error adding new post: $e'),
         duration: const Duration(seconds: 2),
