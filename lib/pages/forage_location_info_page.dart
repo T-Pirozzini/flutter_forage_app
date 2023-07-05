@@ -51,6 +51,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
         'likeCount': 0,
         'saveCount': 0,
         'commentCount': 0,
+        'postTimestamp': DateTime.now().toString(),
       });
 
       if (newPost.id.isNotEmpty) {

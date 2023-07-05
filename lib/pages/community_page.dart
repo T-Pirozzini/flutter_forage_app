@@ -26,8 +26,10 @@ class _CommunityPageState extends State<CommunityPage> {
         children: [
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream:
-                  FirebaseFirestore.instance.collection('Posts').snapshots(),
+              stream: FirebaseFirestore.instance
+                  .collection('Posts')
+                  .orderBy('postTimestamp', descending: true)
+                  .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.hasData) {
                   final posts = snapshot.data!.docs;
@@ -36,20 +38,22 @@ class _CommunityPageState extends State<CommunityPage> {
                     itemCount: posts.length,
                     itemBuilder: (context, index) {
                       final post = posts[index];
-                      // final imageUrl = post['image'];
-                      // final likeCount = post['likeCount'] ?? 0;
-                      // final commentCount = post['commentCount'] ?? 0;
+                      final imageUrl = post['imageUrl'];
+                      final likeCount = post['likeCount'] ?? 0;
+                      final saveCount = post['saveCount'] ?? 0;
+                      final commentCount = post['commentCount'] ?? 0;
+                      final postOrder = post['postTimestamp'];
 
                       return Card(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Image.network(
-                            //   // imageUrl,
-                            //   fit: BoxFit.cover,
-                            //   width: double.infinity,
-                            //   height: 200,
-                            // ),
+                            Image.network(
+                              imageUrl,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: 200,
+                            ),
                             ListTile(
                               title: Text(post['name']),
                               subtitle: Text(post['type']),
@@ -70,10 +74,10 @@ class _CommunityPageState extends State<CommunityPage> {
                             Padding(
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 16.0),
-                              // child: Text(
-                              //   // 'Comments ($commentCount)',
-                              //   style: TextStyle(fontWeight: FontWeight.bold),
-                              // ),
+                              child: Text(
+                                'Comments ($commentCount)',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
                             ),
                             // Add your comment section here
                             // This can be a separate widget or any desired layout
