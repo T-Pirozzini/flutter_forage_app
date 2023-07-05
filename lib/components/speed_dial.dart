@@ -1,30 +1,28 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:geolocator/geolocator.dart';
-import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class MarkerButtons extends StatefulWidget {
   const MarkerButtons({
-    super.key,
-  });
+    Key? key,
+  }) : super(key: key);
 
   @override
   State<MarkerButtons> createState() => _MarkerButtonsState();
 }
 
 class _MarkerButtonsState extends State<MarkerButtons> {
-  // text controller
   final _nameTextController = TextEditingController();
   final _descriptionTextController = TextEditingController();
-
-  // get current user
   final currentUser = FirebaseAuth.instance.currentUser?.email;
 
-  // image picker
   File? _selectedImage;
+
   Future<void> _getImage(ImageSource source) async {
     final picker = ImagePicker();
     final pickedImage = await picker.pickImage(source: source);
@@ -36,7 +34,6 @@ class _MarkerButtonsState extends State<MarkerButtons> {
     }
   }
 
-  // get current position
   Future<Position> _getCurrentPosition() async {
     final location = await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high,
@@ -49,8 +46,8 @@ class _MarkerButtonsState extends State<MarkerButtons> {
       context: context,
       builder: (context) => Container(
         alignment: Alignment.center,
-        width: 450, // Set desired width
-        height: 300, // Set desired height
+        width: 450,
+        height: 300,
         child: SingleChildScrollView(
           child: AlertDialog(
             title: const Text(
@@ -99,7 +96,6 @@ class _MarkerButtonsState extends State<MarkerButtons> {
               ],
             ),
             actions: [
-// image picker
               Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -175,24 +171,26 @@ class _MarkerButtonsState extends State<MarkerButtons> {
                       Navigator.pop(context);
                       _nameTextController.clear();
                       _descriptionTextController.clear();
+                      _selectedImage = null;
                     },
                   ),
                   // Save Forage Location
                   ElevatedButton(
                     onPressed: () async {
                       final currentPosition = await _getCurrentPosition();
+                      final imageUrl = await _uploadImageToFirebaseStorage();
                       saveMarkerInfo(
                         _nameTextController.text,
                         _descriptionTextController.text,
                         markerType,
-                        _selectedImage?.path,
+                        imageUrl,
                         currentPosition,
                         DateTime.now(),
                       );
-                      // ignore: use_build_context_synchronously
                       Navigator.pop(context);
                       _nameTextController.clear();
                       _descriptionTextController.clear();
+                      _selectedImage = null;
                     },
                     child: const Text(
                       'Save Location',
@@ -208,28 +206,66 @@ class _MarkerButtonsState extends State<MarkerButtons> {
     );
   }
 
+  Future<String?> _uploadImageToFirebaseStorage() async {
+    if (_selectedImage == null) return null;
+
+    final fileName = '${DateTime.now().microsecondsSinceEpoch}.png';
+    final destination = 'images/$fileName';
+
+    final ref = firebase_storage.FirebaseStorage.instance.ref(destination);
+    final metadata = firebase_storage.SettableMetadata(
+      contentType: 'image/png',
+    );
+
+    try {
+      await ref.putFile(_selectedImage!, metadata);
+      final imageUrl = await ref.getDownloadURL();
+      return imageUrl;
+    } catch (e) {      
+      return null;
+    }
+  }
+
   void saveMarkerInfo(
-      String markerName,
-      String markerDescription,
-      String markerType,
-      String? markerImagePath,
-      Position currentPosition,
-      DateTime timestamp) {
-    FirebaseFirestore.instance
-        .collection('Users')
-        .doc(currentUser)
-        .collection('Markers')
-        .add({
-      'name': markerName,
-      'description': markerDescription,
-      'type': markerType,
-      'image': markerImagePath,
-      'location': {
-        'latitude': currentPosition.latitude,
-        'longitude': currentPosition.longitude,
-      },
-      'timestamp': timestamp,
-    });
+    String markerName,
+    String markerDescription,
+    String markerType,
+    String? markerImageUrl,
+    Position currentPosition,
+    DateTime timestamp,
+  ) async {
+    if (markerImageUrl != null) {
+      FirebaseFirestore.instance
+          .collection('Users')
+          .doc(currentUser)
+          .collection('Markers')
+          .add({
+        'name': markerName,
+        'description': markerDescription,
+        'type': markerType,
+        'image': markerImageUrl,
+        'location': {
+          'latitude': currentPosition.latitude,
+          'longitude': currentPosition.longitude,
+        },
+        'timestamp': timestamp,
+      });
+    } else {
+      FirebaseFirestore.instance
+          .collection('Users')
+          .doc(currentUser)
+          .collection('Markers')
+          .add({
+        'name': markerName,
+        'description': markerDescription,
+        'type': markerType,
+        'location': {
+          'latitude': currentPosition.latitude,
+          'longitude': currentPosition.longitude,
+        },
+        'timestamp': timestamp,
+      });
+    }
   }
 
   @override
