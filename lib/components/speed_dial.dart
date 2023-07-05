@@ -269,6 +269,7 @@ class _MarkerButtonsState extends State<MarkerButtons> {
         'name': markerName,
         'description': markerDescription,
         'type': markerType,
+        
         'location': {
           'latitude': currentPosition.latitude,
           'longitude': currentPosition.longitude,

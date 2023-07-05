@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'home_page.dart';
 
@@ -29,6 +30,9 @@ class ForageLocationInfo extends StatefulWidget {
 class _ForageLocationInfoState extends State<ForageLocationInfo> {
   final GlobalKey<ScaffoldMessengerState> _scaffoldKey =
       GlobalKey<ScaffoldMessengerState>();  
+  
+  // current user
+  final currentUser = FirebaseAuth.instance.currentUser!;
 
   void postToCommunity() async {
     final postsCollection = FirebaseFirestore.instance.collection('Posts');
@@ -42,6 +46,11 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
         'latitude': widget.lat,
         'longitude': widget.lng,
         'type': widget.type,
+        'imageUrl': widget.imageUrl,
+        'user': currentUser.email,
+        'likeCount': 0,
+        'saveCount': 0,
+        'commentCount': 0,
       });
 
       if (newPost.id.isNotEmpty) {
