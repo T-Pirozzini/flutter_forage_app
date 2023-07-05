@@ -214,36 +214,29 @@ class _MarkerButtonsState extends State<MarkerButtons> {
     final destination = 'images/$fileName';
 
     final ref = firebase_storage.FirebaseStorage.instance.ref(destination);
-    final task = ref.putFile(_selectedImage!);
+    final metadata = firebase_storage.SettableMetadata(
+      contentType: 'image/png',
+    );
 
-    await task.whenComplete(() {});
-
-    if (task.snapshot.state == firebase_storage.TaskState.success) {
+    try {
+      await ref.putFile(_selectedImage!, metadata);
       final imageUrl = await ref.getDownloadURL();
       return imageUrl;
+    } catch (e) {
+      print('Error uploading image: $e');
+      return null;
     }
-
-    return null;
   }
 
   void saveMarkerInfo(
     String markerName,
     String markerDescription,
     String markerType,
-    String? markerImagePath,
+    String? markerImageUrl,
     Position currentPosition,
     DateTime timestamp,
   ) async {
-    if (markerImagePath != null) {
-      // Upload the image to Firebase Storage
-      final storageRef = FirebaseStorage.instance
-          .ref()
-          .child('marker_images')
-          .child(DateTime.now().toString());
-      final uploadTask = storageRef.putFile(File(markerImagePath));
-      final snapshot = await uploadTask;
-      final imageUrl = await snapshot.ref.getDownloadURL();
-
+    if (markerImageUrl != null) {
       FirebaseFirestore.instance
           .collection('Users')
           .doc(currentUser)
@@ -252,7 +245,7 @@ class _MarkerButtonsState extends State<MarkerButtons> {
         'name': markerName,
         'description': markerDescription,
         'type': markerType,
-        'image': imageUrl,
+        'image': markerImageUrl,
         'location': {
           'latitude': currentPosition.latitude,
           'longitude': currentPosition.longitude,
@@ -260,7 +253,6 @@ class _MarkerButtonsState extends State<MarkerButtons> {
         'timestamp': timestamp,
       });
     } else {
-      // Save the marker details without the image URL to Firestore
       FirebaseFirestore.instance
           .collection('Users')
           .doc(currentUser)
@@ -269,7 +261,6 @@ class _MarkerButtonsState extends State<MarkerButtons> {
         'name': markerName,
         'description': markerDescription,
         'type': markerType,
-        
         'location': {
           'latitude': currentPosition.latitude,
           'longitude': currentPosition.longitude,
