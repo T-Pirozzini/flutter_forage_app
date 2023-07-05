@@ -6,7 +6,7 @@ import 'home_page.dart';
 class ForageLocationInfo extends StatefulWidget {
   final String name;
   final String description;
-  final String? image;
+  final String imageUrl;
   final double lat;
   final double lng;
   final String timestamp;
@@ -18,7 +18,7 @@ class ForageLocationInfo extends StatefulWidget {
       required this.description,
       required this.lat,
       required this.lng,
-      this.image,
+      required this.imageUrl,
       required this.timestamp,
       required this.type});
 
@@ -27,85 +27,49 @@ class ForageLocationInfo extends StatefulWidget {
 }
 
 class _ForageLocationInfoState extends State<ForageLocationInfo> {
-
   final GlobalKey<ScaffoldMessengerState> _scaffoldKey =
-      GlobalKey<ScaffoldMessengerState>();
-
-  Future<bool> loadImage() async {
-    if (widget.image != null && await File(widget.image!).exists()) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  Widget buildImage() {
-    return FutureBuilder<bool>(
-      future: loadImage(),
-      builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const CircularProgressIndicator();
-        } else if (snapshot.hasError) {
-          print('Error loading image: ${snapshot.error}');
-          return Image.asset(
-            'lib/assets/images/friends.png',
-            fit: BoxFit.cover,
-          );
-        } else if (snapshot.data == true) {
-          return Image.file(
-            File(widget.image!),
-            fit: BoxFit.cover,
-          );
-        } else {
-          return Image.asset(
-            'lib/assets/images/missing_image.png',
-            fit: BoxFit.contain,
-          );
-        }
-      },
-    );
-  }
+      GlobalKey<ScaffoldMessengerState>();  
 
   void postToCommunity() async {
     final postsCollection = FirebaseFirestore.instance.collection('Posts');
 
     try {
-    // Create a new post document
-    final newPost = await postsCollection.add({
-      'name': widget.name,
-      'description': widget.description,
-      'timestamp': widget.timestamp,
-      'latitude': widget.lat,
-      'longitude': widget.lng,
-      'type': widget.type,
-    });
+      // Create a new post document
+      final newPost = await postsCollection.add({
+        'name': widget.name,
+        'description': widget.description,
+        'timestamp': widget.timestamp,
+        'latitude': widget.lat,
+        'longitude': widget.lng,
+        'type': widget.type,
+      });
 
-    if (newPost.id.isNotEmpty) {
-      print('New post added with ID: ${newPost.id}');
-      final snackBar = SnackBar(
+      if (newPost.id.isNotEmpty) {
+        print('New post added with ID: ${newPost.id}');
+        final snackBar = SnackBar(
           content: Text('New post added with ID: ${newPost.id}'),
           duration: const Duration(seconds: 2),
         );
         _scaffoldKey.currentState?.showSnackBar(snackBar);
-      // Success! You can perform any additional actions here.
-    } else {
-      print('Failed to add new post.');
-      final snackBar = SnackBar(
+        // Success! You can perform any additional actions here.
+      } else {
+        print('Failed to add new post.');
+        final snackBar = SnackBar(
           content: const Text('Failed to add new post.'),
           duration: const Duration(seconds: 2),
         );
         _scaffoldKey.currentState?.showSnackBar(snackBar);
-      // Handle the failure scenario here.
-    }
-  } catch (e) {
-    print('Error adding new post: $e');
-    final snackBar = SnackBar(
+        // Handle the failure scenario here.
+      }
+    } catch (e) {
+      print('Error adding new post: $e');
+      final snackBar = SnackBar(
         content: Text('Error adding new post: $e'),
         duration: const Duration(seconds: 2),
       );
       _scaffoldKey.currentState?.showSnackBar(snackBar);
-    // Handle the error here.
-  }
+      // Handle the error here.
+    }
   }
 
   @override
@@ -143,7 +107,9 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                 width: 400,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child: buildImage(),
+                  child: Center(
+                    child: Image.network(widget.imageUrl, fit: BoxFit.cover),
+                  ),
                 ),
               ),
             ),

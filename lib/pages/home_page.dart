@@ -127,6 +127,7 @@ class _HomePageState extends State<HomePage> {
             GoogleFonts.philosopher(fontSize: 34, fontWeight: FontWeight.bold),
         centerTitle: true,
         backgroundColor: Colors.deepOrange.shade300,
+        elevation: 2,
       ),
       drawer: CustomDrawer(
         onProfileTap: goToProfilePage,
