@@ -259,6 +259,7 @@ class _MarkerButtonsState extends State<MarkerButtons> {
         'name': markerName,
         'description': markerDescription,
         'type': markerType,
+        'image': 'https://st2.depositphotos.com/2586633/46477/v/600/depositphotos_464771766-stock-illustration-no-photo-or-blank-image.jpg',
         'location': {
           'latitude': currentPosition.latitude,
           'longitude': currentPosition.longitude,
