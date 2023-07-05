@@ -1,6 +1,6 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
 import 'home_page.dart';
 
 class ForageLocationInfo extends StatefulWidget {
@@ -27,6 +27,10 @@ class ForageLocationInfo extends StatefulWidget {
 }
 
 class _ForageLocationInfoState extends State<ForageLocationInfo> {
+
+  final GlobalKey<ScaffoldMessengerState> _scaffoldKey =
+      GlobalKey<ScaffoldMessengerState>();
+
   Future<bool> loadImage() async {
     if (widget.image != null && await File(widget.image!).exists()) {
       return true;
@@ -60,6 +64,48 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
         }
       },
     );
+  }
+
+  void postToCommunity() async {
+    final postsCollection = FirebaseFirestore.instance.collection('Posts');
+
+    try {
+    // Create a new post document
+    final newPost = await postsCollection.add({
+      'name': widget.name,
+      'description': widget.description,
+      'timestamp': widget.timestamp,
+      'latitude': widget.lat,
+      'longitude': widget.lng,
+      'type': widget.type,
+    });
+
+    if (newPost.id.isNotEmpty) {
+      print('New post added with ID: ${newPost.id}');
+      final snackBar = SnackBar(
+          content: Text('New post added with ID: ${newPost.id}'),
+          duration: const Duration(seconds: 2),
+        );
+        _scaffoldKey.currentState?.showSnackBar(snackBar);
+      // Success! You can perform any additional actions here.
+    } else {
+      print('Failed to add new post.');
+      final snackBar = SnackBar(
+          content: const Text('Failed to add new post.'),
+          duration: const Duration(seconds: 2),
+        );
+        _scaffoldKey.currentState?.showSnackBar(snackBar);
+      // Handle the failure scenario here.
+    }
+  } catch (e) {
+    print('Error adding new post: $e');
+    final snackBar = SnackBar(
+        content: Text('Error adding new post: $e'),
+        duration: const Duration(seconds: 2),
+      );
+      _scaffoldKey.currentState?.showSnackBar(snackBar);
+    // Handle the error here.
+  }
   }
 
   @override
@@ -181,11 +227,25 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
         TextButton(
           onPressed: () {
             Navigator.of(context).pop();
+            postToCommunity();
           },
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: const [
-              Icon(Icons.close, color: Colors.deepOrange),
+              Icon(Icons.directions_outlined, color: Colors.deepOrange),
+              Text('Share with Community', style: TextStyle(fontSize: 18)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Icon(Icons.close, color: Color.fromRGBO(255, 87, 34, 1)),
               Text('Close'),
             ],
           ),

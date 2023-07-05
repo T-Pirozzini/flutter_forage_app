@@ -30,7 +30,15 @@ class _ForageLocationsState extends State<ForageLocations> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.userName}: LOCATIONS'),
+        title: Column(
+          children: [
+            const Text('LOCATIONS'),
+            Text(
+              'User: ${widget.userName}',
+              style: const TextStyle(fontSize: 16),
+            ),
+          ],
+        ),
         titleTextStyle:
             GoogleFonts.philosopher(fontSize: 24, fontWeight: FontWeight.bold),
         centerTitle: true,
