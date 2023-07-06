@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'dart:io';
 
 class CommunityPage extends StatefulWidget {
   const CommunityPage({
@@ -43,53 +45,95 @@ class _CommunityPageState extends State<CommunityPage> {
                       final saveCount = post['saveCount'] ?? 0;
                       final commentCount = post['commentCount'] ?? 0;
 
-                      return Card(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Image.network(
-                              imageUrl,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: 200,
-                            ),
-                            ListTile(
-                              title: Text(post['name']),
-                              subtitle: Text(post['type']),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.favorite),
-                                    onPressed: () {
-                                      // Handle like button tap
-                                      // Increment likeCount and update Firestore
-                                    },
-                                  ),
-                                  Text('$likeCount'),
-                                  IconButton(
-                                    icon: const Icon(Icons.bookmark_add),
-                                    onPressed: () {
-                                      // Handle like button tap
-                                      // Increment likeCount and update Firestore
-                                    },
-                                  ),
-                                  Text('$saveCount'),
-                                ],
+                      return Padding(
+                        padding: const EdgeInsets.all(10.0),
+                        child: Card(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Image.network(
+                                imageUrl,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: 200,
                               ),
-                            ),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16.0),
-                              child: Text(
-                                'Comments ($commentCount)',
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold),
+                              ListTile(
+                                title: Row(
+                                  children: [
+                                    Image.asset(
+                                        "lib/assets/images/${post['type'].toLowerCase()}.png",
+                                        width: 20,
+                                        height: 20),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      post['name'],
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 18),
+                                    ),
+                                  ],
+                                ),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const SizedBox(height: 5),
+                                    Text(post['description']),
+                                  ],
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.favorite),
+                                      onPressed: () {
+                                        // Handle like button tap
+                                        // Increment likeCount and update Firestore
+                                      },
+                                    ),
+                                    Text('$likeCount'),
+                                    IconButton(
+                                      icon: const Icon(Icons.bookmark_add),
+                                      onPressed: () {
+                                        // Handle like button tap
+                                        // Increment likeCount and update Firestore
+                                      },
+                                    ),
+                                    Text('$saveCount'),
+                                  ],
+                                ),
                               ),
-                            ),
-                            // Add your comment section here
-                            // This can be a separate widget or any desired layout
-                          ],
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    FutureBuilder<String?>(
+                                      future: getAreaFromCoordinates(
+                                          post['latitude'], post['longitude']),
+                                      builder: (context, snapshot) {
+                                        if (snapshot.hasData) {
+                                          return Text(snapshot.data ?? '');
+                                        } else if (snapshot.hasError) {
+                                          return Text(
+                                              'Error: ${snapshot.error}');
+                                        } else {
+                                          return const SizedBox.shrink();
+                                        }
+                                      },
+                                    ),
+                                    Text(
+                                      post['postTimestamp'].split(' ')[0],
+                                      style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.deepOrange.shade400),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },
@@ -106,4 +150,26 @@ class _CommunityPageState extends State<CommunityPage> {
       ),
     );
   }
+}
+
+Future<String?> getAreaFromCoordinates(
+    double latitude, double longitude) async {
+  try {
+    List<Placemark> placemarks =
+        await placemarkFromCoordinates(latitude, longitude);
+
+    if (placemarks != null && placemarks.isNotEmpty) {
+      Placemark placemark = placemarks[0];
+
+      String? area = placemark.locality ??
+          placemark.subLocality ??
+          placemark.administrativeArea;
+
+      return area;
+    }
+  } catch (e) {
+    print('Error: $e');
+  }
+
+  return null;
 }

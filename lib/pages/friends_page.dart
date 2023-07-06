@@ -80,7 +80,10 @@ class _FriendsPageState extends State<FriendsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('FRIENDS'),
+        title: const Text(
+          'FRIENDS',
+          style: TextStyle(letterSpacing: 2.5),
+        ),
         titleTextStyle:
             GoogleFonts.philosopher(fontSize: 24, fontWeight: FontWeight.bold),
         centerTitle: true,
