@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dart:io';
 
 class CommunityPage extends StatefulWidget {
   const CommunityPage({
@@ -14,6 +14,28 @@ class CommunityPage extends StatefulWidget {
 }
 
 class _CommunityPageState extends State<CommunityPage> {
+  final currentUser = FirebaseAuth.instance.currentUser!;
+  String? username;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchUsername();
+  }
+
+  Future<void> fetchUsername() async {
+    final userDoc = await FirebaseFirestore.instance
+        .collection('Users')
+        .doc(currentUser.email)
+        .get();
+
+    if (userDoc.exists) {
+      setState(() {
+        username = userDoc.data()?['username'];
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -43,7 +65,7 @@ class _CommunityPageState extends State<CommunityPage> {
                       final imageUrl = post['imageUrl'];
                       final likeCount = post['likeCount'] ?? 0;
                       final saveCount = post['saveCount'] ?? 0;
-                      final commentCount = post['commentCount'] ?? 0;
+                      // final commentCount = post['commentCount'] ?? 0;
 
                       return Padding(
                         padding: const EdgeInsets.all(10.0),
@@ -109,6 +131,13 @@ class _CommunityPageState extends State<CommunityPage> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.person, size: 16),
+                                        const SizedBox(width: 5),
+                                        Text(post['user'].split('@')[0]),
+                                      ],
+                                    ),
                                     FutureBuilder<String?>(
                                       future: getAreaFromCoordinates(
                                           post['latitude'], post['longitude']),
@@ -158,7 +187,7 @@ Future<String?> getAreaFromCoordinates(
     List<Placemark> placemarks =
         await placemarkFromCoordinates(latitude, longitude);
 
-    if (placemarks != null && placemarks.isNotEmpty) {
+    if (placemarks.isNotEmpty) {
       Placemark placemark = placemarks[0];
 
       String? area = placemark.locality ??
