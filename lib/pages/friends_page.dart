@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import 'forage_locations_page.dart';
 
 class FriendsPage extends StatefulWidget {
@@ -16,6 +15,7 @@ class _FriendsPageState extends State<FriendsPage> {
   late final TextEditingController _searchController;
   List<Map<String, dynamic>> _searchResults = [];
   final currentUser = FirebaseAuth.instance.currentUser!;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -181,7 +181,7 @@ class _FriendsPageState extends State<FriendsPage> {
                                     );
                                   }
                                 }
-                                return const CircularProgressIndicator();
+                                return const SizedBox();
                               },
                             );
                           },

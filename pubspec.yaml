@@ -36,7 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.2
   google_fonts: ^4.0.3
   intl: ^0.17.0
-  geocoding: ^2.1.0
+  geocoding: ^2.1.0  
 
   # google maps deps
   google_maps_flutter: 
