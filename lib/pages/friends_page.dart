@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'forage_locations_page.dart';
 
 class FriendsPage extends StatefulWidget {
-  const FriendsPage({super.key});
+  const FriendsPage({Key? key}) : super(key: key);
 
   @override
   State<FriendsPage> createState() => _FriendsPageState();
@@ -35,8 +35,39 @@ class _FriendsPageState extends State<FriendsPage> {
     final querySnapshot =
         await usersCollection.where('email', isEqualTo: searchTerm).get();
 
+    final currentUserEmail = FirebaseAuth.instance.currentUser!.email!;
+    final currentUserData = await FirebaseFirestore.instance
+        .collection('Users')
+        .doc(currentUserEmail)
+        .get()
+        .then((snapshot) => snapshot.data());
+
+    final List<dynamic> currentUserFriends =
+        currentUserData?['friends'] ?? <dynamic>[];
+    final List<dynamic> currentUserSentFriendRequests =
+        currentUserData?['sentFriendRequests'] ?? <dynamic>[];
+
     setState(() {
-      _searchResults = querySnapshot.docs.map((doc) => doc.data()).toList();
+      _searchResults = querySnapshot.docs.map((doc) {
+        final userData = doc.data();
+        final userEmail = userData['email'] ?? '';
+
+        // Check if the searched user is already a friend
+        final isFriend = currentUserFriends.any((friend) =>
+            friend['email'] != null && friend['email'] == userEmail);
+
+        // Check if the friend request is already sent
+        final isFriendRequestSent = currentUserSentFriendRequests.any(
+            (request) =>
+                request['email'] != null && request['email'] == userEmail);
+
+        // Return modified user data with isFriend and isFriendRequestSent flags
+        return {
+          ...userData,
+          'isFriend': isFriend,
+          'isFriendRequestSent': isFriendRequestSent,
+        };
+      }).toList();
     });
   }
 
@@ -108,13 +139,28 @@ class _FriendsPageState extends State<FriendsPage> {
               itemCount: _searchResults.length,
               itemBuilder: (context, index) {
                 final user = _searchResults[index];
+                final isFriend = user['isFriend'] ?? false;
+                final isFriendRequestSent =
+                    user['isFriendRequestSent'] ?? false;
+
                 return ListTile(
                   title: Text(user['username'] ?? ''),
                   subtitle: Text(user['email'] ?? ''),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.add),
-                    onPressed: () => _sendFriendRequest(user['email']),
-                  ),
+                  trailing: isFriend
+                      ? Icon(Icons.check,
+                          color: Colors
+                              .green) // Display green checkmark for friends
+                      : isFriendRequestSent
+                          ? Icon(Icons.pending,
+                              color: Colors
+                                  .grey) // Display pending-related icon for friend requests sent
+                          : const Icon(
+                              Icons.add), // Display plus sign for other users
+                  onTap: () {
+                    if (!isFriend && !isFriendRequestSent) {
+                      _sendFriendRequest(user['email']);
+                    }
+                  },
                 );
               },
             ),
