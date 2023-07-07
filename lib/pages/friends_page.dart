@@ -14,8 +14,7 @@ class FriendsPage extends StatefulWidget {
 class _FriendsPageState extends State<FriendsPage> {
   late final TextEditingController _searchController;
   List<Map<String, dynamic>> _searchResults = [];
-  final currentUser = FirebaseAuth.instance.currentUser!;
-  bool _isLoading = false;
+  final currentUser = FirebaseAuth.instance.currentUser!;  
 
   @override
   void initState() {
@@ -72,24 +71,39 @@ class _FriendsPageState extends State<FriendsPage> {
   }
 
   Future<void> _sendFriendRequest(String userEmail) async {
-    final currentUserEmail = FirebaseAuth.instance.currentUser!.email!;
-    final usersCollection = FirebaseFirestore.instance.collection('Users');
-    final timeSent = Timestamp.now();
+  final currentUserEmail = FirebaseAuth.instance.currentUser!.email!;
+  final usersCollection = FirebaseFirestore.instance.collection('Users');
+  final timeSent = Timestamp.now();
 
-    // Add the friend request to the selected user's list
-    await usersCollection.doc(userEmail).update({
-      'friendRequests': FieldValue.arrayUnion([
-        {'email': currentUserEmail, 'timestamp': timeSent}
-      ]),
-    });
+  // Check if the friend request is already sent or pending
+  final userDoc = await usersCollection.doc(userEmail).get();
+  final friendRequests = userDoc.data()?['friendRequests'] ?? <dynamic>[];
+  final isFriendRequestSent = friendRequests.any(
+      (request) => request['email'] != null && request['email'] == currentUserEmail);
 
-    // Add the selected user to the current user's sent friend requests list
-    await usersCollection.doc(currentUserEmail).update({
-      'sentFriendRequests': FieldValue.arrayUnion([
-        {'email': currentUserEmail, 'timestamp': timeSent},
-      ]),
-    });
+  if (isFriendRequestSent) {
+    // Show snackbar if the friend request is already pending
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Waiting for $userEmail to accept your request')),
+    );
+    return;
   }
+
+  // Add the friend request to the selected user's list
+  await usersCollection.doc(userEmail).update({
+    'friendRequests': FieldValue.arrayUnion([
+      {'email': currentUserEmail, 'timestamp': timeSent}
+    ]),
+  });
+
+  // Add the selected user to the current user's sent friend requests list
+  await usersCollection.doc(currentUserEmail).update({
+    'sentFriendRequests': FieldValue.arrayUnion([
+      {'email': currentUserEmail, 'timestamp': timeSent},
+    ]),
+  });
+}
+
 
   // navigate to forage locations page
   void goToForageLocationsPage(String friendId, String friendName) {
@@ -147,13 +161,13 @@ class _FriendsPageState extends State<FriendsPage> {
                   title: Text(user['username'] ?? ''),
                   subtitle: Text(user['email'] ?? ''),
                   trailing: isFriend
-                      ? Icon(Icons.check,
+                      ? const Icon(Icons.check,
                           color: Colors
                               .green) // Display green checkmark for friends
                       : isFriendRequestSent
-                          ? Icon(Icons.pending,
+                          ? const Icon(Icons.pending,
                               color: Colors
-                                  .grey) // Display pending-related icon for friend requests sent
+                                  .deepOrange) // Display pending-related icon for friend requests sent
                           : const Icon(
                               Icons.add), // Display plus sign for other users
                   onTap: () {
