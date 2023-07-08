@@ -51,12 +51,21 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
                       snapshot.data!.data() as Map<String, dynamic>;
                   final friendRequests =
                       userData['friendRequests'] as List<dynamic>;
-                  final pendingFriendRequests = friendRequests
-                      .map((request) => {
-                            'email': request['email'],
-                            'timestamp': request['timestamp'].toDate(),
-                          })
-                      .toList();
+                  pendingFriendRequests = friendRequests.map((request) {
+                    return {
+                      'email': request['email'],
+                      'timestamp': request['timestamp'].toDate(),
+                    };
+                  }).toList();
+
+                  final sentRequests =
+                      userData['sentFriendRequests'] as List<dynamic>;
+                  sentFriendRequests = sentRequests.map((request) {
+                    return {
+                      'email': request['email'],
+                      'timestamp': request['timestamp'].toDate(),
+                    };
+                  }).toList();
                   return Column(
                     children: [
                       const Padding(
@@ -94,21 +103,61 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
                                       }
                                     ])
                                   }).then((_) {
-                                    // Remove friend from current user's friend requests list
+                                    // Remove friend from current user's friendRequests list
                                     usersCollection
                                         .doc(currentUserEmail)
                                         .update({
                                       'friendRequests': FieldValue.arrayRemove(
                                           [friendRequest])
+                                    }).then((_) {
+                                      // Remove request from friends, sentFriendRequest list
+                                      final sentFriendRequest =
+                                          userData['sentFriendRequests'][index];
+                                      usersCollection
+                                          .doc(friendRequest['email'])
+                                          .update({
+                                        'sentFriendRequests':
+                                            FieldValue.arrayRemove([
+                                          {
+                                            'email': currentUserEmail,
+                                            'timestamp':
+                                                sentFriendRequest['timestamp']
+                                          }
+                                        ])
+                                      }).then((_) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                                'Friend added to current user\'s friends list'),
+                                            duration: Duration(seconds: 2),
+                                          ),
+                                        );
+                                        setState(() {
+                                          // Update the pendingFriendRequests list in the state
+                                          pendingFriendRequests.removeAt(index);
+                                        });
+                                      }).catchError((error) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                                'Failed to remove friend request: $error'),
+                                            duration:
+                                                const Duration(seconds: 2),
+                                          ),
+                                        );
+                                      });
+                                    }).catchError((error) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                              'Failed to remove friend request: $error'),
+                                          duration: const Duration(seconds: 2),
+                                        ),
+                                      );
                                     });
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                            'Friend added to current user\'s friends list'),
-                                        duration: Duration(seconds: 2),
-                                      ),
-                                    );
-                                    setState(() {});
                                   }).catchError((error) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(

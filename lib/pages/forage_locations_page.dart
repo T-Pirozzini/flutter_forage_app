@@ -32,7 +32,7 @@ class _ForageLocationsState extends State<ForageLocations> {
       appBar: AppBar(
         title: Column(
           children: [
-            const Text('LOCATIONS'),
+            const Text('LOCATIONS', style: TextStyle(letterSpacing: 2.5)),
             Text(
               'User: ${widget.userName}',
               style: const TextStyle(fontSize: 16),

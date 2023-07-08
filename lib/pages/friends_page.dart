@@ -2,11 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import 'forage_locations_page.dart';
 
 class FriendsPage extends StatefulWidget {
-  const FriendsPage({super.key});
+  const FriendsPage({Key? key}) : super(key: key);
 
   @override
   State<FriendsPage> createState() => _FriendsPageState();
@@ -31,12 +30,51 @@ class _FriendsPageState extends State<FriendsPage> {
 
   // search for users
   Future<void> _searchUsers(String searchTerm) async {
+    final currentUserEmail = FirebaseAuth.instance.currentUser!.email!;
+    if (searchTerm == currentUserEmail) {
+      // If the search term is the same as the current user's email, return without performing the search
+      setState(() {
+        _searchResults = [];
+      });
+      return;
+    }
+
     final usersCollection = FirebaseFirestore.instance.collection('Users');
     final querySnapshot =
         await usersCollection.where('email', isEqualTo: searchTerm).get();
 
+    final currentUserData = await FirebaseFirestore.instance
+        .collection('Users')
+        .doc(currentUserEmail)
+        .get()
+        .then((snapshot) => snapshot.data());
+
+    final List<dynamic> currentUserFriends =
+        currentUserData?['friends'] ?? <dynamic>[];
+    final List<dynamic> currentUserSentFriendRequests =
+        currentUserData?['sentFriendRequests'] ?? <dynamic>[];
+
     setState(() {
-      _searchResults = querySnapshot.docs.map((doc) => doc.data()).toList();
+      _searchResults = querySnapshot.docs.map((doc) {
+        final userData = doc.data();
+        final userEmail = userData['email'] ?? '';
+
+        // Check if the searched user is already a friend
+        final isFriend = currentUserFriends.any((friend) =>
+            friend['email'] != null && friend['email'] == userEmail);
+
+        // Check if the friend request is already sent
+        final isFriendRequestSent = currentUserSentFriendRequests.any(
+            (request) =>
+                request['email'] != null && request['email'] == userEmail);
+
+        // Return modified user data with isFriend and isFriendRequestSent flags
+        return {
+          ...userData,
+          'isFriend': isFriend,
+          'isFriendRequestSent': isFriendRequestSent,
+        };
+      }).toList();
     });
   }
 
@@ -44,6 +82,21 @@ class _FriendsPageState extends State<FriendsPage> {
     final currentUserEmail = FirebaseAuth.instance.currentUser!.email!;
     final usersCollection = FirebaseFirestore.instance.collection('Users');
     final timeSent = Timestamp.now();
+
+    // Check if the friend request is already sent or pending
+    final userDoc = await usersCollection.doc(userEmail).get();
+    final friendRequests = userDoc.data()?['friendRequests'] ?? <dynamic>[];
+    final isFriendRequestSent = friendRequests.any((request) =>
+        request['email'] != null && request['email'] == currentUserEmail);
+
+    if (isFriendRequestSent) {
+      // Show snackbar if the friend request is already pending
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('Waiting for $userEmail to accept your request')),
+      );
+      return;
+    }
 
     // Add the friend request to the selected user's list
     await usersCollection.doc(userEmail).update({
@@ -55,7 +108,7 @@ class _FriendsPageState extends State<FriendsPage> {
     // Add the selected user to the current user's sent friend requests list
     await usersCollection.doc(currentUserEmail).update({
       'sentFriendRequests': FieldValue.arrayUnion([
-        {'email': currentUserEmail, 'timestamp': timeSent},
+        {'email': userEmail, 'timestamp': timeSent},
       ]),
     });
   }
@@ -80,7 +133,10 @@ class _FriendsPageState extends State<FriendsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('FRIENDS'),
+        title: const Text(
+          'FRIENDS',
+          style: TextStyle(letterSpacing: 2.5),
+        ),
         titleTextStyle:
             GoogleFonts.philosopher(fontSize: 24, fontWeight: FontWeight.bold),
         centerTitle: true,
@@ -105,13 +161,28 @@ class _FriendsPageState extends State<FriendsPage> {
               itemCount: _searchResults.length,
               itemBuilder: (context, index) {
                 final user = _searchResults[index];
+                final isFriend = user['isFriend'] ?? false;
+                final isFriendRequestSent =
+                    user['isFriendRequestSent'] ?? false;
+
                 return ListTile(
                   title: Text(user['username'] ?? ''),
                   subtitle: Text(user['email'] ?? ''),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.add),
-                    onPressed: () => _sendFriendRequest(user['email']),
-                  ),
+                  trailing: isFriend
+                      ? const Icon(Icons.check,
+                          color: Colors
+                              .green) // Display green checkmark for friends
+                      : isFriendRequestSent
+                          ? const Icon(Icons.pending,
+                              color: Colors
+                                  .deepOrange) // Display pending-related icon for friend requests sent
+                          : const Icon(
+                              Icons.add), // Display plus sign for other users
+                  onTap: () {
+                    if (!isFriend && !isFriendRequestSent) {
+                      _sendFriendRequest(user['email']);
+                    }
+                  },
                 );
               },
             ),
@@ -178,7 +249,7 @@ class _FriendsPageState extends State<FriendsPage> {
                                     );
                                   }
                                 }
-                                return const CircularProgressIndicator();
+                                return const SizedBox();
                               },
                             );
                           },
