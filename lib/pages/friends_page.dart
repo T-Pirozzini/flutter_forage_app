@@ -14,7 +14,7 @@ class FriendsPage extends StatefulWidget {
 class _FriendsPageState extends State<FriendsPage> {
   late final TextEditingController _searchController;
   List<Map<String, dynamic>> _searchResults = [];
-  final currentUser = FirebaseAuth.instance.currentUser!;  
+  final currentUser = FirebaseAuth.instance.currentUser!;
 
   @override
   void initState() {
@@ -30,11 +30,19 @@ class _FriendsPageState extends State<FriendsPage> {
 
   // search for users
   Future<void> _searchUsers(String searchTerm) async {
+    final currentUserEmail = FirebaseAuth.instance.currentUser!.email!;
+    if (searchTerm == currentUserEmail) {
+      // If the search term is the same as the current user's email, return without performing the search
+      setState(() {
+        _searchResults = [];
+      });
+      return;
+    }
+
     final usersCollection = FirebaseFirestore.instance.collection('Users');
     final querySnapshot =
         await usersCollection.where('email', isEqualTo: searchTerm).get();
 
-    final currentUserEmail = FirebaseAuth.instance.currentUser!.email!;
     final currentUserData = await FirebaseFirestore.instance
         .collection('Users')
         .doc(currentUserEmail)
@@ -71,39 +79,39 @@ class _FriendsPageState extends State<FriendsPage> {
   }
 
   Future<void> _sendFriendRequest(String userEmail) async {
-  final currentUserEmail = FirebaseAuth.instance.currentUser!.email!;
-  final usersCollection = FirebaseFirestore.instance.collection('Users');
-  final timeSent = Timestamp.now();
+    final currentUserEmail = FirebaseAuth.instance.currentUser!.email!;
+    final usersCollection = FirebaseFirestore.instance.collection('Users');
+    final timeSent = Timestamp.now();
 
-  // Check if the friend request is already sent or pending
-  final userDoc = await usersCollection.doc(userEmail).get();
-  final friendRequests = userDoc.data()?['friendRequests'] ?? <dynamic>[];
-  final isFriendRequestSent = friendRequests.any(
-      (request) => request['email'] != null && request['email'] == currentUserEmail);
+    // Check if the friend request is already sent or pending
+    final userDoc = await usersCollection.doc(userEmail).get();
+    final friendRequests = userDoc.data()?['friendRequests'] ?? <dynamic>[];
+    final isFriendRequestSent = friendRequests.any((request) =>
+        request['email'] != null && request['email'] == currentUserEmail);
 
-  if (isFriendRequestSent) {
-    // Show snackbar if the friend request is already pending
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Waiting for $userEmail to accept your request')),
-    );
-    return;
+    if (isFriendRequestSent) {
+      // Show snackbar if the friend request is already pending
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('Waiting for $userEmail to accept your request')),
+      );
+      return;
+    }
+
+    // Add the friend request to the selected user's list
+    await usersCollection.doc(userEmail).update({
+      'friendRequests': FieldValue.arrayUnion([
+        {'email': currentUserEmail, 'timestamp': timeSent}
+      ]),
+    });
+
+    // Add the selected user to the current user's sent friend requests list
+    await usersCollection.doc(currentUserEmail).update({
+      'sentFriendRequests': FieldValue.arrayUnion([
+        {'email': userEmail, 'timestamp': timeSent},
+      ]),
+    });
   }
-
-  // Add the friend request to the selected user's list
-  await usersCollection.doc(userEmail).update({
-    'friendRequests': FieldValue.arrayUnion([
-      {'email': currentUserEmail, 'timestamp': timeSent}
-    ]),
-  });
-
-  // Add the selected user to the current user's sent friend requests list
-  await usersCollection.doc(currentUserEmail).update({
-    'sentFriendRequests': FieldValue.arrayUnion([
-      {'email': currentUserEmail, 'timestamp': timeSent},
-    ]),
-  });
-}
-
 
   // navigate to forage locations page
   void goToForageLocationsPage(String friendId, String friendName) {
