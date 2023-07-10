@@ -105,6 +105,9 @@ class MapPageState extends State<MapPage> {
     final location = await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high,
     );
+
+    if (!mounted) return location;
+    
     setState(() {
       currentLocation = location;
     });
@@ -121,7 +124,7 @@ class MapPageState extends State<MapPage> {
 
     final docs = snapshot.docs;
 
-    // // Process each document and add markers
+    // Process each document and add markers
     for (final doc in docs) {
       final data = doc.data();
       final name = data['name'] as String;
@@ -181,6 +184,8 @@ class MapPageState extends State<MapPage> {
       position: location,
       icon: await getMarkerIcon(type),
     );
+
+    if (!mounted) return;
 
     setState(() {
       _markers.add(marker);

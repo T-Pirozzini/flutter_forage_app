@@ -36,6 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.2
   google_fonts: ^4.0.3
   intl: ^0.17.0
+  geocoding: ^2.1.0  
 
   # google maps deps
   google_maps_flutter: 
@@ -54,6 +55,7 @@ dependencies:
   firebase_core: ^2.13.0
   firebase_auth: ^4.6.1
   cloud_firestore: ^4.7.1
+  firebase_storage: ^11.2.4
 
   # Speedial deps
   image_picker: ^0.8.7+5

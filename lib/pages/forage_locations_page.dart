@@ -30,7 +30,15 @@ class _ForageLocationsState extends State<ForageLocations> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.userName}: LOCATIONS'),
+        title: Column(
+          children: [
+            const Text('LOCATIONS', style: TextStyle(letterSpacing: 2.5)),
+            Text(
+              'User: ${widget.userName}',
+              style: const TextStyle(fontSize: 16),
+            ),
+          ],
+        ),
         titleTextStyle:
             GoogleFonts.philosopher(fontSize: 24, fontWeight: FontWeight.bold),
         centerTitle: true,
@@ -90,7 +98,7 @@ class _ForageLocationsState extends State<ForageLocations> {
                                     lat: markerData['location']['latitude'],
                                     lng: markerData['location']['longitude'],
                                     timestamp: formattedDate,
-                                    image: markerData['image'],
+                                    imageUrl: markerData['image'],
                                   );
                                 },
                               );
