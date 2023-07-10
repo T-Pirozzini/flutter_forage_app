@@ -240,39 +240,56 @@ class _MarkerButtonsState extends State<MarkerButtons> {
     Position currentPosition,
     DateTime timestamp,
   ) async {
-    if (markerImageUrl != null) {
-      FirebaseFirestore.instance
-          .collection('Users')
-          .doc(currentUser)
-          .collection('Markers')
-          .add({
-        'name': markerName,
-        'description': markerDescription,
-        'type': markerType,
-        'image': markerImageUrl,
-        'location': {
-          'latitude': currentPosition.latitude,
-          'longitude': currentPosition.longitude,
-        },
-        'timestamp': timestamp,
-      });
+    final userMarkersRef = FirebaseFirestore.instance
+        .collection('Users')
+        .doc(currentUser)
+        .collection('Markers');
+    final markerQuerySnapshot = await userMarkersRef.get();
+    final markerCount = markerQuerySnapshot.size;
+    print(markerCount);
+
+    if (markerCount <= 9) {
+      if (markerImageUrl != null) {
+        FirebaseFirestore.instance
+            .collection('Users')
+            .doc(currentUser)
+            .collection('Markers')
+            .add({
+          'name': markerName,
+          'description': markerDescription,
+          'type': markerType,
+          'image': markerImageUrl,
+          'location': {
+            'latitude': currentPosition.latitude,
+            'longitude': currentPosition.longitude,
+          },
+          'timestamp': timestamp,
+        });
+      } else {
+        FirebaseFirestore.instance
+            .collection('Users')
+            .doc(currentUser)
+            .collection('Markers')
+            .add({
+          'name': markerName,
+          'description': markerDescription,
+          'type': markerType,
+          'image':
+              'https://st2.depositphotos.com/2586633/46477/v/600/depositphotos_464771766-stock-illustration-no-photo-or-blank-image.jpg',
+          'location': {
+            'latitude': currentPosition.latitude,
+            'longitude': currentPosition.longitude,
+          },
+          'timestamp': timestamp,
+        });
+      }
     } else {
-      FirebaseFirestore.instance
-          .collection('Users')
-          .doc(currentUser)
-          .collection('Markers')
-          .add({
-        'name': markerName,
-        'description': markerDescription,
-        'type': markerType,
-        'image':
-            'https://st2.depositphotos.com/2586633/46477/v/600/depositphotos_464771766-stock-illustration-no-photo-or-blank-image.jpg',
-        'location': {
-          'latitude': currentPosition.latitude,
-          'longitude': currentPosition.longitude,
-        },
-        'timestamp': timestamp,
-      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Marker limit reached. You cannot save more markers.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
     }
   }
 
