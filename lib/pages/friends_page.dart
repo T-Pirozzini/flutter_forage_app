@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'forage_locations_page.dart';
@@ -131,6 +132,8 @@ class _FriendsPageState extends State<FriendsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final currentUsername = FirebaseAuth.instance.currentUser!.email!;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -144,14 +147,20 @@ class _FriendsPageState extends State<FriendsPage> {
       ),
       body: Column(
         children: [
-          SizedBox(
-            height: 50,
-            child: TextField(
-              controller: _searchController,
-              onChanged: (value) => _searchUsers(value),
-              decoration: const InputDecoration(
-                hintText: 'Search users...',
-                contentPadding: EdgeInsets.all(8),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: SizedBox(
+              height: 50,
+              child: TextField(
+                controller: _searchController,
+                onChanged: (value) => _searchUsers(value),
+                decoration: const InputDecoration(
+                  hintText: 'Search users...',
+                  contentPadding: EdgeInsets.all(8),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(8)),
+                  ),
+                ),
               ),
             ),
           ),
@@ -199,59 +208,73 @@ class _FriendsPageState extends State<FriendsPage> {
                       snapshot.data!.data() as Map<String, dynamic>;
                   return Column(
                     children: [
-                      const Text(
-                        'Your Friends',
-                        style: TextStyle(fontSize: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            'Your Friends ',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            '(${currentUsername.split('@')[0]})',
+                            style: const TextStyle(fontSize: 24),
+                          ),
+                        ],
                       ),
                       Expanded(
                         child: ListView.builder(
                           itemCount: userData['friends'].length,
                           itemBuilder: (context, index) {
-                            final friendObject = userData['friends'][index]
-                                as Map<String, dynamic>;
-                            final friendId = friendObject['email'];
-                            return FutureBuilder<DocumentSnapshot>(
-                              future: FirebaseFirestore.instance
-                                  .collection('Users')
-                                  .doc(friendId)
-                                  .get(),
-                              builder: (context, snapshot) {
-                                if (snapshot.hasData) {
-                                  final friendData = snapshot.data!.data();
-                                  if (friendData != null &&
-                                      friendData is Map<String, dynamic>) {
-                                    final friendEmail = friendData['email'];
-                                    final friendUsername =
-                                        friendData['username'];
-                                    final friendProfilePic =
-                                        friendData['profilePic'];
+                            final friendObject = userData['friends'][index];
+                            if (friendObject != null &&
+                                friendObject is Map<String, dynamic>) {
+                              final friendId = friendObject['email'];
+                              return FutureBuilder<DocumentSnapshot>(
+                                future: FirebaseFirestore.instance
+                                    .collection('Users')
+                                    .doc(friendId)
+                                    .get(),
+                                builder: (context, snapshot) {
+                                  if (snapshot.hasData) {
+                                    final friendData = snapshot.data!.data();
+                                    if (friendData != null &&
+                                        friendData is Map<String, dynamic>) {
+                                      final friendEmail = friendData['email'];
+                                      final friendUsername =
+                                          friendData['username'];
+                                      final friendProfilePic =
+                                          friendData['profilePic'];
 
-                                    return GestureDetector(
-                                      onTap: () => goToForageLocationsPage(
-                                          friendId, friendUsername),
-                                      child: ListTile(
-                                        title: Text(friendUsername),
-                                        subtitle: Text(friendEmail),
-                                        leading: CircleAvatar(
-                                          backgroundImage: friendProfilePic !=
-                                                  null
-                                              ? AssetImage(
-                                                  'lib/assets/images/$friendProfilePic')
-                                              : null,
-                                          child: friendProfilePic == null
-                                              ? const Icon(Icons.person)
-                                              : null,
+                                      return GestureDetector(
+                                        onTap: () => goToForageLocationsPage(
+                                            friendId, friendUsername),
+                                        child: ListTile(
+                                          title: Text(friendUsername),
+                                          subtitle: Text(friendEmail),
+                                          leading: CircleAvatar(
+                                            backgroundImage: friendProfilePic !=
+                                                    null
+                                                ? AssetImage(
+                                                    'lib/assets/images/$friendProfilePic')
+                                                : null,
+                                            child: friendProfilePic == null
+                                                ? const Icon(Icons.person)
+                                                : null,
+                                          ),
+                                          trailing:
+                                              const Icon(Icons.double_arrow),
+                                          iconColor: Colors.deepOrange.shade400,
                                         ),
-                                        trailing:
-                                            const Icon(Icons.double_arrow),
-                                        iconColor: Colors.deepOrange.shade400,
-                                      ),
-                                    );
+                                      );
+                                    }
                                   }
-                                }
-                                return const SizedBox();
-                              },
-                            );
+                                  return const SizedBox();
+                                },
+                              );
+                            }
                           },
                         ),
                       ),
