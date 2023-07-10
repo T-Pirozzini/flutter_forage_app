@@ -39,6 +39,7 @@ class _CommunityPageState extends State<CommunityPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey.shade200,
       appBar: AppBar(
         title: const Text('COMMUNITY'),
         titleTextStyle: GoogleFonts.philosopher(
@@ -70,14 +71,28 @@ class _CommunityPageState extends State<CommunityPage> {
                       return Padding(
                         padding: const EdgeInsets.all(10.0),
                         child: Card(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.0),
+                            side: BorderSide(
+                              color: Colors
+                                  .deepOrange.shade200, // Set the border color
+                              width: 1.0, // Set the border thickness
+                            ), // Set the border radius
+                          ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Image.network(
-                                imageUrl,
-                                fit: BoxFit.cover,
-                                width: double.infinity,
-                                height: 200,
+                              ClipRRect(
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(12.0),
+                                  topRight: Radius.circular(12.0),
+                                ),
+                                child: Image.network(
+                                  imageUrl,
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: 200,
+                                ),
                               ),
                               ListTile(
                                 title: Row(

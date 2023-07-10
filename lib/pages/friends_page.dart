@@ -135,6 +135,7 @@ class _FriendsPageState extends State<FriendsPage> {
     final currentUsername = FirebaseAuth.instance.currentUser!.email!;
 
     return Scaffold(
+      backgroundColor: Colors.grey.shade200,
       appBar: AppBar(
         title: const Text(
           'FRIENDS',
