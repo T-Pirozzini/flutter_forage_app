@@ -70,6 +70,12 @@ class _ForageLocationsState extends State<ForageLocations> {
                   .collection('Markers')
                   .snapshots(),
               builder: (context, snapshot) {
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(
+                    child: Text('No locations found'),
+                  );
+                }
+
                 if (snapshot.hasData) {
                   final forageLocations = snapshot.data!.docs;
                   return ListView.builder(
@@ -84,6 +90,7 @@ class _ForageLocationsState extends State<ForageLocations> {
 
                       // Format the date
                       final formattedDate = dateFormat.format(dateTime);
+
                       return Column(
                         children: [
                           GestureDetector(
