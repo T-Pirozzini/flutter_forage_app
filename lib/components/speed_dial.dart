@@ -4,6 +4,7 @@ import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -209,6 +210,11 @@ class _MarkerButtonsState extends State<MarkerButtons> {
   Future<String?> _uploadImageToFirebaseStorage() async {
     if (_selectedImage == null) return null;
 
+    final compressedImage = await FlutterImageCompress.compressWithFile(
+      _selectedImage!.path,
+      quality: 85, // Adjust the quality as desired (0-100)
+    );
+
     final fileName = '${DateTime.now().microsecondsSinceEpoch}.png';
     final destination = 'images/$fileName';
 
@@ -218,10 +224,10 @@ class _MarkerButtonsState extends State<MarkerButtons> {
     );
 
     try {
-      await ref.putFile(_selectedImage!, metadata);
+      await ref.putData(compressedImage!, metadata);
       final imageUrl = await ref.getDownloadURL();
       return imageUrl;
-    } catch (e) {      
+    } catch (e) {
       return null;
     }
   }
@@ -234,38 +240,56 @@ class _MarkerButtonsState extends State<MarkerButtons> {
     Position currentPosition,
     DateTime timestamp,
   ) async {
-    if (markerImageUrl != null) {
-      FirebaseFirestore.instance
-          .collection('Users')
-          .doc(currentUser)
-          .collection('Markers')
-          .add({
-        'name': markerName,
-        'description': markerDescription,
-        'type': markerType,
-        'image': markerImageUrl,
-        'location': {
-          'latitude': currentPosition.latitude,
-          'longitude': currentPosition.longitude,
-        },
-        'timestamp': timestamp,
-      });
+    final userMarkersRef = FirebaseFirestore.instance
+        .collection('Users')
+        .doc(currentUser)
+        .collection('Markers');
+    final markerQuerySnapshot = await userMarkersRef.get();
+    final markerCount = markerQuerySnapshot.size;
+    print(markerCount);
+
+    if (markerCount <= 9) {
+      if (markerImageUrl != null) {
+        FirebaseFirestore.instance
+            .collection('Users')
+            .doc(currentUser)
+            .collection('Markers')
+            .add({
+          'name': markerName,
+          'description': markerDescription,
+          'type': markerType,
+          'image': markerImageUrl,
+          'location': {
+            'latitude': currentPosition.latitude,
+            'longitude': currentPosition.longitude,
+          },
+          'timestamp': timestamp,
+        });
+      } else {
+        FirebaseFirestore.instance
+            .collection('Users')
+            .doc(currentUser)
+            .collection('Markers')
+            .add({
+          'name': markerName,
+          'description': markerDescription,
+          'type': markerType,
+          'image':
+              'https://st2.depositphotos.com/2586633/46477/v/600/depositphotos_464771766-stock-illustration-no-photo-or-blank-image.jpg',
+          'location': {
+            'latitude': currentPosition.latitude,
+            'longitude': currentPosition.longitude,
+          },
+          'timestamp': timestamp,
+        });
+      }
     } else {
-      FirebaseFirestore.instance
-          .collection('Users')
-          .doc(currentUser)
-          .collection('Markers')
-          .add({
-        'name': markerName,
-        'description': markerDescription,
-        'type': markerType,
-        'image': 'https://st2.depositphotos.com/2586633/46477/v/600/depositphotos_464771766-stock-illustration-no-photo-or-blank-image.jpg',
-        'location': {
-          'latitude': currentPosition.latitude,
-          'longitude': currentPosition.longitude,
-        },
-        'timestamp': timestamp,
-      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Marker limit reached. You cannot save more markers.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
     }
   }
 
