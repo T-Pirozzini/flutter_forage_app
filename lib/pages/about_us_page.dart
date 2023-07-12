@@ -13,9 +13,17 @@ class AboutUsPage extends StatefulWidget {
 
 class _AboutUsPageState extends State<AboutUsPage> {
   // Open the personal website link
-  void _launchWebsite() async {
-    const url =
-        'https://portfolio-2023-1a61.fly.dev/'; // Replace with your personal website URL
+  void _launchWebsiteTravis() async {
+    const url = 'https://portfolio-2023-1a61.fly.dev/';
+    if (await canLaunch(url)) {
+      await launch(url);
+    } else {
+      throw 'Could not launch $url';
+    }
+  }
+
+  void _launchWebsiteRichard() async {
+    const url = 'Add your website url here';
     if (await canLaunch(url)) {
       await launch(url);
     } else {
@@ -24,9 +32,17 @@ class _AboutUsPageState extends State<AboutUsPage> {
   }
 
   // Open the LinkedIn profile link
-  void _launchLinkedIn() async {
-    const url =
-        'https://www.linkedin.com/in/travis-pirozzini-2522b5115/'; // Replace with your LinkedIn profile URL
+  void _launchLinkedInTravis() async {
+    const url = 'https://www.linkedin.com/in/travis-pirozzini-2522b5115/';
+    if (await canLaunch(url)) {
+      await launch(url);
+    } else {
+      throw 'Could not launch $url';
+    }
+  }
+
+  void _launchLinkedInRichard() async {
+    const url = 'https://www.linkedin.com/in/aurichard4/';
     if (await canLaunch(url)) {
       await launch(url);
     } else {
@@ -35,9 +51,17 @@ class _AboutUsPageState extends State<AboutUsPage> {
   }
 
   // Open the GitHub profile link
-  void _launchGitHub() async {
-    const url =
-        'https://github.com/T-Pirozzini'; // Replace with your GitHub profile URL
+  void _launchGitHubTravis() async {
+    const url = 'https://github.com/T-Pirozzini';
+    if (await canLaunch(url)) {
+      await launch(url);
+    } else {
+      throw 'Could not launch $url';
+    }
+  }
+
+  void _launchGitHubRichard() async {
+    const url = 'https://github.com/au-richard';
     if (await canLaunch(url)) {
       await launch(url);
     } else {
@@ -129,21 +153,21 @@ class _AboutUsPageState extends State<AboutUsPage> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             ElevatedButton.icon(
-                              onPressed: _launchWebsite,
+                              onPressed: _launchWebsiteTravis,
                               icon: const FaIcon(FontAwesomeIcons
                                   .person), // Icon for Personal Website
                               label: const Text('Portfolio'),
                             ),
                             const SizedBox(width: 16),
                             ElevatedButton.icon(
-                              onPressed: _launchLinkedIn,
+                              onPressed: _launchLinkedInTravis,
                               icon: const FaIcon(FontAwesomeIcons
                                   .linkedin), // Icon for LinkedIn
                               label: const Text('LinkedIn'),
                             ),
                             const SizedBox(width: 16),
                             ElevatedButton.icon(
-                              onPressed: _launchGitHub,
+                              onPressed: _launchGitHubTravis,
                               icon: const FaIcon(
                                   FontAwesomeIcons.github), // Icon for GitHub
                               label: const Text('GitHub'),
@@ -188,21 +212,21 @@ class _AboutUsPageState extends State<AboutUsPage> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             ElevatedButton.icon(
-                              onPressed: _launchWebsite,
+                              onPressed: _launchWebsiteRichard,
                               icon: const FaIcon(FontAwesomeIcons
                                   .person), // Icon for Personal Website
                               label: const Text('Portfolio'),
                             ),
                             const SizedBox(width: 16),
                             ElevatedButton.icon(
-                              onPressed: _launchLinkedIn,
+                              onPressed: _launchLinkedInRichard,
                               icon: const FaIcon(FontAwesomeIcons
                                   .linkedin), // Icon for LinkedIn
                               label: const Text('LinkedIn'),
                             ),
                             const SizedBox(width: 16),
                             ElevatedButton.icon(
-                              onPressed: _launchGitHub,
+                              onPressed: _launchGitHubRichard,
                               icon: const FaIcon(
                                   FontAwesomeIcons.github), // Icon for GitHub
                               label: const Text('GitHub'),
