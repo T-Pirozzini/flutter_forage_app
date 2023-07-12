@@ -188,7 +188,7 @@ class _AboutUsPageState extends State<AboutUsPage> {
               child: Stack(
                 children: [
                   Image.asset(
-                    'lib/assets/images/richard_about2.jpg',
+                    'lib/assets/images/richard_about.jpg',
                   ),
                   Container(
                     color: Colors.black.withOpacity(0.5),
@@ -231,7 +231,7 @@ class _AboutUsPageState extends State<AboutUsPage> {
                           ),
                         ),
                         Padding(
-                          padding: EdgeInsets.only(top: 40.0),
+                          padding: const EdgeInsets.only(top: 40.0),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
