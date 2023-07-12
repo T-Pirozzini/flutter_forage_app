@@ -51,6 +51,7 @@ class ExplorePageState extends State<ExplorePage> {
     if (!serviceEnabled) {
       return Future.error('Location services are disabled.');
     }
+    final position = await Geolocator.getCurrentPosition();
 
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
@@ -58,15 +59,10 @@ class ExplorePageState extends State<ExplorePage> {
       if (permission == LocationPermission.denied) {
         return Future.error('Location permissions are denied');
       }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
+    } else if (permission == LocationPermission.deniedForever) {
       return Future.error(
           'Location permissions are permanently denied, we cannot request permissions.');
-    }
-
-    final position = await Geolocator.getCurrentPosition();
-    if (mounted) {
+    } else if (mounted) {
       setState(
         () {
           _isPressed = false;

@@ -188,7 +188,7 @@ class _AboutUsPageState extends State<AboutUsPage> {
               child: Stack(
                 children: [
                   Image.asset(
-                    'lib/assets/images/missing_image.png',
+                    'lib/assets/images/richard_about2.jpg',
                   ),
                   Container(
                     color: Colors.black.withOpacity(0.5),
@@ -202,36 +202,61 @@ class _AboutUsPageState extends State<AboutUsPage> {
                               fontWeight: FontWeight.bold,
                               color: Colors.white),
                         ),
-                        const Text(
-                          'Write your description here...',
-                          style: TextStyle(color: Colors.white, fontSize: 14),
-                          textAlign: TextAlign.center,
+                        const Padding(
+                          padding: EdgeInsets.only(top: 8.0),
+                          child: Text(
+                            'Mobile Developer, Full-Stack Software Developer',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.all(12.0),
+                          child: Text(
+                            '\n Whether I\'m on the basketball court, coding at my desk, or cooking in the kitchen, I\'m always looking to experiment with new ideas.I love blending two entirely different industries together and testing what the outcome would be for an idea. \n\nBy learning software development and combining my  previous knowledge in social sciences and psychology, I aim to bridge the gap between individuals and mental health clinics to be more easily accessible and more well-known publicly.',
+                            style: TextStyle(color: Colors.white, fontSize: 14),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                         const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            ElevatedButton.icon(
-                              onPressed: _launchWebsiteRichard,
-                              icon: const FaIcon(FontAwesomeIcons
-                                  .person), // Icon for Personal Website
-                              label: const Text('Portfolio'),
-                            ),
-                            const SizedBox(width: 16),
-                            ElevatedButton.icon(
-                              onPressed: _launchLinkedInRichard,
-                              icon: const FaIcon(FontAwesomeIcons
-                                  .linkedin), // Icon for LinkedIn
-                              label: const Text('LinkedIn'),
-                            ),
-                            const SizedBox(width: 16),
-                            ElevatedButton.icon(
-                              onPressed: _launchGitHubRichard,
-                              icon: const FaIcon(
-                                  FontAwesomeIcons.github), // Icon for GitHub
-                              label: const Text('GitHub'),
-                            ),
-                          ],
+                        const SizedBox(height: 5),
+                        const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Text(
+                            'I\'m currently open to employment (contract/full & part-time). Please contact me if you\'re interested in working together!',
+                            style: TextStyle(color: Colors.white, fontSize: 14),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.only(top: 40.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              ElevatedButton.icon(
+                                onPressed: _launchWebsiteRichard,
+                                icon: const FaIcon(FontAwesomeIcons
+                                    .person), // Icon for Personal Website
+                                label: const Text('Portfolio'),
+                              ),
+                              const SizedBox(width: 16),
+                              ElevatedButton.icon(
+                                onPressed: _launchLinkedInRichard,
+                                icon: const FaIcon(FontAwesomeIcons
+                                    .linkedin), // Icon for LinkedIn
+                                label: const Text('LinkedIn'),
+                              ),
+                              const SizedBox(width: 16),
+                              ElevatedButton.icon(
+                                onPressed: _launchGitHubRichard,
+                                icon: const FaIcon(
+                                    FontAwesomeIcons.github), // Icon for GitHub
+                                label: const Text('GitHub'),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
