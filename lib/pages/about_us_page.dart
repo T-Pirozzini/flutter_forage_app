@@ -188,7 +188,7 @@ class _AboutUsPageState extends State<AboutUsPage> {
               child: Stack(
                 children: [
                   Image.asset(
-                    'lib/assets/images/missing_image.png',
+                    'lib/assets/images/richard_about.png',
                   ),
                   Container(
                     color: Colors.black.withOpacity(0.5),
@@ -203,11 +203,26 @@ class _AboutUsPageState extends State<AboutUsPage> {
                               color: Colors.white),
                         ),
                         const Text(
-                          'Write your description here...',
+                            'Mobile Developer, Full-Stack Software Developer',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold)),
+                        const Text(
+                          'Whether I\'m on the basketball court, coding at my desk, or cooking in the kitchen, I\'m always looking to experiment with new ideas.I love blending two entirely different industries together and testing what the outcome would be for an idea. By learning software development and combining my  previous knowledge in social sciences and psychology, I aim to bridge the gap between individuals and mental health clinics to be more easily accessible and more well-known publicly.',
                           style: TextStyle(color: Colors.white, fontSize: 14),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 16),
+                        const SizedBox(height: 5),
+                        const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Text(
+                            'I\'m currently open to employment (contract/full & part-time). Please contact me if you\'re interested in working together!',
+                            style: TextStyle(color: Colors.white, fontSize: 14),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
