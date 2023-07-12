@@ -53,5 +53,13 @@
 	<string>This app needs access to location when in the background.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Access to the photo library is required to upload images.</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+    <string>https</string>
+    <string>http</string>
+    <string>tel</string>
+    <string>mailto</string>
+	</array>
+
 </dict>
 </plist>

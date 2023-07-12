@@ -13,7 +13,7 @@ class LocationService {
 
     var json = convert.jsonDecode(response.body);
 
-    var placeId = json['candidates'][0]['place_id'] as String;    
+    var placeId = json['candidates'][0]['place_id'] as String;
 
     return placeId;
   }
@@ -28,7 +28,7 @@ class LocationService {
     var json = convert.jsonDecode(response.body);
 
     var results = json['result'] as Map<String, dynamic>;
-    
+
     return results;
   }
 }
