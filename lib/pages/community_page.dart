@@ -17,6 +17,14 @@ class _CommunityPageState extends State<CommunityPage> {
   final currentUser = FirebaseAuth.instance.currentUser!;
   String? username;
 
+  bool isFavorite = false;
+
+  void toggleFavorite() {
+    setState(() {
+      isFavorite = !isFavorite;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -117,16 +125,18 @@ class _CommunityPageState extends State<CommunityPage> {
                                     Text(post['description']),
                                   ],
                                 ),
+                                // Handle like button tap
+                                // Increment likeCount and update Firestore
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   mainAxisAlignment: MainAxisAlignment.end,
                                   children: [
                                     IconButton(
-                                      icon: const Icon(Icons.favorite),
-                                      onPressed: () {
-                                        // Handle like button tap
-                                        // Increment likeCount and update Firestore
-                                      },
+                                      icon: Icon(
+                                        Icons.favorite,
+                                        color: isFavorite ? Colors.red : null,
+                                      ),
+                                      onPressed: toggleFavorite,
                                     ),
                                     Text('$likeCount'),
                                     IconButton(
