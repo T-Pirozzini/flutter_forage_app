@@ -17,11 +17,17 @@ class _CommunityPageState extends State<CommunityPage> {
   final currentUser = FirebaseAuth.instance.currentUser!;
   String? username;
 
+  int likeCount = 0;
   bool isFavorite = false;
 
   void toggleFavorite() {
     setState(() {
       isFavorite = !isFavorite;
+      if (isFavorite) {
+        likeCount++;
+      } else {
+        likeCount--;
+      }
     });
   }
 
@@ -72,7 +78,7 @@ class _CommunityPageState extends State<CommunityPage> {
                     itemBuilder: (context, index) {
                       final post = posts[index];
                       final imageUrl = post['imageUrl'];
-                      final likeCount = post['likeCount'] ?? 0;
+                      // final likeCount = post['likeCount'] ?? 0;
                       final saveCount = post['saveCount'] ?? 0;
                       // final commentCount = post['commentCount'] ?? 0;
 
