@@ -6,7 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import '../components/search_field.dart';
 
 class ExplorePage extends StatefulWidget {
-  const ExplorePage({Key? key}) : super(key: key);
+  const ExplorePage({super.key});
 
   @override
   State<ExplorePage> createState() => ExplorePageState();
@@ -16,36 +16,28 @@ class ExplorePageState extends State<ExplorePage> {
   final Completer<GoogleMapController> _controller =
       Completer<GoogleMapController>();
 
-  CameraPosition _initialCameraPosition = const CameraPosition(
-    target: LatLng(37.42796133580664, -122.085749655962),
-    zoom: 14,
-  );
+  late CameraPosition _initialCameraPosition;
 
   @override
   void initState() {
     super.initState();
     _determinePosition();
+    _initialCameraPosition = const CameraPosition(
+      target: LatLng(0, 0),
+      zoom: 14.0,
+    );
   }
-
-  // Future<void> _getCurrentLocation() async {
-  //   final position = await Geolocator.getCurrentPosition(
-  //       desiredAccuracy: LocationAccuracy.high);
-  //   setState(() {
-  //     _initialCameraPosition = CameraPosition(
-  //       target: LatLng(position.latitude, position.longitude),
-  //       zoom: 14.0,
-  //     );
-  //   });
-  // }
 
   Future<void> _goToPlace(Map<String, dynamic> place) async {
     final double lat = place['geometry']['location']['lat'];
     final double lng = place['geometry']['location']['lng'];
     final GoogleMapController controller = await _controller.future;
+    final newCameraPosition = CameraPosition(
+      target: LatLng(lat, lng),
+      zoom: 14,
+    );
     controller.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(target: LatLng(lat, lng), zoom: 14),
-      ),
+      CameraUpdate.newCameraPosition(newCameraPosition),
     );
   }
 
@@ -115,7 +107,7 @@ class ExplorePageState extends State<ExplorePage> {
           Expanded(
             child: GoogleMap(
               mapType: MapType.normal,
-              markers: const{},
+              markers: const {},
               initialCameraPosition: _initialCameraPosition,
               onMapCreated: (GoogleMapController controller) {
                 _controller.complete(controller);
