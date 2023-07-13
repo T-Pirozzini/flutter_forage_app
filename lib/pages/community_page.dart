@@ -36,6 +36,67 @@ class _CommunityPageState extends State<CommunityPage> {
     }
   }
 
+  void saveMarkerInfo(
+    String markerName,
+    String markerDescription,
+    String markerType,
+    String? markerImageUrl,
+    double markerLatitude,
+    double markerLongitude,
+    Timestamp timestamp,
+  ) async {
+    final userMarkersRef = FirebaseFirestore.instance
+        .collection('Users')
+        .doc(currentUser.email)
+        .collection('Markers');
+    final markerQuerySnapshot = await userMarkersRef.get();
+    final markerCount = markerQuerySnapshot.size;
+
+    if (markerCount <= 9) {
+      if (markerImageUrl != null) {
+        FirebaseFirestore.instance
+            .collection('Users')
+            .doc(currentUser.email)
+            .collection('Markers')
+            .add({
+          'name': markerName,
+          'description': markerDescription,
+          'type': markerType,
+          'image': markerImageUrl,
+          'location': {
+            'latitude': markerLatitude,
+            'longitude': markerLongitude,
+          },
+          'timestamp': timestamp,
+        });
+      } else {
+        FirebaseFirestore.instance
+            .collection('Users')
+            .doc(currentUser.email)
+            .collection('Markers')
+            .add({
+          'name': markerName,
+          'description': markerDescription,
+          'type': markerType,
+          'image':
+              'https://st2.depositphotos.com/2586633/46477/v/600/depositphotos_464771766-stock-illustration-no-photo-or-blank-image.jpg',
+          'location': {
+            'latitude': markerLatitude,
+            'longitude': markerLongitude,
+          },
+          'timestamp': timestamp,
+        });
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Marker limit reached. You cannot save more markers.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -149,6 +210,16 @@ class _CommunityPageState extends State<CommunityPage> {
                               'bookmarkedBy':
                                   FieldValue.arrayUnion([currentUserEmail]),
                             });
+                            saveMarkerInfo(
+                              post['name'],
+                              post['description'],
+                              post['type'],
+                              post['imageUrl'],
+                              post['latitude'],
+                              post['longitude'],
+                              Timestamp.fromDate(
+                                  DateTime.parse(post['postTimestamp'])),
+                            );
                           }
                         }
 
