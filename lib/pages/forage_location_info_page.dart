@@ -28,8 +28,8 @@ class ForageLocationInfo extends StatefulWidget {
 
 class _ForageLocationInfoState extends State<ForageLocationInfo> {
   final GlobalKey<ScaffoldMessengerState> _scaffoldKey =
-      GlobalKey<ScaffoldMessengerState>();  
-  
+      GlobalKey<ScaffoldMessengerState>();
+
   // current user
   final currentUser = FirebaseAuth.instance.currentUser!;
 
@@ -48,19 +48,21 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
         'imageUrl': widget.imageUrl,
         'user': currentUser.email,
         'likeCount': 0,
-        'saveCount': 0,
+        'likedBy': [],
+        'bookmarkCount': 0,
+        'bookmarkedBy': [],
         'commentCount': 0,
         'postTimestamp': DateTime.now().toString(),
       });
 
-      if (newPost.id.isNotEmpty) {        
+      if (newPost.id.isNotEmpty) {
         final snackBar = SnackBar(
           content: Text('New post added with ID: ${newPost.id}'),
           duration: const Duration(seconds: 2),
         );
         _scaffoldKey.currentState?.showSnackBar(snackBar);
         // Success! You can perform any additional actions here.
-      } else {        
+      } else {
         final snackBar = SnackBar(
           content: Text('Failed to add new post.'),
           duration: Duration(seconds: 2),
@@ -68,7 +70,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
         _scaffoldKey.currentState?.showSnackBar(snackBar);
         // Handle the failure scenario here.
       }
-    } catch (e) {      
+    } catch (e) {
       final snackBar = SnackBar(
         content: Text('Error adding new post: $e'),
         duration: const Duration(seconds: 2),

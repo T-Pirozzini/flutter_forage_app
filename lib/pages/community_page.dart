@@ -65,7 +65,7 @@ class _CommunityPageState extends State<CommunityPage> {
                       final post = posts[index];
                       final imageUrl = post['imageUrl'];
                       final likeCount = post['likeCount'] ?? 0;
-                      final saveCount = post['saveCount'] ?? 0;
+                      final bookmarkCount = post['bookmarkCount'] ?? 0;
 
                       // final commentCount = post['commentCount'] ?? 0;
 
@@ -110,7 +110,49 @@ class _CommunityPageState extends State<CommunityPage> {
                           }
                         }
 
-                        // setState(() {});
+                        setState(() {});
+                      }
+
+                      bool isBookmarked = (post['bookmarkedBy'] ?? [])
+                          .contains(currentUser.email);
+
+                      void toggleBookmark() async {
+                        final currentUserEmail = currentUser.email;
+                        final List<dynamic>? bookmarkedBy =
+                            post['bookmarkedBy'] as List<dynamic>?;
+
+                        if (bookmarkedBy != null &&
+                            bookmarkedBy.contains(currentUserEmail)) {
+                          // User has already liked the post, remove their like
+                          isBookmarked = false;
+                          final int newBookmarkCount = bookmarkCount - 1;
+
+                          final documentSnapshot =
+                              await postsCollection.doc(post.id).get();
+                          if (documentSnapshot.exists) {
+                            postsCollection.doc(post.id).update({
+                              'bookmarkCount': newBookmarkCount,
+                              'bookmarkedBy':
+                                  FieldValue.arrayRemove([currentUserEmail]),
+                            });
+                          }
+                        } else {
+                          // User has not liked the post, allow them to like it
+                          isBookmarked = true;
+                          final int newBookmarkCount = bookmarkCount + 1;
+
+                          final documentSnapshot =
+                              await postsCollection.doc(post.id).get();
+                          if (documentSnapshot.exists) {
+                            postsCollection.doc(post.id).update({
+                              'bookmarkCount': newBookmarkCount,
+                              'bookmarkedBy':
+                                  FieldValue.arrayUnion([currentUserEmail]),
+                            });
+                          }
+                        }
+
+                        setState(() {});
                       }
 
                       return Padding(
@@ -180,12 +222,11 @@ class _CommunityPageState extends State<CommunityPage> {
                                     const SizedBox(width: 20),
                                     IconButton(
                                       icon: const Icon(Icons.bookmark_add),
-                                      onPressed: () {
-                                        // Handle like button tap
-                                        // Increment likeCount and update Firestore
-                                      },
+                                      color: isBookmarked ? Colors.blue : null,
+                                      onPressed: toggleBookmark,
                                     ),
-                                    Text('$saveCount'),
+                                    Text('$bookmarkCount',
+                                        style: const TextStyle(fontSize: 24)),
                                   ],
                                 ),
                               ),
