@@ -155,6 +155,21 @@ class _CommunityPageState extends State<CommunityPage> {
                         setState(() {});
                       }
 
+                      void deletePost() async {
+                        final currentUserEmail = currentUser.email;
+                        if (post['user'] == currentUserEmail) {
+                          await postsCollection.doc(post.id).delete();
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'You can only delete your own posts.',
+                              ),
+                            ),
+                          );
+                        }
+                      }
+
                       return Padding(
                         padding: const EdgeInsets.all(10.0),
                         child: Card(
@@ -227,6 +242,11 @@ class _CommunityPageState extends State<CommunityPage> {
                                     ),
                                     Text('$bookmarkCount',
                                         style: const TextStyle(fontSize: 24)),
+                                    const SizedBox(width: 20),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete),
+                                      onPressed: deletePost,
+                                    ),
                                   ],
                                 ),
                               ),
