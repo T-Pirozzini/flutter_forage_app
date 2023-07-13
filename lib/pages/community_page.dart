@@ -17,20 +17,6 @@ class _CommunityPageState extends State<CommunityPage> {
   final currentUser = FirebaseAuth.instance.currentUser!;
   String? username;
 
-  int likeCount = 0;
-  bool isFavorite = false;
-
-  void toggleFavorite() {
-    setState(() {
-      isFavorite = !isFavorite;
-      if (isFavorite) {
-        likeCount++;
-      } else {
-        likeCount--;
-      }
-    });
-  }
-
   @override
   void initState() {
     super.initState();
@@ -78,9 +64,54 @@ class _CommunityPageState extends State<CommunityPage> {
                     itemBuilder: (context, index) {
                       final post = posts[index];
                       final imageUrl = post['imageUrl'];
-                      // final likeCount = post['likeCount'] ?? 0;
+                      final likeCount = post['likeCount'] ?? 0;
                       final saveCount = post['saveCount'] ?? 0;
+
                       // final commentCount = post['commentCount'] ?? 0;
+
+                      final CollectionReference postsCollection =
+                          FirebaseFirestore.instance.collection('Posts');
+                      bool isFavorite =
+                          (post['likedBy'] ?? []).contains(currentUser.email);
+
+                      void toggleFavorite() async {
+                        final currentUserEmail = currentUser.email;
+                        final List<dynamic>? likedBy =
+                            post['likedBy'] as List<dynamic>?;
+
+                        if (likedBy != null &&
+                            likedBy.contains(currentUserEmail)) {
+                          // User has already liked the post, remove their like
+                          isFavorite = false;
+                          final int newLikeCount = likeCount - 1;
+
+                          final documentSnapshot =
+                              await postsCollection.doc(post.id).get();
+                          if (documentSnapshot.exists) {
+                            postsCollection.doc(post.id).update({
+                              'likeCount': newLikeCount,
+                              'likedBy':
+                                  FieldValue.arrayRemove([currentUserEmail]),
+                            });
+                          }
+                        } else {
+                          // User has not liked the post, allow them to like it
+                          isFavorite = true;
+                          final int newLikeCount = likeCount + 1;
+
+                          final documentSnapshot =
+                              await postsCollection.doc(post.id).get();
+                          if (documentSnapshot.exists) {
+                            postsCollection.doc(post.id).update({
+                              'likeCount': newLikeCount,
+                              'likedBy':
+                                  FieldValue.arrayUnion([currentUserEmail]),
+                            });
+                          }
+                        }
+
+                        // setState(() {});
+                      }
 
                       return Padding(
                         padding: const EdgeInsets.all(10.0),
@@ -144,7 +175,9 @@ class _CommunityPageState extends State<CommunityPage> {
                                       ),
                                       onPressed: toggleFavorite,
                                     ),
-                                    Text('$likeCount'),
+                                    Text('$likeCount',
+                                        style: const TextStyle(fontSize: 24)),
+                                    const SizedBox(width: 20),
                                     IconButton(
                                       icon: const Icon(Icons.bookmark_add),
                                       onPressed: () {
