@@ -65,8 +65,95 @@ class _CommunityPageState extends State<CommunityPage> {
                       final post = posts[index];
                       final imageUrl = post['imageUrl'];
                       final likeCount = post['likeCount'] ?? 0;
-                      final saveCount = post['saveCount'] ?? 0;
+                      final bookmarkCount = post['bookmarkCount'] ?? 0;
+
                       // final commentCount = post['commentCount'] ?? 0;
+
+                      final CollectionReference postsCollection =
+                          FirebaseFirestore.instance.collection('Posts');
+                      bool isFavorite =
+                          (post['likedBy'] ?? []).contains(currentUser.email);
+
+                      void toggleFavorite() async {
+                        final currentUserEmail = currentUser.email;
+                        final List<dynamic>? likedBy =
+                            post['likedBy'] as List<dynamic>?;
+
+                        if (likedBy != null &&
+                            likedBy.contains(currentUserEmail)) {
+                          // User has already liked the post, remove their like
+                          isFavorite = false;
+                          final int newLikeCount = likeCount - 1;
+
+                          final documentSnapshot =
+                              await postsCollection.doc(post.id).get();
+                          if (documentSnapshot.exists) {
+                            postsCollection.doc(post.id).update({
+                              'likeCount': newLikeCount,
+                              'likedBy':
+                                  FieldValue.arrayRemove([currentUserEmail]),
+                            });
+                          }
+                        } else {
+                          // User has not liked the post, allow them to like it
+                          isFavorite = true;
+                          final int newLikeCount = likeCount + 1;
+
+                          final documentSnapshot =
+                              await postsCollection.doc(post.id).get();
+                          if (documentSnapshot.exists) {
+                            postsCollection.doc(post.id).update({
+                              'likeCount': newLikeCount,
+                              'likedBy':
+                                  FieldValue.arrayUnion([currentUserEmail]),
+                            });
+                          }
+                        }
+
+                        setState(() {});
+                      }
+
+                      bool isBookmarked = (post['bookmarkedBy'] ?? [])
+                          .contains(currentUser.email);
+
+                      void toggleBookmark() async {
+                        final currentUserEmail = currentUser.email;
+                        final List<dynamic>? bookmarkedBy =
+                            post['bookmarkedBy'] as List<dynamic>?;
+
+                        if (bookmarkedBy != null &&
+                            bookmarkedBy.contains(currentUserEmail)) {
+                          // User has already liked the post, remove their like
+                          isBookmarked = false;
+                          final int newBookmarkCount = bookmarkCount - 1;
+
+                          final documentSnapshot =
+                              await postsCollection.doc(post.id).get();
+                          if (documentSnapshot.exists) {
+                            postsCollection.doc(post.id).update({
+                              'bookmarkCount': newBookmarkCount,
+                              'bookmarkedBy':
+                                  FieldValue.arrayRemove([currentUserEmail]),
+                            });
+                          }
+                        } else {
+                          // User has not liked the post, allow them to like it
+                          isBookmarked = true;
+                          final int newBookmarkCount = bookmarkCount + 1;
+
+                          final documentSnapshot =
+                              await postsCollection.doc(post.id).get();
+                          if (documentSnapshot.exists) {
+                            postsCollection.doc(post.id).update({
+                              'bookmarkCount': newBookmarkCount,
+                              'bookmarkedBy':
+                                  FieldValue.arrayUnion([currentUserEmail]),
+                            });
+                          }
+                        }
+
+                        setState(() {});
+                      }
 
                       return Padding(
                         padding: const EdgeInsets.all(10.0),
@@ -117,26 +204,29 @@ class _CommunityPageState extends State<CommunityPage> {
                                     Text(post['description']),
                                   ],
                                 ),
+                                // Handle like button tap
+                                // Increment likeCount and update Firestore
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   mainAxisAlignment: MainAxisAlignment.end,
                                   children: [
                                     IconButton(
-                                      icon: const Icon(Icons.favorite),
-                                      onPressed: () {
-                                        // Handle like button tap
-                                        // Increment likeCount and update Firestore
-                                      },
+                                      icon: Icon(
+                                        Icons.favorite,
+                                        color: isFavorite ? Colors.red : null,
+                                      ),
+                                      onPressed: toggleFavorite,
                                     ),
-                                    Text('$likeCount'),
+                                    Text('$likeCount',
+                                        style: const TextStyle(fontSize: 24)),
+                                    const SizedBox(width: 20),
                                     IconButton(
                                       icon: const Icon(Icons.bookmark_add),
-                                      onPressed: () {
-                                        // Handle like button tap
-                                        // Increment likeCount and update Firestore
-                                      },
+                                      color: isBookmarked ? Colors.blue : null,
+                                      onPressed: toggleBookmark,
                                     ),
-                                    Text('$saveCount'),
+                                    Text('$bookmarkCount',
+                                        style: const TextStyle(fontSize: 24)),
                                   ],
                                 ),
                               ),
