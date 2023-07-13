@@ -97,6 +97,36 @@ class _CommunityPageState extends State<CommunityPage> {
     }
   }
 
+  void removeMarkerInfo(
+    String markerName,
+    String markerDescription,
+    String markerType,
+    String? markerImageUrl,
+    double markerLatitude,
+    double markerLongitude,
+    Timestamp timestamp,
+  ) async {
+    final userMarkersRef = FirebaseFirestore.instance
+        .collection('Users')
+        .doc(currentUser.email)
+        .collection('Markers');
+
+    await userMarkersRef
+        .where('name', isEqualTo: markerName)
+        .where('description', isEqualTo: markerDescription)
+        .where('type', isEqualTo: markerType)
+        .where('image', isEqualTo: markerImageUrl)
+        .where('location.latitude', isEqualTo: markerLatitude)
+        .where('location.longitude', isEqualTo: markerLongitude)
+        .where('timestamp', isEqualTo: timestamp)
+        .get()
+        .then((querySnapshot) {
+      querySnapshot.docs.forEach((doc) {
+        doc.reference.delete();
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -196,6 +226,16 @@ class _CommunityPageState extends State<CommunityPage> {
                               'bookmarkedBy':
                                   FieldValue.arrayRemove([currentUserEmail]),
                             });
+                            removeMarkerInfo(
+                              post['name'],
+                              post['description'],
+                              post['type'],
+                              post['imageUrl'],
+                              post['latitude'],
+                              post['longitude'],
+                              Timestamp.fromDate(
+                                  DateTime.parse(post['postTimestamp'])),
+                            );
                           }
                         } else {
                           // User has not liked the post, allow them to like it
