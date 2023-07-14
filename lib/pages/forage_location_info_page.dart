@@ -174,7 +174,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
         ),
       ),
       actions: [
-        TextButton(
+        ElevatedButton(
           onPressed: () {
             Navigator.of(context).pop();
             Navigator.pushReplacement(
@@ -189,41 +189,77 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
               ),
             );
           },
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Icon(Icons.map_outlined, color: Colors.deepOrange),
-              Text('Go to Location', style: TextStyle(fontSize: 18)),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Icon(Icons.map_outlined, color: Colors.white),
+                  SizedBox(width: 10),
+                  Text('Go to this Location', style: TextStyle(fontSize: 18)),
+                ],
+              ),
+              Icon(Icons.double_arrow_outlined, color: Colors.white),
             ],
           ),
         ),
         const SizedBox(height: 10),
-        TextButton(
+        ElevatedButton(
           onPressed: () {
             Navigator.of(context).pop();
             postToCommunity();
           },
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Icon(Icons.directions_outlined, color: Colors.deepOrange),
-              Text('Share with Community', style: TextStyle(fontSize: 18)),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Icon(Icons.directions_outlined, color: Colors.white),
+                  SizedBox(width: 10),
+                  Text('Share with the community',
+                      style: TextStyle(fontSize: 18)),
+                ],
+              ),
+              Icon(Icons.double_arrow_outlined, color: Colors.white),
             ],
           ),
+        ),
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.info_outline_rounded, color: Colors.deepOrange),
+            SizedBox(width: 5),
+            Text('Your location will be become public'),
+          ],
         ),
         const SizedBox(height: 10),
-        TextButton(
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Icon(Icons.close, color: Color.fromRGBO(255, 87, 34, 1)),
-              Text('Close'),
-            ],
-          ),
+
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            ElevatedButton.icon(
+              style: ButtonStyle(
+                backgroundColor: MaterialStateProperty.all<Color>(Colors.grey),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              icon: const Icon(Icons.delete),
+              label: const Text('Delete Location', style: TextStyle(fontSize: 12)),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              icon: const Icon(Icons.close),
+              label: const Text('Close'),
+            ),
+          ],
         ),
+        // ),
       ],
     );
   }
