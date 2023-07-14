@@ -211,7 +211,8 @@ class MapPageState extends State<MapPage> {
           type: type,
         );
       }
-    });  }
+    });
+  }
 
   // add markers
   Future<void> addMarker({
@@ -260,6 +261,7 @@ class MapPageState extends State<MapPage> {
 
   // go to place
   Future<void> _goToPlace(Map<String, dynamic> place) async {
+    followUser = false;
     final double lat = place['geometry']['location']['lat'];
     final double lng = place['geometry']['location']['lng'];
     final GoogleMapController controller = await _controller.future;
@@ -281,7 +283,6 @@ class MapPageState extends State<MapPage> {
         children: [
           Expanded(
             // Container(
-            // padding: EdgeInsets.zero,
             child: GoogleMap(
               mapType: MapType.normal,
               markers: _markers,
@@ -320,7 +321,7 @@ class MapPageState extends State<MapPage> {
           Positioned(
             top: 20,
             left: 20,
-            right: -50,
+            right: -100,
             child: Container(
               margin: const EdgeInsets.only(right: 150),
               child: Row(

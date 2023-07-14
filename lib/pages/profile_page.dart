@@ -210,6 +210,7 @@ class _ProfilePageState extends State<ProfilePage> {
               return GestureDetector(
                 onTap: () {
                   setState(() {
+                    Navigator.of(context).pop(newValue);
                     selectedProfileOption = option;
                     newValue = option;
                   });
@@ -275,7 +276,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       backgroundColor: Colors.deepOrange.shade100,
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: const Text('PROFILE', style: TextStyle(letterSpacing: 2.5)),
         titleTextStyle:
             GoogleFonts.philosopher(fontSize: 24, fontWeight: FontWeight.bold),
         centerTitle: true,
