@@ -3,10 +3,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/components/map_style.dart';
+import 'package:flutter_forager_app/pages/home_page.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../components/search_field.dart';
+import 'forage_locations_page.dart';
 
 class MapPage extends StatefulWidget {
   final double lat;
@@ -95,11 +97,6 @@ class MapPageState extends State<MapPage> {
     });
   }
 
-  // final CameraPosition _kGooglePlex = CameraPosition(
-  //   target: LatLng(lat, lng),
-  //   zoom: 14,
-  // );
-
   // get current position
   Future<Position> _getCurrentPosition() async {
     final location = await Geolocator.getCurrentPosition(
@@ -107,7 +104,7 @@ class MapPageState extends State<MapPage> {
     );
 
     if (!mounted) return location;
-    
+
     setState(() {
       currentLocation = location;
     });
@@ -180,7 +177,21 @@ class MapPageState extends State<MapPage> {
     final markerId = MarkerId(name);
     final marker = Marker(
       markerId: markerId,
-      infoWindow: InfoWindow(title: name, snippet: description),
+      infoWindow: InfoWindow(
+        title: name,
+        snippet: '(tap here for more info)',
+        onTap: () => Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (BuildContext context) => HomePage(
+              lat: location.latitude,
+              lng: location.longitude,
+              followUser: false,
+              currentIndex: 1,
+            ),
+          ),
+        ),
+      ),
       position: location,
       icon: await getMarkerIcon(type),
     );
