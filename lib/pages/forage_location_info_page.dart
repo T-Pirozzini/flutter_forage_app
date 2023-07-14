@@ -89,23 +89,22 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Confirmation'),
-          content: Text('Are you sure you want to delete this location?'),
+          title: const Text('Confirmation'),
+          content: const Text('Are you sure you want to delete this location?'),
           actions: [
             TextButton(
-              child: Text('Cancel'),
+              child: const Text('Cancel'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             TextButton(
-              child: Text('Delete'),
+              child: const Text('Delete'),
               onPressed: () {
                 try {
                   markersCollection
                       .where('name', isEqualTo: widget.name)
                       .where('description', isEqualTo: widget.description)
-                      // .where('timestamp', isEqualTo: widget.timestamp)
                       .where('type', isEqualTo: widget.type)
                       .get()
                       .then((snapshot) {
@@ -113,22 +112,18 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                       ds.reference.delete();
                     }
                   });
-
-                  Navigator.of(context).pop(); // Close the dialog
-
+                  Navigator.of(context).pop();
                   final snackBar = SnackBar(
                     content: Text('Location deleted.'),
-                    duration: const Duration(seconds: 2),
+                    duration: Duration(seconds: 2),
                   );
                   ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                  // Success! You can perform any additional actions here.
                 } catch (e) {
                   final snackBar = SnackBar(
                     content: Text('Error deleting location: $e'),
                     duration: const Duration(seconds: 2),
                   );
                   ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                  // Handle the error here.
                 }
               },
             ),
@@ -148,12 +143,12 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
           children: [
             Image.asset(
                 'lib/assets/images/${widget.type.toLowerCase()}_marker.png',
-                width: 50),
+                width: 40),
             const SizedBox(width: 10),
             Text(
               widget.name.toUpperCase(),
               style: const TextStyle(
-                fontSize: 32,
+                fontSize: 28,
                 fontWeight: FontWeight.bold,
               ),
               maxLines: 1,
@@ -173,60 +168,104 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                 width: 400,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child: Center(
-                    child: Image.network(widget.imageUrl, fit: BoxFit.cover),
+                  child: Image.network(
+                    widget.imageUrl,
+                    fit: BoxFit.cover,
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
             Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Row(
-                  children: const [
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
                     Icon(Icons.info_outline_rounded),
-                    Text('Description: ',
+                    SizedBox(width: 5),
+                    Text('What makes this location special? ',
                         style: TextStyle(fontWeight: FontWeight.bold)),
                   ],
                 ),
-                Text(widget.description),
+                const SizedBox(height: 2),
+                Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Colors.deepOrange,
+                      ),
+                    ),
+                    child: Text(widget.description)),
               ],
             ),
-            const SizedBox(height: 10),
+            const Divider(height: 20, thickness: 2),
             Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Row(
-                  children: const [
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
                     Icon(Icons.calendar_month_rounded),
+                    SizedBox(width: 5),
                     Text(
-                      'Date/Time: ',
+                      'When did you discover this location? ',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
-                Text(widget.timestamp),
+                const SizedBox(height: 2),
+                Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Colors.deepOrange,
+                      ),
+                    ),
+                    child: Text(widget.timestamp)),
               ],
             ),
-            const SizedBox(height: 10),
-            Row(
-              children: const [
-                Icon(Icons.pin_drop_outlined),
-                Text('Location: ',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-              ],
-            ),
-            Row(
+            const Divider(height: 20, thickness: 2),
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text('Lat: ',
+                Icon(Icons.pin_drop_outlined),
+                SizedBox(width: 5),
+                Text('Coordinates of your location: ',
                     style: TextStyle(fontWeight: FontWeight.bold)),
-                Text(widget.lat.toStringAsFixed(2)),
-                const SizedBox(width: 10),
-                const Text('Lng: ',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                Text(widget.lng.toStringAsFixed(2)),
               ],
+            ),
+            const SizedBox(height: 2),
+            Center(
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Colors.deepOrange,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        const Text('Lat: ',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text(widget.lat.toStringAsFixed(2)),
+                      ],
+                    ),
+                    const SizedBox(width: 10),
+                    Row(
+                      children: [
+                        const Text('Lng: ',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text(widget.lng.toStringAsFixed(2)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
