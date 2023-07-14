@@ -46,6 +46,7 @@ class _HomePageState extends State<HomePage> {
     followUser = widget.followUser;
     lat = widget.lat;
     lng = widget.lng;
+    currentIndex = widget.currentIndex;
   }
 
   // navigate to profile page

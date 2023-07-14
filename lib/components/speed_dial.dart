@@ -187,6 +187,7 @@ class _MarkerButtonsState extends State<MarkerButtons> {
                         imageUrl,
                         currentPosition,
                         DateTime.now(),
+                        currentUser,
                       );
                       Navigator.pop(context);
                       _nameTextController.clear();
@@ -239,6 +240,7 @@ class _MarkerButtonsState extends State<MarkerButtons> {
     String? markerImageUrl,
     Position currentPosition,
     DateTime timestamp,
+    String? currentUser,
   ) async {
     final userMarkersRef = FirebaseFirestore.instance
         .collection('Users')
@@ -264,6 +266,7 @@ class _MarkerButtonsState extends State<MarkerButtons> {
             'longitude': currentPosition.longitude,
           },
           'timestamp': timestamp,
+          'currentUser': currentUser,
         });
       } else {
         FirebaseFirestore.instance
@@ -281,6 +284,7 @@ class _MarkerButtonsState extends State<MarkerButtons> {
             'longitude': currentPosition.longitude,
           },
           'timestamp': timestamp,
+          'markerOwner': currentUser,
         });
       }
     } else {
@@ -340,6 +344,12 @@ class _MarkerButtonsState extends State<MarkerButtons> {
           backgroundColor: Colors.grey.shade800,
           foregroundColor: Colors.white,
           onTap: () => displayDialog('Fish'),
+        ),
+        SpeedDialChild(
+          child: Image.asset('lib/assets/images/shellfish.png', width: 40),
+          backgroundColor: Colors.grey.shade800,
+          foregroundColor: Colors.white,
+          onTap: () => displayDialog('Shellfish'),
         ),
       ],
     );

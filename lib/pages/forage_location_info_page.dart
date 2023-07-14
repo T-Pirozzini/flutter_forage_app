@@ -63,7 +63,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
         _scaffoldKey.currentState?.showSnackBar(snackBar);
         // Success! You can perform any additional actions here.
       } else {
-        final snackBar = SnackBar(
+        const snackBar = SnackBar(
           content: Text('Failed to add new post.'),
           duration: Duration(seconds: 2),
         );
@@ -80,6 +80,112 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
     }
   }
 
+  void deleteLocation() {
+    final markersCollection = FirebaseFirestore.instance
+        .collection('Users')
+        .doc(currentUser.email)
+        .collection('Markers');
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirmation'),
+          content: const Text('Are you sure you want to delete this location?'),
+          actions: [
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Delete'),
+              onPressed: () {
+                try {
+                  markersCollection
+                      .where('name', isEqualTo: widget.name)
+                      .where('description', isEqualTo: widget.description)
+                      .where('type', isEqualTo: widget.type)
+                      .get()
+                      .then((snapshot) {
+                    for (DocumentSnapshot ds in snapshot.docs) {
+                      ds.reference.delete();
+                    }
+                  });
+                  Navigator.of(context).pop();
+                  const snackBar = SnackBar(
+                    content: Text('Location deleted.'),
+                    duration: Duration(seconds: 2),
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                } catch (e) {
+                  final snackBar = SnackBar(
+                    content: Text('Error deleting location: $e'),
+                    duration: const Duration(seconds: 2),
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void currentUserMatchesMarkerOwner() async {
+    CollectionReference<Map<String, dynamic>> markerOwnerCollection =
+        FirebaseFirestore.instance
+            .collection('Users')
+            .doc(currentUser.email)
+            .collection('Markers');
+
+    print('Current user: ${currentUser.email}');
+    print('Marker owner: ${markerOwnerCollection}');
+
+    QuerySnapshot<Map<String, dynamic>> markerOwnerSnapshot =
+        await markerOwnerCollection.get();
+
+    if (markerOwnerSnapshot.docs.isNotEmpty) {
+      for (QueryDocumentSnapshot<Map<String, dynamic>> docSnapshot
+          in markerOwnerSnapshot.docs) {
+        Map<String, dynamic>? markerOwnerData = docSnapshot.data();
+        if (markerOwnerData != null &&
+            markerOwnerData.containsKey('markerOwner')) {
+          dynamic markerOwnerValue = markerOwnerData['markerOwner'];
+          print('Marker owner: $markerOwnerValue');
+        }
+      }
+    }
+
+    if (currentUser.email == markerOwnerCollection.id) {
+      // Assuming `markerOwner` is the ID field
+      print('User matches marker owner.');
+
+      Navigator.of(context).pop();
+      postToCommunity();
+    } else {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Error'),
+            content:
+                const Text('You are not the original owner of this marker.'),
+            actions: [
+              TextButton(
+                child: const Text('OK'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -90,12 +196,12 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
           children: [
             Image.asset(
                 'lib/assets/images/${widget.type.toLowerCase()}_marker.png',
-                width: 50),
+                width: 40),
             const SizedBox(width: 10),
             Text(
               widget.name.toUpperCase(),
               style: const TextStyle(
-                fontSize: 32,
+                fontSize: 28,
                 fontWeight: FontWeight.bold,
               ),
               maxLines: 1,
@@ -115,60 +221,104 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                 width: 400,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child: Center(
-                    child: Image.network(widget.imageUrl, fit: BoxFit.cover),
+                  child: Image.network(
+                    widget.imageUrl,
+                    fit: BoxFit.cover,
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
             Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Row(
-                  children: const [
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
                     Icon(Icons.info_outline_rounded),
-                    Text('Description: ',
+                    SizedBox(width: 5),
+                    Text('What makes this location special? ',
                         style: TextStyle(fontWeight: FontWeight.bold)),
                   ],
                 ),
-                Text(widget.description),
+                const SizedBox(height: 2),
+                Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Colors.deepOrange,
+                      ),
+                    ),
+                    child: Text(widget.description)),
               ],
             ),
-            const SizedBox(height: 10),
+            const Divider(height: 20, thickness: 2),
             Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Row(
-                  children: const [
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
                     Icon(Icons.calendar_month_rounded),
+                    SizedBox(width: 5),
                     Text(
-                      'Date/Time: ',
+                      'When did you discover this location? ',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
-                Text(widget.timestamp),
+                const SizedBox(height: 2),
+                Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Colors.deepOrange,
+                      ),
+                    ),
+                    child: Text(widget.timestamp)),
               ],
             ),
-            const SizedBox(height: 10),
-            Row(
-              children: const [
-                Icon(Icons.pin_drop_outlined),
-                Text('Location: ',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-              ],
-            ),
-            Row(
+            const Divider(height: 20, thickness: 2),
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text('Lat: ',
+                Icon(Icons.pin_drop_outlined),
+                SizedBox(width: 5),
+                Text('Coordinates of your location: ',
                     style: TextStyle(fontWeight: FontWeight.bold)),
-                Text(widget.lat.toStringAsFixed(2)),
-                const SizedBox(width: 10),
-                const Text('Lng: ',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                Text(widget.lng.toStringAsFixed(2)),
               ],
+            ),
+            const SizedBox(height: 2),
+            Center(
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Colors.deepOrange,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        const Text('Lat: ',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text(widget.lat.toStringAsFixed(2)),
+                      ],
+                    ),
+                    const SizedBox(width: 10),
+                    Row(
+                      children: [
+                        const Text('Lng: ',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text(widget.lng.toStringAsFixed(2)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
@@ -207,8 +357,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
         const SizedBox(height: 10),
         ElevatedButton(
           onPressed: () {
-            Navigator.of(context).pop();
-            postToCommunity();
+            currentUserMatchesMarkerOwner();
           },
           child: const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -246,9 +395,11 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
               ),
               onPressed: () {
                 Navigator.of(context).pop();
+                deleteLocation();
               },
               icon: const Icon(Icons.delete),
-              label: const Text('Delete Location', style: TextStyle(fontSize: 12)),
+              label:
+                  const Text('Delete Location', style: TextStyle(fontSize: 12)),
             ),
             ElevatedButton.icon(
               onPressed: () {

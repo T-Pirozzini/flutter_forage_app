@@ -61,7 +61,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
         _scaffoldKey.currentState?.showSnackBar(snackBar);
         // Success! You can perform any additional actions here.
       } else {        
-        final snackBar = SnackBar(
+        const snackBar = SnackBar(
           content: Text('Failed to add new post.'),
           duration: Duration(seconds: 2),
         );
@@ -123,8 +123,8 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: const [
+                const Row(
+                  children: [
                     Icon(Icons.info_outline_rounded),
                     Text('Description: ',
                         style: TextStyle(fontWeight: FontWeight.bold)),
@@ -137,8 +137,8 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: const [
+                const Row(
+                  children: [
                     Icon(Icons.calendar_month_rounded),
                     Text(
                       'Date/Time: ',
@@ -150,8 +150,8 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
               ],
             ),
             const SizedBox(height: 10),
-            Row(
-              children: const [
+            const Row(
+              children: [
                 Icon(Icons.pin_drop_outlined),
                 Text('Location: ',
                     style: TextStyle(fontWeight: FontWeight.bold)),
@@ -187,9 +187,9 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
               ),
             );
           },
-          child: Row(
+          child: const Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
+            children: [
               Icon(Icons.map_outlined, color: Colors.deepOrange),
               Text('Go to Location', style: TextStyle(fontSize: 18)),
             ],
@@ -201,9 +201,9 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
             Navigator.of(context).pop();
             postToCommunity();
           },
-          child: Row(
+          child: const Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
+            children: [
               Icon(Icons.directions_outlined, color: Colors.deepOrange),
               Text('Share with Community', style: TextStyle(fontSize: 18)),
             ],
@@ -214,9 +214,9 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
           onPressed: () {
             Navigator.of(context).pop();
           },
-          child: Row(
+          child: const Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
+            children: [
               Icon(Icons.close, color: Color.fromRGBO(255, 87, 34, 1)),
               Text('Close'),
             ],
