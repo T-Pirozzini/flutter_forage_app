@@ -112,21 +112,22 @@ class MapPageState extends State<MapPage> {
 
   // get current users marker data
   void fetchMarkerData() async {
-    final snapshot = await FirebaseFirestore.instance
+    final currentUserEmail = currentUser.email;
+
+    // Fetch markers from the current user's collection
+    final userMarkerSnapshot = await FirebaseFirestore.instance
         .collection('Users')
-        .doc(currentUser.email)
+        .doc(currentUserEmail)
         .collection('Markers')
         .get();
 
-    final docs = snapshot.docs;
+    final userMarkerDocs = userMarkerSnapshot.docs;
 
     // Process each document and add markers
-    for (final doc in docs) {
+    for (final doc in userMarkerDocs) {
       final data = doc.data();
       final name = data['name'] as String;
       final description = data['description'] as String;
-
-      // Retrieve the latitude and longitude as doubles
       final location = data['location'] as Map<String, dynamic>;
       final latitude = location['latitude'] as double;
       final longitude = location['longitude'] as double;
@@ -140,20 +141,67 @@ class MapPageState extends State<MapPage> {
       );
     }
 
-    // Subscribe to collection changes for real-time updates
+    // Fetch friends' list
+    final friendsSnapshot = await FirebaseFirestore.instance
+        .collection('Users')
+        .doc(currentUserEmail)
+        .get();
+
+    final friendsData = friendsSnapshot.data();
+    if (friendsData != null && friendsData.containsKey('friends')) {
+      final friendsList = friendsData['friends'] as List<dynamic>;
+      if (friendsList.isNotEmpty) {
+        final friendMap = friendsList[0] as Map<String, dynamic>;
+        final friendEmail = friendMap['email'] as String;
+
+        // Fetch markers from each friend's collection
+        final friendMarkerSnapshot = await FirebaseFirestore.instance
+            .collection('Users')
+            .doc(friendEmail)
+            .collection('Markers')
+            .get();
+
+        final friendMarkerDocs = friendMarkerSnapshot.docs;
+
+        // Process each friend's document and add markers
+        for (final doc in friendMarkerDocs) {
+          final data = doc.data();
+          final name = data['name'] as String;
+          final description = data['description'] as String;
+          final location = data['location'] as Map<String, dynamic>;
+          final latitude = location['latitude'] as double;
+          final longitude = location['longitude'] as double;
+          final type = data['type'] as String;
+
+          addMarker(
+            name: name,
+            description: description,
+            location: LatLng(latitude, longitude),
+            type: type,
+          );
+        }
+      }
+    } else {
+      print('Error accessing friends docs');
+    }
+
+    // Subscribe to changes in the current user's collection for real-time updates
     FirebaseFirestore.instance
         .collection('Users')
-        .doc(currentUser.email)
+        .doc(currentUserEmail)
         .collection('Markers')
         .snapshots()
         .listen((snapshot) {
-      _markers.clear(); // Clear existing markers
+      _markers.removeWhere(
+          (marker) => marker.markerId.value.startsWith(currentUserEmail!));
+
       for (final doc in snapshot.docs) {
         final data = doc.data();
         final name = data['name'] as String;
         final description = data['description'] as String;
-        final latitude = data['location']['latitude'] as double;
-        final longitude = data['location']['longitude'] as double;
+        final location = data['location'] as Map<String, dynamic>;
+        final latitude = location['latitude'] as double;
+        final longitude = location['longitude'] as double;
         final type = data['type'] as String;
 
         addMarker(
@@ -213,6 +261,7 @@ class MapPageState extends State<MapPage> {
 
   // go to place
   Future<void> _goToPlace(Map<String, dynamic> place) async {
+    followUser = false;
     final double lat = place['geometry']['location']['lat'];
     final double lng = place['geometry']['location']['lng'];
     final GoogleMapController controller = await _controller.future;
@@ -234,7 +283,6 @@ class MapPageState extends State<MapPage> {
         children: [
           Expanded(
             // Container(
-            // padding: EdgeInsets.zero,
             child: GoogleMap(
               mapType: MapType.normal,
               markers: _markers,
@@ -273,7 +321,7 @@ class MapPageState extends State<MapPage> {
           Positioned(
             top: 20,
             left: 20,
-            right: -50,
+            right: -100,
             child: Container(
               margin: const EdgeInsets.only(right: 150),
               child: Row(

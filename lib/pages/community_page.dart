@@ -44,6 +44,7 @@ class _CommunityPageState extends State<CommunityPage> {
     double markerLatitude,
     double markerLongitude,
     Timestamp timestamp,
+    String markerOwner,
   ) async {
     final userMarkersRef = FirebaseFirestore.instance
         .collection('Users')
@@ -68,6 +69,7 @@ class _CommunityPageState extends State<CommunityPage> {
             'longitude': markerLongitude,
           },
           'timestamp': timestamp,
+          'markerOwner': markerOwner,
         });
       } else {
         FirebaseFirestore.instance
@@ -85,6 +87,7 @@ class _CommunityPageState extends State<CommunityPage> {
             'longitude': markerLongitude,
           },
           'timestamp': timestamp,
+          'markerOwner': markerOwner,
         });
       }
     } else {
@@ -98,14 +101,14 @@ class _CommunityPageState extends State<CommunityPage> {
   }
 
   void removeMarkerInfo(
-    String markerName,
-    String markerDescription,
-    String markerType,
-    String? markerImageUrl,
-    double markerLatitude,
-    double markerLongitude,
-    Timestamp timestamp,
-  ) async {
+      String markerName,
+      String markerDescription,
+      String markerType,
+      String? markerImageUrl,
+      double markerLatitude,
+      double markerLongitude,
+      Timestamp timestamp,
+      String markerOwner) async {
     final userMarkersRef = FirebaseFirestore.instance
         .collection('Users')
         .doc(currentUser.email)
@@ -235,6 +238,7 @@ class _CommunityPageState extends State<CommunityPage> {
                               post['longitude'],
                               Timestamp.fromDate(
                                   DateTime.parse(post['postTimestamp'])),
+                              post['user'],
                             );
                           }
                         } else {
@@ -259,6 +263,7 @@ class _CommunityPageState extends State<CommunityPage> {
                               post['longitude'],
                               Timestamp.fromDate(
                                   DateTime.parse(post['postTimestamp'])),
+                              post['user'],
                             );
                           }
                         }
@@ -269,13 +274,45 @@ class _CommunityPageState extends State<CommunityPage> {
                       void deletePost() async {
                         final currentUserEmail = currentUser.email;
                         if (post['user'] == currentUserEmail) {
-                          await postsCollection.doc(post.id).delete();
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: const Text('Confirmation'),
+                                content: const Text(
+                                    'Are you sure you want to delete this post?'),
+                                actions: [
+                                  TextButton(
+                                    child: const Text('Cancel'),
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                    },
+                                  ),
+                                  TextButton(
+                                    child: const Text('Delete'),
+                                    onPressed: () async {
+                                      await postsCollection
+                                          .doc(post.id)
+                                          .delete();
+                                      Navigator.of(context)
+                                          .pop(); // Close the confirmation dialog
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Post deleted.'),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              );
+                            },
+                          );
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text(
-                                'You can only delete your own posts.',
-                              ),
+                              content:
+                                  Text('You can only delete your own posts.'),
                             ),
                           );
                         }

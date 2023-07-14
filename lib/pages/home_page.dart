@@ -122,7 +122,10 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('FORAGER'),
+        title: const Text(
+          'FORAGER',
+          style: TextStyle(letterSpacing: 2.5),
+        ),
         titleTextStyle:
             GoogleFonts.philosopher(fontSize: 34, fontWeight: FontWeight.bold),
         centerTitle: true,
