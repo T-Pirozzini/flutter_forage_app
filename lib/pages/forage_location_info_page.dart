@@ -80,6 +80,64 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
     }
   }
 
+  void deleteLocation() {
+    final markersCollection = FirebaseFirestore.instance
+        .collection('Users')
+        .doc(currentUser.email)
+        .collection('Markers');
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Confirmation'),
+          content: Text('Are you sure you want to delete this location?'),
+          actions: [
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('Delete'),
+              onPressed: () {
+                try {
+                  markersCollection
+                      .where('name', isEqualTo: widget.name)
+                      .where('description', isEqualTo: widget.description)
+                      // .where('timestamp', isEqualTo: widget.timestamp)
+                      .where('type', isEqualTo: widget.type)
+                      .get()
+                      .then((snapshot) {
+                    for (DocumentSnapshot ds in snapshot.docs) {
+                      ds.reference.delete();
+                    }
+                  });
+
+                  Navigator.of(context).pop(); // Close the dialog
+
+                  final snackBar = SnackBar(
+                    content: Text('Location deleted.'),
+                    duration: const Duration(seconds: 2),
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                  // Success! You can perform any additional actions here.
+                } catch (e) {
+                  final snackBar = SnackBar(
+                    content: Text('Error deleting location: $e'),
+                    duration: const Duration(seconds: 2),
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                  // Handle the error here.
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -246,9 +304,11 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
               ),
               onPressed: () {
                 Navigator.of(context).pop();
+                deleteLocation();
               },
               icon: const Icon(Icons.delete),
-              label: const Text('Delete Location', style: TextStyle(fontSize: 12)),
+              label:
+                  const Text('Delete Location', style: TextStyle(fontSize: 12)),
             ),
             ElevatedButton.icon(
               onPressed: () {
