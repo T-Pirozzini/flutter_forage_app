@@ -8,7 +8,6 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../components/search_field.dart';
-import 'forage_locations_page.dart';
 
 class MapPage extends StatefulWidget {
   final double lat;

@@ -63,7 +63,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
         _scaffoldKey.currentState?.showSnackBar(snackBar);
         // Success! You can perform any additional actions here.
       } else {
-        final snackBar = SnackBar(
+        const snackBar = SnackBar(
           content: Text('Failed to add new post.'),
           duration: Duration(seconds: 2),
         );
@@ -113,7 +113,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                     }
                   });
                   Navigator.of(context).pop();
-                  final snackBar = SnackBar(
+                  const snackBar = SnackBar(
                     content: Text('Location deleted.'),
                     duration: Duration(seconds: 2),
                   );
@@ -131,6 +131,59 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
         );
       },
     );
+  }
+
+  void currentUserMatchesMarkerOwner() async {
+    CollectionReference<Map<String, dynamic>> markerOwnerCollection =
+        FirebaseFirestore.instance
+            .collection('Users')
+            .doc(currentUser.email)
+            .collection('Markers');
+
+    print('Current user: ${currentUser.email}');
+    print('Marker owner: ${markerOwnerCollection}');
+
+    QuerySnapshot<Map<String, dynamic>> markerOwnerSnapshot =
+        await markerOwnerCollection.get();
+
+    if (markerOwnerSnapshot.docs.isNotEmpty) {
+      for (QueryDocumentSnapshot<Map<String, dynamic>> docSnapshot
+          in markerOwnerSnapshot.docs) {
+        Map<String, dynamic>? markerOwnerData = docSnapshot.data();
+        if (markerOwnerData != null &&
+            markerOwnerData.containsKey('markerOwner')) {
+          dynamic markerOwnerValue = markerOwnerData['markerOwner'];
+          print('Marker owner: $markerOwnerValue');
+        }
+      }
+    }
+
+    if (currentUser.email == markerOwnerCollection.id) {
+      // Assuming `markerOwner` is the ID field
+      print('User matches marker owner.');
+
+      Navigator.of(context).pop();
+      postToCommunity();
+    } else {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Error'),
+            content:
+                const Text('You are not the original owner of this marker.'),
+            actions: [
+              TextButton(
+                child: const Text('OK'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
+    }
   }
 
   @override
@@ -304,8 +357,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
         const SizedBox(height: 10),
         ElevatedButton(
           onPressed: () {
-            Navigator.of(context).pop();
-            postToCommunity();
+            currentUserMatchesMarkerOwner();
           },
           child: const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

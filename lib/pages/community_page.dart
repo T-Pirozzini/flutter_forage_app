@@ -121,9 +121,9 @@ class _CommunityPageState extends State<CommunityPage> {
         .where('timestamp', isEqualTo: timestamp)
         .get()
         .then((querySnapshot) {
-      querySnapshot.docs.forEach((doc) {
+      for (var doc in querySnapshot.docs) {
         doc.reference.delete();
-      });
+      }
     });
   }
 
