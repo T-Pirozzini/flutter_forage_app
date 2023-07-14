@@ -141,49 +141,50 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
             .collection('Markers');
 
     print('Current user: ${currentUser.email}');
-    print('Marker owner: ${markerOwnerCollection}');
 
     QuerySnapshot<Map<String, dynamic>> markerOwnerSnapshot =
-        await markerOwnerCollection.get();
+        await markerOwnerCollection
+            .where('name', isEqualTo: widget.name)
+            .where('description', isEqualTo: widget.description)
+            .where('type', isEqualTo: widget.type)
+            .get();
 
     if (markerOwnerSnapshot.docs.isNotEmpty) {
-      for (QueryDocumentSnapshot<Map<String, dynamic>> docSnapshot
-          in markerOwnerSnapshot.docs) {
-        Map<String, dynamic>? markerOwnerData = docSnapshot.data();
-        if (markerOwnerData != null &&
-            markerOwnerData.containsKey('markerOwner')) {
-          dynamic markerOwnerValue = markerOwnerData['markerOwner'];
-          print('Marker owner: $markerOwnerValue');
+      DocumentSnapshot<Map<String, dynamic>> docSnapshot =
+          markerOwnerSnapshot.docs.first;
+      Map<String, dynamic>? markerOwnerData = docSnapshot.data();
+      if (markerOwnerData != null &&
+          markerOwnerData.containsKey('markerOwner')) {
+        dynamic markerOwnerValue = markerOwnerData['markerOwner'];
+        print('Marker owner value: $markerOwnerValue');
+
+        if (markerOwnerValue == currentUser.email) {
+          print('User matches marker owner.');
+
+          Navigator.of(context).pop();
+          postToCommunity();
+          return;
         }
       }
     }
 
-    if (currentUser.email == markerOwnerCollection.id) {
-      // Assuming `markerOwner` is the ID field
-      print('User matches marker owner.');
-
-      Navigator.of(context).pop();
-      postToCommunity();
-    } else {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Error'),
-            content:
-                const Text('You are not the original owner of this marker.'),
-            actions: [
-              TextButton(
-                child: const Text('OK'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        },
-      );
-    }
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Error'),
+          content: const Text('You are not the original owner of this marker.'),
+          actions: [
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
