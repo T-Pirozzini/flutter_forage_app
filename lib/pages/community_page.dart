@@ -44,6 +44,7 @@ class _CommunityPageState extends State<CommunityPage> {
     double markerLatitude,
     double markerLongitude,
     Timestamp timestamp,
+    String markerOwner,
   ) async {
     final userMarkersRef = FirebaseFirestore.instance
         .collection('Users')
@@ -68,6 +69,7 @@ class _CommunityPageState extends State<CommunityPage> {
             'longitude': markerLongitude,
           },
           'timestamp': timestamp,
+          'markerOwner': markerOwner,
         });
       } else {
         FirebaseFirestore.instance
@@ -85,6 +87,7 @@ class _CommunityPageState extends State<CommunityPage> {
             'longitude': markerLongitude,
           },
           'timestamp': timestamp,
+          'markerOwner': markerOwner,
         });
       }
     } else {
@@ -105,6 +108,7 @@ class _CommunityPageState extends State<CommunityPage> {
     double markerLatitude,
     double markerLongitude,
     Timestamp timestamp,
+    String markerOwner
   ) async {
     final userMarkersRef = FirebaseFirestore.instance
         .collection('Users')
@@ -235,6 +239,7 @@ class _CommunityPageState extends State<CommunityPage> {
                               post['longitude'],
                               Timestamp.fromDate(
                                   DateTime.parse(post['postTimestamp'])),
+                                  post['user'],
                             );
                           }
                         } else {
@@ -259,6 +264,7 @@ class _CommunityPageState extends State<CommunityPage> {
                               post['longitude'],
                               Timestamp.fromDate(
                                   DateTime.parse(post['postTimestamp'])),
+                                  post['user'],
                             );
                           }
                         }

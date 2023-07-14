@@ -123,6 +123,7 @@ class _ForageLocationsState extends State<ForageLocations> {
                                       lng: markerData['location']['longitude'],
                                       timestamp: formattedDate,
                                       imageUrl: markerData['image'],
+                                      markerOwner: markerData['markerOwner'],
                                     );
                                   },
                                 );

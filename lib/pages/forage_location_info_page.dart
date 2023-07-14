@@ -11,6 +11,7 @@ class ForageLocationInfo extends StatefulWidget {
   final double lng;
   final String timestamp;
   final String type;
+  final String markerOwner;
 
   const ForageLocationInfo(
       {super.key,
@@ -20,7 +21,8 @@ class ForageLocationInfo extends StatefulWidget {
       required this.lng,
       required this.imageUrl,
       required this.timestamp,
-      required this.type});
+      required this.type,
+      required this.markerOwner});
 
   @override
   State<ForageLocationInfo> createState() => _ForageLocationInfoState();
@@ -53,6 +55,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
         'bookmarkedBy': [],
         'commentCount': 0,
         'postTimestamp': DateTime.now().toString(),
+        'markerOwner': widget.markerOwner,
       });
 
       if (newPost.id.isNotEmpty) {
@@ -140,8 +143,6 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
             .doc(currentUser.email)
             .collection('Markers');
 
-    print('Current user: ${currentUser.email}');
-
     QuerySnapshot<Map<String, dynamic>> markerOwnerSnapshot =
         await markerOwnerCollection
             .where('name', isEqualTo: widget.name)
@@ -156,11 +157,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
       if (markerOwnerData != null &&
           markerOwnerData.containsKey('markerOwner')) {
         dynamic markerOwnerValue = markerOwnerData['markerOwner'];
-        print('Marker owner value: $markerOwnerValue');
-
         if (markerOwnerValue == currentUser.email) {
-          print('User matches marker owner.');
-
           Navigator.of(context).pop();
           postToCommunity();
           return;
@@ -173,7 +170,8 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Error'),
-          content: const Text('You are not the original owner of this marker.'),
+          content:
+              const Text('You are not the original owner of this location.'),
           actions: [
             TextButton(
               child: const Text('OK'),
@@ -285,7 +283,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
               children: [
                 Icon(Icons.pin_drop_outlined),
                 SizedBox(width: 5),
-                Text('Coordinates of your location: ',
+                Text('Coordinates of forage location: ',
                     style: TextStyle(fontWeight: FontWeight.bold)),
               ],
             ),
@@ -321,6 +319,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                 ),
               ),
             ),
+            Text(widget.markerOwner),
           ],
         ),
       ),
