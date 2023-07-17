@@ -23,6 +23,44 @@ class _ForageLocationsState extends State<ForageLocations> {
   final currentUser = FirebaseAuth.instance.currentUser!;
   final dateFormat = DateFormat('MMM dd, yyyy HH:mm');
 
+  bool _isDeleting = false;
+
+  Future<bool> _deleteConfirmation() async {
+    if (_isDeleting) {
+      return false; // Prevent showing the dialog if it's already open
+    }
+    _isDeleting = true;
+    bool shouldDelete = await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Forage Location'),
+          content: const Text(
+              'Are you sure you want to delete this forage location?'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(false); // No, don't delete
+                _isDeleting =
+                    false; // Reset the flag when the dialog is dismissed
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(true); // Yes, delete
+                _isDeleting =
+                    false; // Reset the flag when the dialog is dismissed
+              },
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+    return shouldDelete;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -94,19 +132,23 @@ class _ForageLocationsState extends State<ForageLocations> {
                           padding: const EdgeInsets.only(right: 16),
                           child: const Icon(Icons.delete, color: Colors.white),
                         ),
-                        onDismissed: (direction) {
-                          // Delete the marker data from Firestore
-                          FirebaseFirestore.instance
-                              .collection('Users')
-                              .doc(widget.userId)
-                              .collection('Markers')
-                              .doc(forageLocations[index].id)
-                              .delete();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Forage location deleted'),
-                            ),
-                          );
+                        confirmDismiss: (direction) async {
+                          bool shouldDelete = await _deleteConfirmation();
+                          if (shouldDelete) {
+                            // Delete the marker data from Firestore
+                            FirebaseFirestore.instance
+                                .collection('Users')
+                                .doc(widget.userId)
+                                .collection('Markers')
+                                .doc(forageLocations[index].id)
+                                .delete();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Forage location deleted'),
+                              ),
+                            );
+                          }
+                          return null;
                         },
                         child: Column(
                           children: [
