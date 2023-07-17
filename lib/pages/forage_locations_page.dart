@@ -26,16 +26,17 @@ class _ForageLocationsState extends State<ForageLocations> {
   bool _isDeleting = false;
 
   Future<bool> _deleteConfirmation() async {
-    if (_isDeleting)
+    if (_isDeleting) {
       return false; // Prevent showing the dialog if it's already open
+    }
     _isDeleting = true;
     bool shouldDelete = await showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Delete Forage Location'),
-          content:
-              Text('Are you sure you want to delete this forage location?'),
+          title: const Text('Delete Forage Location'),
+          content: const Text(
+              'Are you sure you want to delete this forage location?'),
           actions: <Widget>[
             TextButton(
               onPressed: () {
@@ -43,7 +44,7 @@ class _ForageLocationsState extends State<ForageLocations> {
                 _isDeleting =
                     false; // Reset the flag when the dialog is dismissed
               },
-              child: Text('Cancel'),
+              child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () {
@@ -51,7 +52,7 @@ class _ForageLocationsState extends State<ForageLocations> {
                 _isDeleting =
                     false; // Reset the flag when the dialog is dismissed
               },
-              child: Text('Delete'),
+              child: const Text('Delete'),
             ),
           ],
         );
@@ -147,6 +148,7 @@ class _ForageLocationsState extends State<ForageLocations> {
                               ),
                             );
                           }
+                          return null;
                         },
                         child: Column(
                           children: [
