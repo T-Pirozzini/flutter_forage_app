@@ -10,6 +10,7 @@ import '../components/drawer.dart';
 import 'about_page.dart';
 import 'about_us_page.dart';
 import 'community_page.dart';
+import 'credits_page.dart';
 import 'map_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -88,6 +89,19 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // navigate to credits page
+  void goCreditsPage() {
+    // pop menu drawer
+    Navigator.pop(context);
+    // go to new page
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const CreditsPage(),
+      ),
+    );
+  }
+
   // navigate to forage locations page
   void goToForageLocationsPage() {
     // pop menu drawer
@@ -138,6 +152,7 @@ class _HomePageState extends State<HomePage> {
         onForageLocationsTap: goToForageLocationsPage,
         onAboutTap: goToAboutPage,
         onAboutUsTap: goAboutUsPage,
+        onCreditsTap: goCreditsPage,
       ),
       body: pages[currentIndex],
       floatingActionButtonLocation: FloatingActionButtonLocation.miniStartFloat,

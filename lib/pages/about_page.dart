@@ -13,8 +13,9 @@ class _AboutPageState extends State<AboutPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey.shade800,
       appBar: AppBar(
-        title: const Text('ABOUT FORAGER'),
+        title: const Text('APP INFO'),
         titleTextStyle:
             GoogleFonts.philosopher(fontSize: 24, fontWeight: FontWeight.bold),
         centerTitle: true,
@@ -36,28 +37,42 @@ class _AboutPageState extends State<AboutPage> {
           },
         ),
       ),
-      body: Column(
-        children: [
-          Stack(
+      body: const Padding(
+        padding: EdgeInsets.all(10.0),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Image.asset('lib/assets/images/autumn_background.jpg'),
-              Container(
-                color: Colors.blue.withOpacity(0.5),
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: const Center(
-                  child: Text(
-                    'This mobile app allows you to mark locations of fish, trees, berries, ferns, and mushrooms on to your map. You\'re allowed allowed to save up to 10 locations per account with the custom markers inside the speed dial switch on the map page. Once you are friends with someone, you can view each other\'s saved locations.',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
+              Text("Welcome to Forager!",
+                  style: TextStyle(fontSize: 24, color: Colors.white)),
+              SizedBox(height: 20),
+              Text(
+                'We created this app to help foster a deeper connection with nature by encouraging users to explore the wilderness around them. Our app is designed to help people discover and exchange information about forageable items in the wild, inspiring a sense of adventure and appreciation for the natural world. By providing a platform for users to share their findings with friends and the wider community, we aim to build a vibrant network of nature enthusiasts who can collaboratively explore, learn, and celebrate the wonders of the great outdoors. Together, we aspire to nurture a community that values sustainability, conservation, and the joy of discovering hidden treasures amidst the beauty of our natural landscapes.',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+              SizedBox(height: 20),
+              Text(
+                'Embark on a captivating adventure with our interactive map feature. The marker faithfully traces your path, unveiling the thrill of unique discoveries. Create personalized markers, capture moments with photos, and save them as exclusive, cherished reminders.',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+              SizedBox(height: 20),
+              Text(
+                'Connect with friends and fellow explorers, exchanging locations to inspire exciting journeys. Discover hidden gems on the map, fostering camaraderie and discovery.',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+              SizedBox(height: 20),
+              Text(
+                'Safeguard your treasures while contributing to the adventure. Keep special spots exclusive to your exploration, or share them on the community board to spark enthusiasm among nature enthusiasts.',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+              SizedBox(height: 50),
+              Text(
+                'We hope you enjoy your journey with Forager!',
+                style: TextStyle(color: Colors.white, fontSize: 20),
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }

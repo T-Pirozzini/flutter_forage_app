@@ -10,13 +10,25 @@ class CustomListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 10.0),
-      child: ListTile(
-        leading: Icon(icon, color: Colors.white),
-        title: Text(text, style: const TextStyle(color: Colors.white)),
-        onTap: onTap,
-      ),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(10.0, 10, 0, 10),
+          child: ListTile(
+            leading: Icon(
+              icon,
+              color: Colors.white,
+              size: 32,
+            ),
+            title: Text(text,
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 20, letterSpacing: 2)),
+            onTap: onTap,
+          ),
+        ),
+        const Divider(
+            thickness: 1, color: Colors.white, indent: 20, endIndent: 30),
+      ],
     );
   }
 }
