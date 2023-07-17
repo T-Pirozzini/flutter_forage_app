@@ -82,7 +82,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[300],
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -90,7 +90,25 @@ class _RegisterPageState extends State<RegisterPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.lock, size: 100),
+                Container(
+                  width:
+                      200, // Set the width of the container to control the size of the circular border
+                  height:
+                      200, // Set the height of the container to control the size of the circular border
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(18.0),
+                    child: ClipOval(
+                      child: Image.asset(
+                        'lib/assets/images/forager_logo.png',
+                        fit: BoxFit
+                            .contain, // Use 'contain' to maintain aspect ratio and fit the logo within the circle
+                      ),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 25),
                 const Text(
                   'Let\'s create an account for you',

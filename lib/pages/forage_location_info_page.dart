@@ -319,7 +319,17 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                 ),
               ),
             ),
-            Text(widget.markerOwner),
+            const Divider(height: 20, thickness: 2),
+            Center(
+                child: Row(
+              children: [
+                const Icon(Icons.person_outline_rounded),
+                const SizedBox(width: 5),
+                const Text("Location Owner: ",
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(widget.markerOwner),
+              ],
+            )),
           ],
         ),
       ),
@@ -354,7 +364,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
             ],
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 5),
         ElevatedButton(
           onPressed: () {
             currentUserMatchesMarkerOwner();
@@ -383,7 +393,6 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
             Text('Your location will be become public'),
           ],
         ),
-        const SizedBox(height: 10),
 
         const SizedBox(height: 10),
         Row(
