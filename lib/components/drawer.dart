@@ -7,6 +7,7 @@ class CustomDrawer extends StatelessWidget {
   final void Function()? onSignOutTap;
   final void Function()? onAboutTap;
   final void Function()? onAboutUsTap;
+  final void Function()? onCreditsTap;
 
   const CustomDrawer(
       {super.key,
@@ -14,7 +15,8 @@ class CustomDrawer extends StatelessWidget {
       required this.onSignOutTap,
       required this.onForageLocationsTap,
       required this.onAboutTap,
-      required this.onAboutUsTap});
+      required this.onAboutUsTap,
+      required this.onCreditsTap});
 
   @override
   Widget build(BuildContext context) {
@@ -27,26 +29,32 @@ class CustomDrawer extends StatelessWidget {
             Column(
               children: [
                 DrawerHeader(
-                  child: Image.asset('lib/assets/images/wicker-basket.png',
-                      color: Colors.white, width: 100),
+                  child: Image.asset('lib/assets/images/hills.png',
+                      color: Colors.white, width: 150),
                 ),
-// profile list tile
+                // profile tile
                 CustomListTile(
                   icon: Icons.person,
-                  text: 'P R O F I L E',
+                  text: 'PROFILE',
                   onTap: onProfileTap,
                 ),
-                // home list tile
+                // about tile
                 CustomListTile(
                   icon: Icons.info_outline,
-                  text: 'A B O U T',
+                  text: 'APP INFO',
                   onTap: onAboutTap,
                 ),
-                // profile list tile
+                // About us tile
                 CustomListTile(
-                  icon: Icons.smart_toy,
-                  text: 'A B O U T  U S',
+                  icon: Icons.people,
+                  text: 'ABOUT  US',
                   onTap: onAboutUsTap,
+                ),
+                // Credits tile
+                CustomListTile(
+                  icon: Icons.handshake_rounded,
+                  text: 'CREDITS',
+                  onTap: onCreditsTap,
                 ),
               ],
             ),
@@ -55,7 +63,7 @@ class CustomDrawer extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(bottom: 25.0),
               child: CustomListTile(
-                  icon: Icons.logout, text: 'L O G O U T', onTap: onSignOutTap),
+                  icon: Icons.logout, text: 'SIGN OUT', onTap: onSignOutTap),
             ),
           ],
         ));

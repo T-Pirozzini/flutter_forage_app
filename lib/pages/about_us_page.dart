@@ -74,7 +74,7 @@ class _AboutUsPageState extends State<AboutUsPage> {
     return Scaffold(
       backgroundColor: Colors.grey.shade200,
       appBar: AppBar(
-        title: const Text('ABOUT US'),
+        title: const Text('ABOUT US', style: TextStyle(letterSpacing: 2.5)),
         titleTextStyle:
             GoogleFonts.philosopher(fontSize: 24, fontWeight: FontWeight.bold),
         centerTitle: true,
