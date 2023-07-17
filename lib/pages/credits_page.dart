@@ -9,7 +9,7 @@ class CreditsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade200,
+      backgroundColor: Colors.grey.shade800,
       appBar: AppBar(
         title: const Text('CREDITS', style: TextStyle(letterSpacing: 2.5)),
         titleTextStyle:
@@ -33,11 +33,42 @@ class CreditsPage extends StatelessWidget {
           },
         ),
       ),
-      body: const Column(
-        children: [
-          Text('Smashing Stocks'),
-          Text("'https://www.flaticon.com/authors/smashicons'"),
-        ],
+      body: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Icons: Flaticon',
+                style: TextStyle(fontSize: 24, color: Colors.white)),
+            Text("'Smashing Stocks' from www.flaticon.com",
+                style: TextStyle(fontSize: 18, color: Colors.white)),
+            Text("'ultimatearm' from www.flaticon.com",
+                style: TextStyle(fontSize: 18, color: Colors.white)),
+            Text("'Adib Sulthon' from www.flaticon.com",
+                style: TextStyle(fontSize: 18, color: Colors.white)),
+            Text("'DinosoftLabs' from www.flaticon.com",
+                style: TextStyle(fontSize: 18, color: Colors.white)),
+            Text("'Futuer' from www.flaticon.com",
+                style: TextStyle(fontSize: 18, color: Colors.white)),
+            Text("'popo2021' from www.flaticon.com",
+                style: TextStyle(fontSize: 18, color: Colors.white)),
+            SizedBox(height: 40),
+            Text('Backgrounds: Unsplash',
+                style: TextStyle(fontSize: 24, color: Colors.white)),
+            Text("'Nature' by 'Luca Bravo' from www.unsplash.com",
+                style: TextStyle(fontSize: 18, color: Colors.white)),
+            Text("'Woodland' by 'Lukasz Szmigiel' from www.unsplash.com",
+                style: TextStyle(fontSize: 18, color: Colors.white)),
+            Text("'Fishing' by 'James Wheeler' from www.unsplash.com",
+                style: TextStyle(fontSize: 18, color: Colors.white)),
+            Text("'Berries' by 'Will' from www.unsplash.com",
+                style: TextStyle(fontSize: 18, color: Colors.white)),
+            Text("'Mushrooming' by 'Irina Lacob' from www.unsplash.com",
+                style: TextStyle(fontSize: 18, color: Colors.white)),
+            SizedBox(height: 80),
+            Text('Thank you!',
+                style: TextStyle(fontSize: 24, color: Colors.white)),
+          ],
+        ),
       ),
     );
   }
