@@ -129,6 +129,44 @@ class _FriendsPageState extends State<FriendsPage> {
     );
   }
 
+  // Deleting Friends
+  bool _isDeleting = false;
+  Future<bool> _deleteFriendConfirmation() async {
+    if (_isDeleting) {
+      return false; // Prevent showing the dialog if it's already open
+    }
+    _isDeleting = true;
+    bool shouldDelete = await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Forage Location'),
+          content: const Text(
+              'Are you sure you want to delete this forage location?'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(false); // No, don't delete
+                _isDeleting =
+                    false; // Reset the flag when the dialog is dismissed
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(true); // Yes, delete
+                _isDeleting =
+                    false; // Reset the flag when the dialog is dismissed
+              },
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+    return shouldDelete;
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUsername = FirebaseAuth.instance.currentUser!.email!;
@@ -251,22 +289,70 @@ class _FriendsPageState extends State<FriendsPage> {
                                       return GestureDetector(
                                         onTap: () => goToForageLocationsPage(
                                             friendId, friendUsername),
-                                        child: ListTile(
-                                          title: Text(friendUsername),
-                                          subtitle: Text(friendEmail),
-                                          leading: CircleAvatar(
-                                            backgroundImage: friendProfilePic !=
-                                                    null
-                                                ? AssetImage(
-                                                    'lib/assets/images/$friendProfilePic')
-                                                : null,
-                                            child: friendProfilePic == null
-                                                ? const Icon(Icons.person)
-                                                : null,
+                                        child: Dismissible(
+                                          key: UniqueKey(),
+                                          direction:
+                                              DismissDirection.endToStart,
+                                          background: Container(
+                                            color: Colors.red.shade400,
+                                            alignment: Alignment.centerRight,
+                                            padding: const EdgeInsets.only(
+                                                right: 16),
+                                            child: const Icon(Icons.delete,
+                                                color: Colors.white),
                                           ),
-                                          trailing:
-                                              const Icon(Icons.double_arrow),
-                                          iconColor: Colors.deepOrange.shade400,
+                                          confirmDismiss: (direction) async {
+                                            bool shouldDelete =
+                                                await _deleteFriendConfirmation();
+                                            if (shouldDelete) {
+                                              // Delete the friend from the user's data
+                                              FirebaseFirestore.instance
+                                                  .collection('Users')
+                                                  .doc(currentUser.email)
+                                                  .update({
+                                                'friends':
+                                                    FieldValue.arrayRemove(
+                                                        [friendObject]),
+                                              });
+                                              // Delete the user from the friend's data
+                                              FirebaseFirestore.instance
+                                                  .collection('Users')
+                                                  .doc(friendId)
+                                                  .update({
+                                                'friends':
+                                                    FieldValue.arrayRemove(
+                                                        [friendObject]),
+                                              });
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                const SnackBar(
+                                                  content:
+                                                      Text('Friend deleted'),
+                                                ),
+                                              );
+                                            }
+                                            return null;
+                                          },
+                                          child: Card(
+                                            child: ListTile(
+                                              title: Text(friendUsername),
+                                              subtitle: Text(friendEmail),
+                                              leading: CircleAvatar(
+                                                backgroundImage:
+                                                    friendProfilePic != null
+                                                        ? AssetImage(
+                                                            'lib/assets/images/$friendProfilePic')
+                                                        : null,
+                                                child: friendProfilePic == null
+                                                    ? const Icon(Icons.person)
+                                                    : null,
+                                              ),
+                                              trailing: const Icon(
+                                                  Icons.double_arrow),
+                                              iconColor:
+                                                  Colors.deepOrange.shade400,
+                                            ),
+                                          ),
                                         ),
                                       );
                                     }

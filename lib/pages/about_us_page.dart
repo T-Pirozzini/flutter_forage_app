@@ -235,13 +235,13 @@ class _AboutUsPageState extends State<AboutUsPage> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              ElevatedButton.icon(
-                                onPressed: _launchWebsiteRichard,
-                                icon: const FaIcon(FontAwesomeIcons
-                                    .person), // Icon for Personal Website
-                                label: const Text('Portfolio'),
-                              ),
-                              const SizedBox(width: 16),
+                              // ElevatedButton.icon(
+                              //   onPressed: _launchWebsiteRichard,
+                              //   icon: const FaIcon(FontAwesomeIcons
+                              //       .person), // Icon for Personal Website
+                              //   label: const Text('Portfolio'),
+                              // ),
+                              // const SizedBox(width: 16),
                               ElevatedButton.icon(
                                 onPressed: _launchLinkedInRichard,
                                 icon: const FaIcon(FontAwesomeIcons

@@ -266,7 +266,7 @@ class _MarkerButtonsState extends State<MarkerButtons> {
             'longitude': currentPosition.longitude,
           },
           'timestamp': timestamp,
-          'currentUser': currentUser,
+          'markerOwner': currentUser,
         });
       } else {
         FirebaseFirestore.instance
@@ -350,6 +350,12 @@ class _MarkerButtonsState extends State<MarkerButtons> {
           backgroundColor: Colors.grey.shade800,
           foregroundColor: Colors.white,
           onTap: () => displayDialog('Shellfish'),
+        ),
+        SpeedDialChild(
+          child: Image.asset('lib/assets/images/nuts.png', width: 40),
+          backgroundColor: Colors.grey.shade800,
+          foregroundColor: Colors.white,
+          onTap: () => displayDialog('Nuts'),
         ),
       ],
     );

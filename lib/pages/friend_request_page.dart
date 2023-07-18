@@ -80,6 +80,18 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
                                       ]),
                                     });
 
+                                    // Add current user to friend requesters friends list
+                                    await usersCollection
+                                        .doc(friendUserEmail)
+                                        .update({
+                                      'friends': FieldValue.arrayUnion([
+                                        {
+                                          'email': currentUserEmail,
+                                          'timestamp': timestamp,
+                                        },
+                                      ]),
+                                    });
+
                                     // Remove request from friend's sentFriendRequest list
                                     await usersCollection
                                         .doc(friendUserEmail)
@@ -93,7 +105,7 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
                                       ])
                                     });
 
-                                    // Remove friend from current user's friendRequests list
+                                    // Remove friend from current user's pendingRequests list
                                     await usersCollection
                                         .doc(currentUserEmail)
                                         .update({
