@@ -442,7 +442,6 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
             Text('Your location will be become public'),
           ],
         ),
-       
         const SizedBox(height: 10),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -467,7 +466,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
               label: const Text('Close'),
             ),
           ],
-        ),        
+        ),
       ],
     );
   }
