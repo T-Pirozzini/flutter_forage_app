@@ -120,7 +120,7 @@ class _HomePageState extends State<HomePage> {
 
   // sign user out
   void signOut() async {
-    await FirebaseAuth.instance.signOut();
+    await FirebaseAuth.instance.signOut();    
   }
 
   @override

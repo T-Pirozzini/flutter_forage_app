@@ -28,9 +28,11 @@ class CustomDrawer extends StatelessWidget {
             //header
             Column(
               children: [
-                DrawerHeader(
-                  child: Image.asset('lib/assets/images/hills.png',
-                      color: Colors.white, width: 150),
+                DrawerHeader(                  
+                  child: ClipOval(
+                    child: Image.asset('lib/assets/images/forager_logo.png',
+                        width: 138),
+                  ),
                 ),
                 // profile tile
                 CustomListTile(

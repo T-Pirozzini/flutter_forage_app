@@ -276,7 +276,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                 ),
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 5),
             Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -289,9 +289,8 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                         style: TextStyle(fontWeight: FontWeight.bold)),
                   ],
                 ),
-                const SizedBox(height: 2),
                 Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
                       border: Border.all(
                         color: Colors.deepOrange,
@@ -300,7 +299,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                     child: Text(widget.description)),
               ],
             ),
-            const Divider(height: 20, thickness: 2),
+            const Divider(height: 10, thickness: 2),
             Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -315,9 +314,8 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 2),
                 Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
                       border: Border.all(
                         color: Colors.deepOrange,
@@ -326,7 +324,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                     child: Text(widget.timestamp)),
               ],
             ),
-            const Divider(height: 20, thickness: 2),
+            const Divider(height: 10, thickness: 2),
             const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -339,7 +337,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
             const SizedBox(height: 2),
             Center(
               child: Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
                   border: Border.all(
                     color: Colors.deepOrange,
@@ -374,7 +372,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
               children: [
                 const Icon(Icons.person_outline_rounded),
                 const SizedBox(width: 5),
-                const Text("Location Owner: ",
+                const Text("Owner: ",
                     style: TextStyle(fontWeight: FontWeight.bold)),
                 Text(widget.markerOwner),
               ],
