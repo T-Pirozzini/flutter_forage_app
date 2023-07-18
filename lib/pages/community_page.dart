@@ -367,36 +367,31 @@ class _CommunityPageState extends State<CommunityPage> {
                                     Text(post['description']),
                                   ],
                                 ),
-                                // Handle like button tap
-                                // Increment likeCount and update Firestore
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    IconButton(
-                                      icon: Icon(
-                                        Icons.favorite,
-                                        color: isFavorite ? Colors.red : null,
-                                      ),
-                                      onPressed: toggleFavorite,
+                              ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.favorite,
+                                      color: isFavorite ? Colors.red : null,
                                     ),
-                                    Text('$likeCount',
-                                        style: const TextStyle(fontSize: 24)),
-                                    const SizedBox(width: 20),
-                                    IconButton(
-                                      icon: const Icon(Icons.bookmark_add),
-                                      color: isBookmarked ? Colors.blue : null,
-                                      onPressed: toggleBookmark,
-                                    ),
-                                    Text('$bookmarkCount',
-                                        style: const TextStyle(fontSize: 24)),
-                                    const SizedBox(width: 20),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete),
-                                      onPressed: deletePost,
-                                    ),
-                                  ],
-                                ),
+                                    onPressed: toggleFavorite,
+                                  ),
+                                  Text('$likeCount',
+                                      style: const TextStyle(fontSize: 18)),
+                                  IconButton(
+                                    icon: const Icon(Icons.bookmark_add),
+                                    color: isBookmarked ? Colors.blue : null,
+                                    onPressed: toggleBookmark,
+                                  ),
+                                  Text('$bookmarkCount',
+                                      style: const TextStyle(fontSize: 18)),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete),
+                                    onPressed: deletePost,
+                                  ),
+                                ],
                               ),
                               Padding(
                                 padding: const EdgeInsets.all(8.0),

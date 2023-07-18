@@ -266,7 +266,7 @@ class _MarkerButtonsState extends State<MarkerButtons> {
             'longitude': currentPosition.longitude,
           },
           'timestamp': timestamp,
-          'currentUser': currentUser,
+          'markerOwner': currentUser,
         });
       } else {
         FirebaseFirestore.instance
