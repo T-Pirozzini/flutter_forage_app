@@ -136,7 +136,56 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
     );
   }
 
-  void currentUserMatchesMarkerOwner() async {
+  void currentUserMatchesMarkerOwnerPost() async {
+    CollectionReference<Map<String, dynamic>> markerOwnerCollection =
+        FirebaseFirestore.instance
+            .collection('Users')
+            .doc(currentUser.email)
+            .collection('Markers');
+
+    QuerySnapshot<Map<String, dynamic>> markerOwnerSnapshot =
+        await markerOwnerCollection
+            .where('name', isEqualTo: widget.name)
+            .where('description', isEqualTo: widget.description)
+            .where('type', isEqualTo: widget.type)
+            .get();
+
+    if (markerOwnerSnapshot.docs.isNotEmpty) {
+      DocumentSnapshot<Map<String, dynamic>> docSnapshot =
+          markerOwnerSnapshot.docs.first;
+      Map<String, dynamic>? markerOwnerData = docSnapshot.data();
+      if (markerOwnerData != null &&
+          markerOwnerData.containsKey('markerOwner')) {
+        dynamic markerOwnerValue = markerOwnerData['markerOwner'];
+        if (markerOwnerValue == currentUser.email) {
+          Navigator.of(context).pop();
+          postToCommunity();
+          return;
+        }
+      }
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Error'),
+          content:
+              const Text('You are not the original owner of this location.'),
+          actions: [
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void currentUserMatchesMarkerOwnerDelete() async {
     CollectionReference<Map<String, dynamic>> markerOwnerCollection =
         FirebaseFirestore.instance
             .collection('Users')
@@ -367,7 +416,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
         const SizedBox(height: 5),
         ElevatedButton(
           onPressed: () {
-            currentUserMatchesMarkerOwner();
+            currentUserMatchesMarkerOwnerPost();
           },
           child: const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -393,7 +442,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
             Text('Your location will be become public'),
           ],
         ),
-
+       
         const SizedBox(height: 10),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -404,7 +453,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
               ),
               onPressed: () {
                 Navigator.of(context).pop();
-                deleteLocation();
+                currentUserMatchesMarkerOwnerDelete();
               },
               icon: const Icon(Icons.delete),
               label:
@@ -418,8 +467,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
               label: const Text('Close'),
             ),
           ],
-        ),
-        // ),
+        ),        
       ],
     );
   }
