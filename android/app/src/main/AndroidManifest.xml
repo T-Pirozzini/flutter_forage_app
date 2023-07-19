@@ -16,7 +16,7 @@
     </queries>
 
    <application
-        android:label="flutter_forager_app"
+        android:label="Forager"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 

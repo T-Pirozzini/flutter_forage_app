@@ -37,8 +37,7 @@ dependencies:
   google_fonts: ^4.0.3
   intl: ^0.17.0
   geocoding: ^2.1.0
-  flutter_image_compress: ^2.0.3
-  flutter_launcher_icons: ^0.13.1  
+  flutter_image_compress: ^2.0.3   
   url_launcher: ^6.1.12  
   font_awesome_flutter: ^10.5.0
 
@@ -67,13 +66,20 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: "^0.13.1"
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  image_path: "lib/assets/images/app_logo.png"
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^2.0.0
+  # flutter_lints: ^2.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
