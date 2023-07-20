@@ -6,7 +6,7 @@ import 'package:flutter_forager_app/components/map_style.dart';
 import 'package:flutter_forager_app/pages/home_page.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-
+import 'package:permission_handler/permission_handler.dart';
 import '../components/search_field.dart';
 
 class MapPage extends StatefulWidget {
@@ -29,6 +29,38 @@ class MapPageState extends State<MapPage> {
   late StreamSubscription<Position> _positionStreamSubscription;
   late Marker _currentPositionMarker;
 
+  // Method to request location permissions
+  void _requestLocationPermission() async {
+    // Check if the permission is already granted
+    if (await Permission.location.isGranted) {
+      // If already granted, proceed with location-based operations
+      _onLocationPermissionGranted();
+      return;
+    }
+
+    // Request the permission
+    final permissionStatus = await Permission.location.request();
+    if (permissionStatus.isGranted) {
+      // If the user grants the permission, proceed with location-based operations
+      _onLocationPermissionGranted();
+    } else {
+      // If the user denies the permission, handle this case gracefully (show an error, prompt to grant permission again, etc.)
+      // For example, you can display a SnackBar or showDialog to inform the user.
+      print('Location permission denied.');
+    }
+  }
+
+  void _onLocationPermissionGranted() async {
+    // You can add any location-based operations that require the user's permission here.
+    // For example, fetch the user's current location, set up geolocation services, etc.
+
+    // Fetch the user's current position
+    await _getCurrentPosition();
+
+    // Fetch marker data based on the user's location
+    fetchMarkerData();
+  }
+
   // get current user
   final currentUser = FirebaseAuth.instance.currentUser!;
 
@@ -41,6 +73,8 @@ class MapPageState extends State<MapPage> {
 
   @override
   void initState() {
+    // Request location permissions
+    _requestLocationPermission();
     _currentPositionMarker = Marker(
       markerId: const MarkerId('currentPosition'),
       infoWindow: const InfoWindow(title: 'Current Position'),

@@ -48,6 +48,7 @@ dependencies:
   flutter_dotenv: ^5.0.2
   geolocator: 
   google_places_flutter: ^2.0.5
+  permission_handler: ^10.4.3
 
   # main page deps
   flutter_speed_dial: ^6.2.0

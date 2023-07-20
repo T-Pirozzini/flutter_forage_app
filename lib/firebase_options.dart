@@ -51,7 +51,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyArjEK3Kfv6o7LYzwOEIl2i77BKSNbxcWI',
-    appId: '1:628799344593:android:b1105320c55bf33b53daf0',
+    appId: '1:628799344593:android:04731e714aa066a853daf0',
     messagingSenderId: '628799344593',
     projectId: 'flutter-forager-app',
     storageBucket: 'flutter-forager-app.appspot.com',
