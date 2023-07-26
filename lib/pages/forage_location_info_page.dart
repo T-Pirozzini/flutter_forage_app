@@ -303,7 +303,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Row(
+                Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.calendar_month_rounded),
@@ -325,7 +325,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
               ],
             ),
             const Divider(height: 10, thickness: 2),
-            const Row(
+            Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.pin_drop_outlined),
@@ -396,7 +396,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
               ),
             );
           },
-          child: const Row(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
@@ -416,7 +416,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
           onPressed: () {
             currentUserMatchesMarkerOwnerPost();
           },
-          child: const Row(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
@@ -432,7 +432,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
             ],
           ),
         ),
-        const Row(
+        Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.info_outline_rounded, color: Colors.deepOrange),
