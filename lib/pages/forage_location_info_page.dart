@@ -280,7 +280,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Row(
+                Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.info_outline_rounded),

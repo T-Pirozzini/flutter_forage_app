@@ -9,7 +9,7 @@ ios/Runner/GoogleService-Info.plist
 
 
 # Ignore the App Delegate file
-**/AppDelegate.*
+# **/AppDelegate.*
 
 # Firebase
 android/app/google-services.json
