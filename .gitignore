@@ -1,19 +1,19 @@
 # Ignore the AndroidManifest.xml file
-app/src/main/AndroidManifest.xml
-secrets.xml
+# app/src/main/AndroidManifest.xml
+# secrets.xml
 
 # Ignore firebase and keys
-google-services.json
-android/app/google-services.json
-ios/Runner/GoogleService-Info.plist
+# google-services.json
+# android/app/google-services.json
+# ios/Runner/GoogleService-Info.plist
 
 
 # Ignore the App Delegate file
 # **/AppDelegate.*
 
 # Firebase
-android/app/google-services.json
-ios/Runner/GoogleService-Info.plist
+# android/app/google-services.json
+# ios/Runner/GoogleService-Info.plist
 
 *.env
 
