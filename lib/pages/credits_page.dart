@@ -33,7 +33,7 @@ class CreditsPage extends StatelessWidget {
           },
         ),
       ),
-      body: const Center(
+      body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

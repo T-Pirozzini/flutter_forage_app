@@ -15,13 +15,13 @@ class _AboutPageState extends State<AboutPage> {
     return Scaffold(
       backgroundColor: Colors.grey.shade800,
       appBar: AppBar(
-        title: const Text('APP INFO'),
+        title: Text('APP INFO'),
         titleTextStyle:
             GoogleFonts.philosopher(fontSize: 24, fontWeight: FontWeight.bold),
         centerTitle: true,
         backgroundColor: Colors.deepOrange.shade400,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () {
             Navigator.push(
               context,
@@ -37,10 +37,7 @@ class _AboutPageState extends State<AboutPage> {
           },
         ),
       ),
-      body: const Padding(
-        padding: EdgeInsets.all(10.0),
-        child: Center(
-          child: Column(
+      body: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text("Welcome to Forager!",
@@ -72,8 +69,6 @@ class _AboutPageState extends State<AboutPage> {
               ),
             ],
           ),
-        ),
-      ),
-    );
+        );
   }
 }
