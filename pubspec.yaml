@@ -58,7 +58,7 @@ dependencies:
   # Firebase deps
   firebase_core: ^2.13.0
   firebase_auth: ^4.6.1
-  cloud_firestore: ^4.7.1
+  cloud_firestore: ^4.3.1
   firebase_storage: ^11.2.4
 
   # Speedial deps
