@@ -8,6 +8,7 @@ class CustomDrawer extends StatelessWidget {
   final void Function()? onAboutTap;
   final void Function()? onAboutUsTap;
   final void Function()? onCreditsTap;
+  final void Function()? showDeleteConfirmationDialog;
 
   const CustomDrawer(
       {super.key,
@@ -16,7 +17,8 @@ class CustomDrawer extends StatelessWidget {
       required this.onForageLocationsTap,
       required this.onAboutTap,
       required this.onAboutUsTap,
-      required this.onCreditsTap});
+      required this.onCreditsTap,
+      required this.showDeleteConfirmationDialog});
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +30,7 @@ class CustomDrawer extends StatelessWidget {
             //header
             Column(
               children: [
-                DrawerHeader(                  
+                DrawerHeader(
                   child: ClipOval(
                     child: Image.asset('lib/assets/images/forager_logo.png',
                         width: 138),
@@ -66,6 +68,18 @@ class CustomDrawer extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 25.0),
               child: CustomListTile(
                   icon: Icons.logout, text: 'SIGN OUT', onTap: onSignOutTap),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 25.0),
+              child: ListTile(
+                  title: Row(
+                    children: [
+                      Icon(Icons.delete_forever, color: Colors.white, size: 30),
+                      Text('Delete Account?',
+                          style: TextStyle(color: Colors.white, fontSize: 18)),
+                    ],
+                  ),
+                  onTap: showDeleteConfirmationDialog),
             ),
           ],
         ));
