@@ -59,70 +59,72 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 25.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width:
-                      200, // Set the width of the container to control the size of the circular border
-                  height:
-                      200, // Set the height of the container to control the size of the circular border
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(18.0),
-                    child: ClipOval(
-                      child: Image.asset(
-                        'lib/assets/images/forager_logo.png',
-                        fit: BoxFit
-                            .contain, // Use 'contain' to maintain aspect ratio and fit the logo within the circle
+        child: SingleChildScrollView(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 25.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width:
+                        200, // Set the width of the container to control the size of the circular border
+                    height:
+                        200, // Set the height of the container to control the size of the circular border
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(18.0),
+                      child: ClipOval(
+                        child: Image.asset(
+                          'lib/assets/images/forager_logo.png',
+                          fit: BoxFit
+                              .contain, // Use 'contain' to maintain aspect ratio and fit the logo within the circle
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 25),
-                const Text(
-                  'Welcome back, you\'ve been missed!',
-                  style: TextStyle(fontSize: 18),
-                ),
-                const SizedBox(height: 25),
-                MyTextField(
-                  controller: emailTextController,
-                  hintText: 'Email',
-                  obscureText: false,
-                ),
-                const SizedBox(height: 10),
-                MyTextField(
-                  controller: passwordTextController,
-                  hintText: 'Password',
-                  obscureText: true,
-                ),
-                const SizedBox(height: 10),
-                MyButton(onTap: signIn, text: 'Sign In'),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Not a member?',
-                      style: TextStyle(color: Colors.grey[700]),
-                    ),
-                    const SizedBox(width: 5),
-                    GestureDetector(
-                      onTap: widget.onTap,
-                      child: const Text(
-                        'Register now!',
-                        style: TextStyle(
-                            color: Colors.blue, fontWeight: FontWeight.bold),
+                  const SizedBox(height: 25),
+                  const Text(
+                    'Welcome back, you\'ve been missed!',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                  const SizedBox(height: 25),
+                  MyTextField(
+                    controller: emailTextController,
+                    hintText: 'Email',
+                    obscureText: false,
+                  ),
+                  const SizedBox(height: 10),
+                  MyTextField(
+                    controller: passwordTextController,
+                    hintText: 'Password',
+                    obscureText: true,
+                  ),
+                  const SizedBox(height: 10),
+                  MyButton(onTap: signIn, text: 'Sign In'),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Not a member?',
+                        style: TextStyle(color: Colors.grey[700]),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      const SizedBox(width: 5),
+                      GestureDetector(
+                        onTap: widget.onTap,
+                        child: const Text(
+                          'Register now!',
+                          style: TextStyle(
+                              color: Colors.blue, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
