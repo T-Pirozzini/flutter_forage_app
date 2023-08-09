@@ -6,6 +6,7 @@ import 'package:flutter_forager_app/pages/forage_locations_page.dart';
 import 'package:flutter_forager_app/pages/friends_page.dart';
 import 'package:flutter_forager_app/pages/profile_page.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../auth/auth_page.dart';
 import '../components/drawer.dart';
 import 'about_page.dart';
 import 'about_us_page.dart';
@@ -120,7 +121,55 @@ class _HomePageState extends State<HomePage> {
 
   // sign user out
   void signOut() async {
-    await FirebaseAuth.instance.signOut();    
+    await FirebaseAuth.instance.signOut();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => AuthPage()),
+    );
+  }
+
+  void showDeleteConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Confirm Account Deletion'),
+          content: Text(
+            'We are sad to see you go. Are you sure you would like to delete your account? This action will be permanent.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('Delete'),
+              onPressed: () {
+                deleteAccount();
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void deleteAccount() async {
+    try {
+      // Delete the user's account
+      await FirebaseAuth.instance.currentUser?.delete();
+
+      // Navigate to AuthPage after successful deletion
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => AuthPage()),
+      );
+    } catch (e) {
+      print('Error deleting account: $e');
+    }
   }
 
   @override
@@ -153,6 +202,7 @@ class _HomePageState extends State<HomePage> {
         onAboutTap: goToAboutPage,
         onAboutUsTap: goAboutUsPage,
         onCreditsTap: goCreditsPage,
+        showDeleteConfirmationDialog: showDeleteConfirmationDialog,
       ),
       body: pages[currentIndex],
       floatingActionButtonLocation: FloatingActionButtonLocation.miniStartFloat,
