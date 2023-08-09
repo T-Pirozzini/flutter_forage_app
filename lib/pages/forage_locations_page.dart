@@ -147,8 +147,9 @@ class _ForageLocationsState extends State<ForageLocations> {
                                 content: Text('Forage location deleted'),
                               ),
                             );
+                            return true; 
                           }
-                          return null;
+                          return false; 
                         },
                         child: Column(
                           children: [

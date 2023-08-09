@@ -213,7 +213,7 @@ class _MarkerButtonsState extends State<MarkerButtons> {
 
     final compressedImage = await FlutterImageCompress.compressWithFile(
       _selectedImage!.path,
-      quality: 85, // Adjust the quality as desired (0-100)
+      quality: 70, // Adjust the quality as desired (0-100)
     );
 
     final fileName = '${DateTime.now().microsecondsSinceEpoch}.png';
