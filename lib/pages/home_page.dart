@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:floating_bottom_navigation_bar/floating_bottom_navigation_bar.dart';
 import 'package:flutter_forager_app/components/speed_dial.dart';
 import 'package:flutter_forager_app/pages/forage_locations_page.dart';
+import 'package:flutter_forager_app/pages/friends_controller.dart';
 import 'package:flutter_forager_app/pages/friends_page.dart';
 import 'package:flutter_forager_app/pages/profile_page.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -179,7 +180,7 @@ class _HomePageState extends State<HomePage> {
       ForageLocations(
           userId: currentUser.email!,
           userName: currentUser.email!.split("@")[0]),
-      const FriendsPage(),
+      const FriendsController(),
       const CommunityPage(),
     ];
 

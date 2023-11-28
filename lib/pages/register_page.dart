@@ -47,7 +47,7 @@ class _RegisterPageState extends State<RegisterPage> {
         'bio': 'Fill in your bio here ...',
         'profilePic': '',
         'profileBackground': '',
-        'email': emailTextController.text,
+        'email': emailTextController.text.toLowerCase(),
         'friends': [],
         'friendRequests': [],
         'sentFriendRequests': [],
@@ -92,10 +92,8 @@ class _RegisterPageState extends State<RegisterPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    width:
-                        200, 
-                    height:
-                        200, 
+                    width: 200,
+                    height: 200,
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
                     ),
@@ -104,8 +102,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       child: ClipOval(
                         child: Image.asset(
                           'lib/assets/images/forager_logo.png',
-                          fit: BoxFit
-                              .contain, 
+                          fit: BoxFit.contain,
                         ),
                       ),
                     ),

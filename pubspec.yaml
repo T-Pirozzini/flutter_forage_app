@@ -42,7 +42,7 @@ dependencies:
   font_awesome_flutter:
 
   # google maps deps
-  google_maps_flutter: 
+  google_maps_flutter: ^2.5.0
   http: ^0.13.5
   xml: ^6.2.2
   flutter_dotenv: ^5.0.2
