@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -28,11 +29,21 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
     super.dispose();
   }
 
+  Future<List<Map<String, dynamic>>> fetchUsers() async {
+    final QuerySnapshot querySnapshot =
+        await FirebaseFirestore.instance.collection('Users').get();
+
+    return querySnapshot.docs
+        .map((doc) => doc.data() as Map<String, dynamic>)
+        .toList();
+  }
+
   // search for users
   Future<void> _searchUsers(String searchTerm) async {
     final currentUserEmail = FirebaseAuth.instance.currentUser!.email!;
-    if (searchTerm == currentUserEmail) {
-      // If the search term is the same as the current user's email, return without performing the search
+
+    if (searchTerm.isEmpty || searchTerm == currentUserEmail) {
+      // Clear results if the search term is empty or the same as the current user's email
       setState(() {
         _searchResults = [];
       });
@@ -40,8 +51,12 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
     }
 
     final usersCollection = FirebaseFirestore.instance.collection('Users');
-    final querySnapshot =
-        await usersCollection.where('email', isEqualTo: searchTerm).get();
+    // Use a range query for a partial match
+    final querySnapshot = await usersCollection
+        .where('email', isNotEqualTo: currentUserEmail)
+        .where('email', isGreaterThanOrEqualTo: searchTerm)
+        .where('email', isLessThanOrEqualTo: searchTerm + '\uf8ff')
+        .get();
 
     final currentUserData = await FirebaseFirestore.instance
         .collection('Users')
