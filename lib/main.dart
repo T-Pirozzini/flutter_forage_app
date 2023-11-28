@@ -20,12 +20,18 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      theme: ThemeData(
-          primarySwatch: Colors.deepOrange,
-          textTheme: GoogleFonts.alegreyaSansTextTheme()),
-      home: const AuthPage(),
-      debugShowCheckedModeBanner: false,
+    return GestureDetector(
+      // dismiss keyboard when user taps outside of text field
+      onTap: () {
+        FocusScope.of(context).requestFocus(FocusNode());
+      },
+      child: MaterialApp(
+        theme: ThemeData(
+            primarySwatch: Colors.deepOrange,
+            textTheme: GoogleFonts.alegreyaSansTextTheme()),
+        home: const AuthPage(),
+        debugShowCheckedModeBanner: false,
+      ),
     );
   }
 }

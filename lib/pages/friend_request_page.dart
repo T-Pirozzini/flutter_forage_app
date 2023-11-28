@@ -126,6 +126,23 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
         {'email': userEmail, 'timestamp': timeSent},
       ]),
     });
+
+    // Update the search results to reflect the change
+    int userIndex =
+        _searchResults.indexWhere((user) => user['email'] == userEmail);
+    if (userIndex != -1) {
+      setState(() {
+        _searchResults[userIndex]['isFriendRequestSent'] = true;
+        _searchController.clear();
+      });
+    }
+
+    // Show snackbar after friend request is sent
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Friend request sent to ${userEmail.split('@')[0]}'),
+      ),
+    );
   }
 
   @override
@@ -158,36 +175,38 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
               ),
             ),
           ),
-          SizedBox(
-            height: 100,
-            child: ListView.builder(
-              itemCount: _searchResults.length,
-              itemBuilder: (context, index) {
-                final user = _searchResults[index];
-                final isFriend = user['isFriend'] ?? false;
-                final isFriendRequestSent =
-                    user['isFriendRequestSent'] ?? false;
+          Visibility(
+            visible: _searchResults.isNotEmpty,
+            child: SizedBox(
+              height: 100,
+              child: ListView.builder(
+                itemCount: _searchResults.length,
+                itemBuilder: (context, index) {
+                  final user = _searchResults[index];
+                  final isFriend = user['isFriend'] ?? false;
+                  final isFriendRequestSent =
+                      user['isFriendRequestSent'] ?? false;
 
-                return ListTile(
-                  title: Text(user['username'] ?? ''),
-                  subtitle: Text(user['email'] ?? ''),
-                  trailing: isFriend
-                      ? const Icon(Icons.check,
-                          color: Colors
-                              .green) // Display green checkmark for friends
-                      : isFriendRequestSent
-                          ? const Icon(Icons.pending,
-                              color: Colors
-                                  .deepOrange) // Display pending-related icon for friend requests sent
-                          : const Icon(
-                              Icons.add), // Display plus sign for other users
-                  onTap: () {
-                    if (!isFriend && !isFriendRequestSent) {
-                      _sendFriendRequest(user['email']);
-                    }
-                  },
-                );
-              },
+                  return ListTile(
+                    title: Text(user['username'] ?? ''),
+                    trailing: isFriend
+                        ? const Icon(Icons.check,
+                            color: Colors
+                                .green) // Display green checkmark for friends
+                        : isFriendRequestSent
+                            ? const Icon(Icons.pending,
+                                color: Colors
+                                    .deepOrange) // Display pending-related icon for friend requests sent
+                            : const Icon(
+                                Icons.add), // Display plus sign for other users
+                    onTap: () {
+                      if (!isFriend && !isFriendRequestSent) {
+                        _sendFriendRequest(user['email']);
+                      }
+                    },
+                  );
+                },
+              ),
             ),
           ),
           Expanded(
@@ -197,144 +216,32 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
                   .doc(currentUser.email)
                   .snapshots(),
               builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  final userData =
-                      snapshot.data!.data() as Map<String, dynamic>;
-
-                  return Column(
-                    children: [
-                      const Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Text(
-                          'Accept Friend Request?',
-                          style: TextStyle(fontSize: 24),
-                        ),
-                      ),
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: userData['friendRequests'].length,
-                          itemBuilder: (context, index) {
-                            final currentUserEmail =
-                                FirebaseAuth.instance.currentUser!.email!;
-                            final usersCollection =
-                                FirebaseFirestore.instance.collection('Users');
-                            final friendUserEmail =
-                                userData['friendRequests'][index]['email'];
-                            final friendUserTimestamp =
-                                userData['friendRequests'][index]['timestamp'];
-
-                            return ListTile(
-                              title: Text(friendUserEmail),
-                              leading: IconButton(
-                                onPressed: () async {
-                                  try {
-                                    // Generate the timestamp
-                                    final timestamp = Timestamp.now();
-
-                                    // Add friend to current user's friends list
-                                    await usersCollection
-                                        .doc(currentUserEmail)
-                                        .update({
-                                      'friends': FieldValue.arrayUnion([
-                                        {
-                                          'email': friendUserEmail,
-                                          'timestamp': timestamp,
-                                        },
-                                      ]),
-                                    });
-
-                                    // Add current user to friend requesters friends list
-                                    await usersCollection
-                                        .doc(friendUserEmail)
-                                        .update({
-                                      'friends': FieldValue.arrayUnion([
-                                        {
-                                          'email': currentUserEmail,
-                                          'timestamp': timestamp,
-                                        },
-                                      ]),
-                                    });
-
-                                    // Remove request from friend's sentFriendRequest list
-                                    await usersCollection
-                                        .doc(friendUserEmail)
-                                        .update({
-                                      'sentFriendRequests':
-                                          FieldValue.arrayRemove([
-                                        {
-                                          'email': currentUserEmail,
-                                          'timestamp': friendUserTimestamp,
-                                        }
-                                      ])
-                                    });
-
-                                    // Remove friend from current user's pendingRequests list
-                                    await usersCollection
-                                        .doc(currentUserEmail)
-                                        .update({
-                                      'friendRequests': FieldValue.arrayRemove([
-                                        {
-                                          'email': friendUserEmail,
-                                          'timestamp': friendUserTimestamp,
-                                        }
-                                      ])
-                                    });
-
-                                    // Friend request removal completed successfully
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                            'Friend request removed successfully.'),
-                                        duration: Duration(seconds: 2),
-                                      ),
-                                    );
-                                  } catch (error) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Error: $error'),
-                                        duration: const Duration(seconds: 2),
-                                      ),
-                                    );
-                                  }
-                                },
-                                icon: const Icon(Icons.person_add),
-                                color: Colors.deepOrange,
-                              ),
-                              // Add any additional widgets or functionality for pending friend requests
-                            );
-                          },
-                        ),
-                      ),
-                      const Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Text(
-                          'Sent Friend Requests',
-                          style: TextStyle(fontSize: 24),
-                        ),
-                      ),
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: userData['sentFriendRequests'].length,
-                          itemBuilder: (context, index) {
-                            final sentFriendRequest =
-                                userData['sentFriendRequests'][index];
-                            final sentDate = sentFriendRequest['timestamp'];
-                            final daysAgo = calculateDaysAgo(sentDate);
-                            return ListTile(
-                              title: Text(sentFriendRequest['email']),
-                              leading: const Icon(Icons.person),
-                              trailing: Text(daysAgo),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  );
-                } else {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
                 }
+                final userData = snapshot.data!.data() as Map<String, dynamic>;
+
+                return Column(
+                  children: [
+                    // Pending Friend Requests Section
+                    if (userData['friendRequests'].isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text('Accept Friend Requests?',
+                            style: TextStyle(fontSize: 24)),
+                      ),
+                    _buildFriendRequestsSection(userData['friendRequests']),
+                    // Sent Friend Requests Section
+                    if (userData['sentFriendRequests'].isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text('Sent Friend Requests',
+                            style: TextStyle(fontSize: 24)),
+                      ),
+                    _buildSentFriendRequestsSection(
+                        userData['sentFriendRequests']),
+                  ],
+                );
               },
             ),
           ),
@@ -348,5 +255,105 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
     final sentDate = timestamp.toDate();
     final difference = now.difference(sentDate).inDays;
     return '$difference days ago';
+  }
+
+  Widget _buildFriendRequestsSection(List<dynamic> friendRequests) {
+    if (friendRequests.isEmpty) return SizedBox.shrink();
+    final currentUserEmail = FirebaseAuth.instance.currentUser!.email!;
+    final usersCollection = FirebaseFirestore.instance.collection('Users');
+
+    return Expanded(
+      child: ListView.builder(
+        itemCount: friendRequests.length,
+        itemBuilder: (context, index) {
+          final friendRequest = friendRequests[index];
+          final friendUserEmail = friendRequest['email'];
+          final friendUserTimestamp = friendRequest['timestamp'];
+          return ListTile(
+            title: Text(friendUserEmail),
+            leading: IconButton(
+              onPressed: () async {
+                try {
+                  // Generate the timestamp
+                  final timestamp = Timestamp.now();
+
+                  // Add friend to current user's friends list
+                  await usersCollection.doc(currentUserEmail).update({
+                    'friends': FieldValue.arrayUnion([
+                      {
+                        'email': friendUserEmail,
+                        'timestamp': timestamp,
+                      },
+                    ]),
+                  });
+
+                  // Add current user to friend requesters friends list
+                  await usersCollection.doc(friendUserEmail).update({
+                    'friends': FieldValue.arrayUnion([
+                      {
+                        'email': currentUserEmail,
+                        'timestamp': timestamp,
+                      },
+                    ]),
+                  });
+
+                  // Remove request from friend's sentFriendRequest list
+                  await usersCollection.doc(friendUserEmail).update({
+                    'sentFriendRequests': FieldValue.arrayRemove([
+                      {
+                        'email': currentUserEmail,
+                        'timestamp': friendUserTimestamp,
+                      }
+                    ])
+                  });
+
+                  // Remove friend from current user's pendingRequests list
+                  await usersCollection.doc(currentUserEmail).update({
+                    'friendRequests': FieldValue.arrayRemove([
+                      {
+                        'email': friendUserEmail,
+                        'timestamp': friendUserTimestamp,
+                      }
+                    ])
+                  });
+
+                  // Friend request removal completed successfully
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Friend request removed successfully.'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                } catch (error) {}
+              },
+              icon: const Icon(Icons.person_add),
+              color: Colors.deepOrange,
+            ),
+            // Add any additional widgets or functionality for pending friend requests
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSentFriendRequestsSection(List<dynamic> sentFriendRequests) {
+    if (sentFriendRequests.isEmpty) return SizedBox.shrink();
+
+    return Expanded(
+      child: ListView.builder(
+        itemCount: sentFriendRequests.length,
+        itemBuilder: (context, index) {
+          final Map<String, dynamic> sentFriendRequest =
+              sentFriendRequests[index];
+          final Timestamp sentDate = sentFriendRequest['timestamp'];
+          final String daysAgo = calculateDaysAgo(sentDate);
+          return ListTile(
+            title: Text(sentFriendRequest['email']),
+            leading: const Icon(Icons.person),
+            trailing: Text(daysAgo),
+          );
+        },
+      ),
+    );
   }
 }
