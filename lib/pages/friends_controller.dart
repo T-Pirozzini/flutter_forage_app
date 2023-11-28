@@ -13,28 +13,7 @@ class FriendsController extends StatefulWidget {
 }
 
 class _TimeSheetControllerState extends State<FriendsController> {
-  String userRole = '';
   final currentUser = FirebaseAuth.instance.currentUser!;
-
-  @override
-  void initState() {
-    super.initState();
-    // fetchUserRole();
-  }
-
-  // Future<void> fetchUserRole() async {
-  //   final user = FirebaseAuth.instance.currentUser;
-  //   if (user != null) {
-  //     final userDoc = await FirebaseFirestore.instance
-  //         .collection('Users')
-  //         .doc(currentUser.email)
-  //         .get();
-  //     final role = userDoc['role'];
-  //     setState(() {
-  //       userRole = role;
-  //     });
-  //   }
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +30,7 @@ class _TimeSheetControllerState extends State<FriendsController> {
             tabs: [
               Tab(text: 'Your Friends'),
               Tab(text: 'Requests'),
-              Tab(text: 'Search Users'),
+              Tab(text: 'Your Profile'),
             ],
           ),
         ),
