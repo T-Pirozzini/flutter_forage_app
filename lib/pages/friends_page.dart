@@ -15,10 +15,8 @@ class _FriendsPageState extends State<FriendsPage> {
   final currentUser = FirebaseAuth.instance.currentUser!;
 
   // navigate to forage locations page
-  void goToForageLocationsPage(String friendId, String friendName) {
-    // pop menu drawer
-    Navigator.pop(context);
-    // go to new page
+  void goToForageLocationsPage(
+      String friendId, String friendName, VoidCallback onPop) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -27,7 +25,7 @@ class _FriendsPageState extends State<FriendsPage> {
           userName: friendName,
         ),
       ),
-    );
+    ).then((_) => onPop()); // Invoke the callback when page is popped
   }
 
   // Deleting Friends
@@ -191,7 +189,9 @@ class _FriendsPageState extends State<FriendsPage> {
 
                                     return GestureDetector(
                                       onTap: () => goToForageLocationsPage(
-                                          friendId, friendUsername),
+                                          friendId,
+                                          friendUsername,
+                                          () => setState(() {})),
                                       child: Dismissible(
                                         key: UniqueKey(),
                                         direction: DismissDirection.endToStart,

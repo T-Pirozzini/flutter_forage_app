@@ -4,7 +4,6 @@ import 'package:floating_bottom_navigation_bar/floating_bottom_navigation_bar.da
 import 'package:flutter_forager_app/components/speed_dial.dart';
 import 'package:flutter_forager_app/pages/forage_locations_page.dart';
 import 'package:flutter_forager_app/pages/friends_controller.dart';
-import 'package:flutter_forager_app/pages/friends_page.dart';
 import 'package:flutter_forager_app/pages/profile_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../auth/auth_page.dart';
@@ -52,18 +51,18 @@ class _HomePageState extends State<HomePage> {
     currentIndex = widget.currentIndex;
   }
 
-  // navigate to profile page
-  void goToProfilePage() {
-    // pop menu drawer
-    Navigator.pop(context);
-    // go to new page
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const ProfilePage(),
-      ),
-    );
-  }
+  // // navigate to profile page
+  // void goToProfilePage() {
+  //   // pop menu drawer
+  //   Navigator.pop(context);
+  //   // go to new page
+  //   Navigator.push(
+  //     context,
+  //     MaterialPageRoute(
+  //       builder: (context) => const ProfilePage(),
+  //     ),
+  //   );
+  // }
 
   // navigate to profile page
   void goToAboutPage() {
@@ -197,7 +196,7 @@ class _HomePageState extends State<HomePage> {
         elevation: 2,
       ),
       drawer: CustomDrawer(
-        onProfileTap: goToProfilePage,
+        // onProfileTap: goToProfilePage,
         onSignOutTap: signOut,
         onForageLocationsTap: goToForageLocationsPage,
         onAboutTap: goToAboutPage,
