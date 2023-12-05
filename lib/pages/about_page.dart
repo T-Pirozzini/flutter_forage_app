@@ -37,38 +37,41 @@ class _AboutPageState extends State<AboutPage> {
           },
         ),
       ),
-      body: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text("Welcome to Forager!",
-                  style: TextStyle(fontSize: 24, color: Colors.white)),
-              SizedBox(height: 20),
-              Text(
-                'We created this app to help foster a deeper connection with nature by encouraging users to explore the wilderness around them. Our app is designed to help people discover and exchange information about forageable items in the wild, inspiring a sense of adventure and appreciation for the natural world. By providing a platform for users to share their findings with friends and the wider community, we aim to build a vibrant network of nature enthusiasts who can collaboratively explore, learn, and celebrate the wonders of the great outdoors. Together, we aspire to nurture a community that values sustainability, conservation, and the joy of discovering hidden treasures amidst the beauty of our natural landscapes.',
-                style: TextStyle(color: Colors.white, fontSize: 16),
-              ),
-              SizedBox(height: 20),
-              Text(
-                'Embark on a captivating adventure with our interactive map feature. The marker faithfully traces your path, unveiling the thrill of unique discoveries. Create personalized markers, capture moments with photos, and save them as exclusive, cherished reminders.',
-                style: TextStyle(color: Colors.white, fontSize: 16),
-              ),
-              SizedBox(height: 20),
-              Text(
-                'Connect with friends and fellow explorers, exchanging locations to inspire exciting journeys. Discover hidden gems on the map, fostering camaraderie and discovery.',
-                style: TextStyle(color: Colors.white, fontSize: 16),
-              ),
-              SizedBox(height: 20),
-              Text(
-                'Safeguard your treasures while contributing to the adventure. Keep special spots exclusive to your exploration, or share them on the community board to spark enthusiasm among nature enthusiasts.',
-                style: TextStyle(color: Colors.white, fontSize: 16),
-              ),
-              SizedBox(height: 50),
-              Text(
-                'We hope you enjoy your journey with Forager!',
-                style: TextStyle(color: Colors.white, fontSize: 20),
-              ),
-            ],
-          ),
-        );
+      body: Padding(
+        padding: const EdgeInsets.all(18.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text("Welcome to Forager!",
+                style: TextStyle(fontSize: 24, color: Colors.white)),
+            SizedBox(height: 20),
+            Text(
+              'Our app fosters a deeper bond with nature, encouraging exploration and discovery of wild forageables. It\'s a platform for sharing findings, igniting adventure, and appreciating nature. Our goal is to create a community of nature enthusiasts who value sustainability, conservation, and the joy of unearthing hidden natural treasures.',
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Our interactive map offers an exciting journey, tracking your path and revealing unique discoveries. Personalize markers, capture moments with photos, and save these special memories.',
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Link up with friends and explorers to share locations and uncover hidden gems, enhancing camaraderie and adventure.',
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Protect your discoveries while adding to the adventure. Choose to keep special spots private or share them with the community to inspire fellow nature lovers.',
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+            SizedBox(height: 50),
+            Text(
+              'We hope you enjoy your journey with Forager!',
+              style: TextStyle(color: Colors.white, fontSize: 20),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

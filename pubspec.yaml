@@ -40,6 +40,7 @@ dependencies:
   flutter_image_compress: ^2.0.3   
   url_launcher:  
   font_awesome_flutter:
+  google_mobile_ads: ^3.1.0
 
   # google maps deps
   google_maps_flutter: ^2.5.0

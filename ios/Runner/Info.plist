@@ -60,6 +60,8 @@
     <string>tel</string>
     <string>mailto</string>
 	</array>
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-8699226690238380~4468022765</string>
 
 </dict>
 </plist>

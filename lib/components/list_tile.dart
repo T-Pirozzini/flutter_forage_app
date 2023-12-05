@@ -22,7 +22,7 @@ class CustomListTile extends StatelessWidget {
             ),
             title: Text(text,
                 style: const TextStyle(
-                    color: Colors.white, fontSize: 20, letterSpacing: 2)),
+                    color: Colors.white, fontSize: 16, letterSpacing: 2)),
             onTap: onTap,
           ),
         ),

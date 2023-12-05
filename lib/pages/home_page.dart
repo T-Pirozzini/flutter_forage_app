@@ -1,12 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:floating_bottom_navigation_bar/floating_bottom_navigation_bar.dart';
+import 'package:flutter_forager_app/components/ad_mob_service.dart';
 import 'package:flutter_forager_app/components/speed_dial.dart';
 import 'package:flutter_forager_app/pages/forage_locations_page.dart';
 import 'package:flutter_forager_app/pages/friends_controller.dart';
-import 'package:flutter_forager_app/pages/friends_page.dart';
-import 'package:flutter_forager_app/pages/profile_page.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../auth/auth_page.dart';
 import '../components/drawer.dart';
 import 'about_page.dart';
@@ -43,6 +43,8 @@ class _HomePageState extends State<HomePage> {
   double lat = 0;
   double lng = 0;
 
+  BannerAd? _banner;
+
   @override
   void initState() {
     super.initState();
@@ -50,20 +52,31 @@ class _HomePageState extends State<HomePage> {
     lat = widget.lat;
     lng = widget.lng;
     currentIndex = widget.currentIndex;
+
+    _createBannerAd();
   }
 
-  // navigate to profile page
-  void goToProfilePage() {
-    // pop menu drawer
-    Navigator.pop(context);
-    // go to new page
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const ProfilePage(),
-      ),
-    );
+  void _createBannerAd() {
+    _banner = BannerAd(
+      adUnitId: AdMobService.bannerAdUnitId!,
+      size: AdSize.fullBanner,
+      listener: AdMobService.bannerListener,
+      request: const AdRequest(),
+    )..load();
   }
+
+  // // navigate to profile page
+  // void goToProfilePage() {
+  //   // pop menu drawer
+  //   Navigator.pop(context);
+  //   // go to new page
+  //   Navigator.push(
+  //     context,
+  //     MaterialPageRoute(
+  //       builder: (context) => const ProfilePage(),
+  //     ),
+  //   );
+  // }
 
   // navigate to profile page
   void goToAboutPage() {
@@ -197,7 +210,7 @@ class _HomePageState extends State<HomePage> {
         elevation: 2,
       ),
       drawer: CustomDrawer(
-        onProfileTap: goToProfilePage,
+        // onProfileTap: goToProfilePage,
         onSignOutTap: signOut,
         onForageLocationsTap: goToForageLocationsPage,
         onAboutTap: goToAboutPage,
@@ -205,10 +218,26 @@ class _HomePageState extends State<HomePage> {
         onCreditsTap: goCreditsPage,
         showDeleteConfirmationDialog: showDeleteConfirmationDialog,
       ),
-      body: pages[currentIndex],
-      floatingActionButtonLocation: FloatingActionButtonLocation.miniStartFloat,
-      floatingActionButton:
-          pages[currentIndex] is MapPage ? const MarkerButtons() : null,
+      body: Column(
+        children: [
+          Expanded(
+            child: pages[currentIndex], // Main content of the page
+          ),
+          _banner != null
+              ? Container(
+                  height: 50,
+                  child: AdWidget(ad: _banner!),
+                )
+              : SizedBox.shrink(), // Banner ad or empty container
+        ],
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
+      floatingActionButton: pages[currentIndex] is MapPage
+          ? Padding(
+              padding: const EdgeInsets.fromLTRB(0, 0, 0, 20),
+              child: const MarkerButtons(),
+            )
+          : null,
       extendBody: true,
       bottomNavigationBar: FloatingNavbar(
         onTap: (index) => setState(() => currentIndex = index),
@@ -217,6 +246,7 @@ class _HomePageState extends State<HomePage> {
         selectedItemColor: Colors.black,
         selectedBackgroundColor: Colors.deepOrange.shade300,
         unselectedItemColor: Colors.white,
+        margin: EdgeInsets.fromLTRB(0, 0, 0, 50),
         items: [
           FloatingNavbarItem(icon: Icons.map, title: 'Forage'),
           FloatingNavbarItem(icon: Icons.hotel_class_sharp, title: 'Locations'),
