@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_forager_app/components/map_style.dart';
+import 'package:flutter_forager_app/screens/forage/map_style.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import '../components/search_field.dart';

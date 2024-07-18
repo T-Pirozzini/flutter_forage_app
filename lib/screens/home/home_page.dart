@@ -2,20 +2,21 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:floating_bottom_navigation_bar/floating_bottom_navigation_bar.dart';
 import 'package:flutter_forager_app/components/ad_mob_service.dart';
-import 'package:flutter_forager_app/components/speed_dial.dart';
-import 'package:flutter_forager_app/pages/forage_locations_page.dart';
-import 'package:flutter_forager_app/pages/friends_controller.dart';
+import 'package:flutter_forager_app/screens/forage/speed_dial.dart';
+import 'package:flutter_forager_app/screens/profile/profile_page.dart';
+import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
+import 'package:flutter_forager_app/screens/friends/friends_controller.dart';
 import 'package:flutter_forager_app/screens/home/dashboard_page.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../auth/auth_page.dart';
-import '../../components/drawer.dart';
-import '../../pages/about_page.dart';
-import '../../pages/about_us_page.dart';
-import '../../pages/community_page.dart';
-import '../../pages/credits_page.dart';
-import '../../pages/map_page.dart';
+import '../drawer/drawer.dart';
+import '../drawer/about_page.dart';
+import '../drawer/about_us_page.dart';
+import '../community/community_page.dart';
+import '../drawer/credits_page.dart';
+import '../forage/map_page.dart';
 
 class HomePage extends StatefulWidget {
   final double lat;
@@ -204,7 +205,8 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final pages = [
-      DashboardPage(),
+      ProfilePage(),
+      // DashboardPage(),
       MapPage(lat: lat, lng: lng, followUser: followUser),
       // ForageLocations(
       //     userId: currentUser.email!,

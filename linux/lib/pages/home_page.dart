@@ -1,10 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:floating_bottom_navigation_bar/floating_bottom_navigation_bar.dart';
-import 'package:flutter_forager_app/components/speed_dial.dart';
-import 'package:flutter_forager_app/pages/forage_locations_page.dart';
-import 'package:flutter_forager_app/pages/friends_page.dart';
-import 'package:flutter_forager_app/pages/profile_page.dart';
+import 'package:flutter_forager_app/screens/forage/speed_dial.dart';
+import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
+import 'package:flutter_forager_app/screens/friends/friends_page.dart';
+import 'package:flutter_forager_app/screens/profile/profile_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../components/drawer.dart';
 import 'about_page.dart';
