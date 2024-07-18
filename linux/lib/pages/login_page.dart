@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/components/button.dart';
-import 'package:flutter_forager_app/components/text_field.dart';
+import 'package:flutter_forager_app/screens/forage/text_field.dart';
 
 class LoginPage extends StatefulWidget {
   final Function()? onTap;

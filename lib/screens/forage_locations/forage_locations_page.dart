@@ -1,11 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_forager_app/pages/forage_location_info_page.dart';
+import 'package:flutter_forager_app/screens/forage_locations/forage_location_info_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
-import 'home_page.dart';
+import '../home/home_page.dart';
 
 class ForageLocations extends StatefulWidget {
   final String userId;
@@ -147,9 +147,9 @@ class _ForageLocationsState extends State<ForageLocations> {
                                 content: Text('Forage location deleted'),
                               ),
                             );
-                            return true; 
+                            return true;
                           }
-                          return false; 
+                          return false;
                         },
                         child: Column(
                           children: [
@@ -218,7 +218,7 @@ class _ForageLocationsState extends State<ForageLocations> {
                 }
               },
             ),
-          ),
+          ),          
         ],
       ),
     );
