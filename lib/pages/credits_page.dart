@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'home_page.dart';
+import '../screens/home/home_page.dart';
 
 class CreditsPage extends StatelessWidget {
   const CreditsPage({super.key});

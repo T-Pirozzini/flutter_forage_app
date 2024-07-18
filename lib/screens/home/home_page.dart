@@ -5,15 +5,17 @@ import 'package:flutter_forager_app/components/ad_mob_service.dart';
 import 'package:flutter_forager_app/components/speed_dial.dart';
 import 'package:flutter_forager_app/pages/forage_locations_page.dart';
 import 'package:flutter_forager_app/pages/friends_controller.dart';
+import 'package:flutter_forager_app/screens/home/dashboard_page.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import '../auth/auth_page.dart';
-import '../components/drawer.dart';
-import 'about_page.dart';
-import 'about_us_page.dart';
-import 'community_page.dart';
-import 'credits_page.dart';
-import 'map_page.dart';
+import '../../auth/auth_page.dart';
+import '../../components/drawer.dart';
+import '../../pages/about_page.dart';
+import '../../pages/about_us_page.dart';
+import '../../pages/community_page.dart';
+import '../../pages/credits_page.dart';
+import '../../pages/map_page.dart';
 
 class HomePage extends StatefulWidget {
   final double lat;
@@ -44,6 +46,7 @@ class _HomePageState extends State<HomePage> {
   double lng = 0;
 
   BannerAd? _banner;
+  bool _isBannerAdLoaded = false;
 
   @override
   void initState() {
@@ -58,9 +61,21 @@ class _HomePageState extends State<HomePage> {
 
   void _createBannerAd() {
     _banner = BannerAd(
-      adUnitId: AdMobService.bannerAdUnitId!,
+      // adUnitId: AdMobService.bannerAdUnitId!, // Uncomment this line before production
+      adUnitId:
+          'ca-app-pub-3940256099942544/6300978111', // This is a test ad unit ID
       size: AdSize.fullBanner,
-      listener: AdMobService.bannerListener,
+      listener: BannerAdListener(
+        onAdLoaded: (Ad ad) {
+          setState(() {
+            _isBannerAdLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (Ad ad, LoadAdError error) {
+          // Handle the error
+          ad.dispose();
+        },
+      ),
       request: const AdRequest(),
     )..load();
   }
@@ -189,10 +204,11 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final pages = [
+      DashboardPage(),
       MapPage(lat: lat, lng: lng, followUser: followUser),
-      ForageLocations(
-          userId: currentUser.email!,
-          userName: currentUser.email!.split("@")[0]),
+      // ForageLocations(
+      //     userId: currentUser.email!,
+      //     userName: currentUser.email!.split("@")[0]),
       const FriendsController(),
       const CommunityPage(),
     ];
@@ -220,15 +236,15 @@ class _HomePageState extends State<HomePage> {
       ),
       body: Column(
         children: [
+          if (_isBannerAdLoaded && _banner != null)
+            Container(
+              width: double.infinity,
+              height: 50,
+              child: AdWidget(ad: _banner!),
+            ),
           Expanded(
-            child: pages[currentIndex], // Main content of the page
+            child: pages[currentIndex],
           ),
-          _banner != null
-              ? Container(
-                  height: 50,
-                  child: AdWidget(ad: _banner!),
-                )
-              : SizedBox.shrink(), // Banner ad or empty container
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
@@ -246,12 +262,18 @@ class _HomePageState extends State<HomePage> {
         selectedItemColor: Colors.black,
         selectedBackgroundColor: Colors.deepOrange.shade300,
         unselectedItemColor: Colors.white,
-        margin: EdgeInsets.fromLTRB(0, 0, 0, 50),
+        iconSize: 14,
+        margin: EdgeInsets.fromLTRB(0, 0, 0, 0),
         items: [
-          FloatingNavbarItem(icon: Icons.map, title: 'Forage'),
-          FloatingNavbarItem(icon: Icons.hotel_class_sharp, title: 'Locations'),
-          FloatingNavbarItem(icon: Icons.group, title: 'Friends'),
-          FloatingNavbarItem(icon: Icons.forum, title: 'Community'),
+          FloatingNavbarItem(
+              icon: FontAwesomeIcons.doorOpen, title: 'Dashboard'),
+          FloatingNavbarItem(icon: FontAwesomeIcons.compass, title: 'Forage'),
+          // FloatingNavbarItem(icon: Icons.hotel_class_sharp, title: 'Locations'),
+          // FloatingNavbarItem(icon: Icons.group, title: 'Friends'),
+          FloatingNavbarItem(
+              icon: FontAwesomeIcons.kitchenSet, title: 'Recipes'),
+          FloatingNavbarItem(
+              icon: FontAwesomeIcons.cameraRetro, title: 'Community'),
         ],
       ),
     );

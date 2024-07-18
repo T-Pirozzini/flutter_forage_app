@@ -5,7 +5,7 @@ import 'package:flutter_forager_app/pages/forage_location_info_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
-import 'home_page.dart';
+import '../screens/home/home_page.dart';
 
 class ForageLocations extends StatefulWidget {
   final String userId;
