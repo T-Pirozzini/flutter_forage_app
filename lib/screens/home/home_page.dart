@@ -58,6 +58,7 @@ class _HomePageState extends State<HomePage> {
     currentIndex = widget.currentIndex;
 
     _createBannerAd();
+    AdMobService.loadInterstitialAd();
   }
 
   void _createBannerAd() {
@@ -205,8 +206,8 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final pages = [
-      ProfilePage(),
-      // DashboardPage(),
+      // ProfilePage(),
+      DashboardPage(),
       MapPage(lat: lat, lng: lng, followUser: followUser),
       // ForageLocations(
       //     userId: currentUser.email!,

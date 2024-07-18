@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_forager_app/components/ad_mob_service.dart';
 import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
 
 class DashboardPage extends StatelessWidget {
@@ -23,6 +24,7 @@ class DashboardPage extends StatelessWidget {
                 ),
               ),
             );
+            AdMobService.showInterstitialAd();
           },
           child: const Text('View Your Forage Locations'),
         ),
