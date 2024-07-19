@@ -7,6 +7,7 @@ import 'package:flutter_forager_app/screens/profile/profile_page.dart';
 import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
 import 'package:flutter_forager_app/screens/friends/friends_controller.dart';
 import 'package:flutter_forager_app/screens/home/dashboard_page.dart';
+import 'package:flutter_forager_app/screens/recipes/recipes_page.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -145,6 +146,7 @@ class _HomePageState extends State<HomePage> {
         builder: (context) => ForageLocations(
           userId: currentUser.email!,
           userName: currentUser.email!.split("@")[0],
+          userLocations: true,
         ),
       ),
     );
@@ -212,7 +214,8 @@ class _HomePageState extends State<HomePage> {
       // ForageLocations(
       //     userId: currentUser.email!,
       //     userName: currentUser.email!.split("@")[0]),
-      const FriendsController( currentTab: 0),
+      // const FriendsController(currentTab: 0),
+      RecipesPage(),
       const CommunityPage(),
     ];
 

@@ -21,6 +21,7 @@ class DashboardPage extends StatelessWidget {
                 builder: (context) => ForageLocations(
                   userId: currentUser.email!,
                   userName: currentUser.email!.split("@")[0],
+                  userLocations: true,
                 ),
               ),
             );

@@ -23,6 +23,7 @@ class _FriendsPageState extends State<FriendsPage> {
         builder: (context) => ForageLocations(
           userId: friendId,
           userName: friendName,
+          userLocations: true,
         ),
       ),
     ).then((_) => onPop()); // Invoke the callback when page is popped
@@ -305,7 +306,7 @@ class _FriendsPageState extends State<FriendsPage> {
                               return const SizedBox.shrink();
                             },
                           ),
-                        ),                        
+                        ),
                       ],
                     );
                   } else {

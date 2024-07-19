@@ -391,7 +391,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                   lat: widget.lat,
                   lng: widget.lng,
                   followUser: false,
-                  currentIndex: 0,
+                  currentIndex: 1,
                 ),
               ),
             );
@@ -444,18 +444,6 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            // ElevatedButton.icon(
-            //   style: ButtonStyle(
-            //     backgroundColor: MaterialStateProperty.all<Color>(Colors.grey),
-            //   ),
-            //   onPressed: () {
-            //     Navigator.of(context).pop();
-            //     currentUserMatchesMarkerOwnerDelete();
-            //   },
-            //   icon: const Icon(Icons.delete),
-            //   label:
-            //       const Text('Delete Location', style: TextStyle(fontSize: 12)),
-            // ),
             ElevatedButton.icon(
               onPressed: () {
                 Navigator.of(context).pop();

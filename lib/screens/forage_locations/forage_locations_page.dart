@@ -5,14 +5,16 @@ import 'package:flutter_forager_app/screens/forage_locations/forage_location_inf
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
-import '../home/home_page.dart';
-
 class ForageLocations extends StatefulWidget {
   final String userId;
   final String userName;
+  final bool userLocations;
 
   const ForageLocations(
-      {Key? key, required this.userId, required this.userName})
+      {Key? key,
+      required this.userId,
+      required this.userName,
+      required this.userLocations})
       : super(key: key);
 
   @override
@@ -78,17 +80,25 @@ class _ForageLocationsState extends State<ForageLocations> {
         titleTextStyle:
             GoogleFonts.philosopher(fontSize: 24, fontWeight: FontWeight.bold),
         centerTitle: true,
-        backgroundColor: Colors.deepOrange.shade400,        
+        backgroundColor: Colors.deepOrange.shade400,
       ),
       body: Column(
         children: [
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('Users')
-                  .doc(widget.userId)
-                  .collection('Markers')
-                  .snapshots(),
+              stream: widget.userLocations
+                  ? FirebaseFirestore.instance
+                      .collection('Users')
+                      .doc(widget.userId)
+                      .collection('Markers')
+                      .where('markerOwner', isEqualTo: widget.userId)
+                      .snapshots()
+                  : FirebaseFirestore.instance
+                      .collection('Users')
+                      .doc(widget.userId)
+                      .collection('Markers')
+                      .where('markerOwner', isNotEqualTo: widget.userId)
+                      .snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return const Center(

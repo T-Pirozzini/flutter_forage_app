@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_forager_app/screens/home/home_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AboutPage extends StatefulWidget {
@@ -20,22 +19,6 @@ class _AboutPageState extends State<AboutPage> {
             GoogleFonts.philosopher(fontSize: 24, fontWeight: FontWeight.bold),
         centerTitle: true,
         backgroundColor: Colors.deepOrange.shade400,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const HomePage(
-                  lat: 0,
-                  lng: 0,
-                  followUser: true,
-                  currentIndex: 0,
-                ),
-              ),
-            );
-          },
-        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(18.0),

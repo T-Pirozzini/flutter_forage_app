@@ -16,22 +16,6 @@ class CreditsPage extends StatelessWidget {
             GoogleFonts.philosopher(fontSize: 24, fontWeight: FontWeight.bold),
         centerTitle: true,
         backgroundColor: Colors.deepOrange.shade400,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const HomePage(
-                  lat: 0,
-                  lng: 0,
-                  followUser: true,
-                  currentIndex: 0,
-                ),
-              ),
-            );
-          },
-        ),
       ),
       body: Center(
         child: Column(

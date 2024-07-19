@@ -284,7 +284,7 @@ class _ProfilePageState extends State<ProfilePage> {
         titleTextStyle:
             GoogleFonts.philosopher(fontSize: 24, fontWeight: FontWeight.bold),
         centerTitle: true,
-        backgroundColor: Colors.deepOrange.shade300,
+        backgroundColor: Colors.grey.shade600,
       ),
       body: Column(
         children: [
@@ -374,6 +374,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                         ),
                         Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text('View your Forage Locations'),
                             Row(
@@ -400,6 +401,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                           userId: currentUser.email!,
                                           userName:
                                               currentUser.email!.split("@")[0],
+                                          userLocations: true,
                                         ),
                                       ),
                                     );
@@ -441,8 +443,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                       MaterialPageRoute(
                                         builder: (context) => ForageLocations(
                                           userId: currentUser.email!,
-                                          userName:
-                                              currentUser.email!.split("@")[0],
+                                          userName: "Bookmarked Locations",
+                                          userLocations: false,
                                         ),
                                       ),
                                     );
@@ -485,7 +487,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                   onPressed: () => Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => const FriendsController(currentTab: 0),
+                                      builder: (context) =>
+                                          const FriendsController(
+                                              currentTab: 0),
                                     ),
                                   ),
                                   icon: const Icon(
@@ -533,7 +537,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) =>
-                                          const FriendsController(currentTab: 1),
+                                          const FriendsController(
+                                              currentTab: 1),
                                     ),
                                   ),
                                   icon: const Icon(
@@ -558,37 +563,6 @@ class _ProfilePageState extends State<ProfilePage> {
                               indent: 15,
                               endIndent: 15,
                               color: Colors.white,
-                            ),
-                            const SizedBox(height: 15),
-                            Container(
-                              width: 100,
-                              height: 100,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 3),
-                                  ),
-                                ],
-                              ),
-                              child: GestureDetector(
-                                onTap: goHome,
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Image.asset('lib/assets/images/forage.png',
-                                        width: 40, color: Colors.deepOrange),
-                                    const Text(
-                                      'Let\'s forage!',
-                                      style: TextStyle(fontSize: 18),
-                                    ),
-                                  ],
-                                ),
-                              ),
                             ),
                           ],
                         ),

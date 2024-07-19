@@ -139,7 +139,7 @@ class _CommunityPageState extends State<CommunityPage> {
         titleTextStyle: GoogleFonts.philosopher(
             fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 2.5),
         centerTitle: true,
-        backgroundColor: Colors.deepOrange.shade400,
+        backgroundColor: Colors.grey.shade600,
       ),
       body: Column(
         children: [
