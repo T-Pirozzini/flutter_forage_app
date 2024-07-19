@@ -206,13 +206,13 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final pages = [
-      // ProfilePage(),
-      DashboardPage(),
+      ProfilePage(),
+      // DashboardPage(),
       MapPage(lat: lat, lng: lng, followUser: followUser),
       // ForageLocations(
       //     userId: currentUser.email!,
       //     userName: currentUser.email!.split("@")[0]),
-      const FriendsController(),
+      const FriendsController( currentTab: 0),
       const CommunityPage(),
     ];
 

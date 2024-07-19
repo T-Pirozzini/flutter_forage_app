@@ -1,7 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_forager_app/components/ad_mob_service.dart';
+import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
 import 'package:flutter_forager_app/screens/friends/friend_request_page.dart';
+import 'package:flutter_forager_app/screens/friends/friends_controller.dart';
 import 'package:flutter_forager_app/screens/friends/friends_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -273,6 +276,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser!;
     return Scaffold(
       backgroundColor: Colors.deepOrange.shade100,
       appBar: AppBar(
@@ -299,6 +303,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       userData['profileBackground'] ?? selectedBackgroundOption;
                   selectedProfileOption =
                       userData['profilePic'] ?? selectedProfileOption;
+
                   return Center(
                     child: ListView(
                       padding: const EdgeInsets.only(
@@ -316,7 +321,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                     userData['username'],
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 32,
+                                      fontSize: 24,
                                     ),
                                   ),
                                 ),
@@ -329,17 +334,15 @@ class _ProfilePageState extends State<ProfilePage> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8.0),
                             Text(
                               userData['email'],
                               style: const TextStyle(
-                                fontSize: 24,
+                                fontSize: 14,
                                 color: Colors.black87,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 15),
                         Container(
                           height: 80,
                           margin: const EdgeInsets.all(8.0),
@@ -372,66 +375,117 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         Column(
                           children: [
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Image.asset('lib/assets/images/friends.png',
-                                      width: 40, color: Colors.deepOrange),
-                                  const SizedBox(width: 10),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Text('You have '),
-                                      Text(
-                                        userData['friends'].length.toString(),
-                                        style: const TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold),
-                                      ),
-                                      const Text(' friend(s).'),
-                                      IconButton(
-                                        onPressed: () => Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                const FriendsPage(),
-                                          ),
-                                        ),
-                                        icon: const Icon(
-                                          Icons.arrow_forward_ios,
-                                          color: Colors.deepOrange,
+                            Text('View your Forage Locations'),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Text('You have '),
+                                    Text(
+                                      'Add # of markers in here with Riverpod',
+                                      style: const TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                    const Text(' location(s).'),
+                                  ],
+                                ),
+                                IconButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => ForageLocations(
+                                          userId: currentUser.email!,
+                                          userName:
+                                              currentUser.email!.split("@")[0],
                                         ),
                                       ),
-                                    ],
+                                    );
+                                    AdMobService.showInterstitialAd();
+                                  },
+                                  icon: const Icon(
+                                    Icons.arrow_forward_ios,
+                                    color: Colors.deepOrange,
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                            const Divider(
+                            Divider(
                               thickness: 2,
                               indent: 15,
                               endIndent: 15,
                               color: Colors.white,
                             ),
+                            Text('View your Community Bookmarked Locations'),
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisAlignment: MainAxisAlignment.end,
                               children: [
-                                const Text('You have '),
-                                Text(
-                                  userData['friendRequests'].length.toString(),
-                                  style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold),
+                                Row(
+                                  children: [
+                                    const Text('You have '),
+                                    Text(
+                                      'Add # of markers in here with Riverpod',
+                                      style: const TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                    const Text(' location(s).'),
+                                  ],
                                 ),
-                                const Text(' pending friend requests.'),
+                                IconButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => ForageLocations(
+                                          userId: currentUser.email!,
+                                          userName:
+                                              currentUser.email!.split("@")[0],
+                                        ),
+                                      ),
+                                    );
+                                    AdMobService.showInterstitialAd();
+                                  },
+                                  icon: const Icon(
+                                    Icons.arrow_forward_ios,
+                                    color: Colors.deepOrange,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Divider(
+                              thickness: 2,
+                              indent: 15,
+                              endIndent: 15,
+                              color: Colors.white,
+                            ),
+                            Text('View your Friends Locations'),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Image.asset('lib/assets/images/friends.png',
+                                        width: 30, color: Colors.deepOrange),
+                                    const SizedBox(width: 10),
+                                    const Text('You have '),
+                                    Text(
+                                      userData['friends'].length.toString(),
+                                      style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                    const Text(' friend(s).'),
+                                  ],
+                                ),
                                 IconButton(
                                   onPressed: () => Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) =>
-                                          const FriendRequestPage(),
+                                      builder: (context) => const FriendsController(currentTab: 0),
                                     ),
                                   ),
                                   icon: const Icon(
@@ -447,38 +501,48 @@ class _ProfilePageState extends State<ProfilePage> {
                               endIndent: 15,
                               color: Colors.white,
                             ),
-                            if (userData['sentFriendRequests'].length < 1)
-                              const Text(
-                                  'You haven\'t sent any friend requests.')
-                            else
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Text('You have sent '),
-                                  Text(
-                                    userData['sentFriendRequests']
-                                        .length
-                                        .toString(),
-                                    style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                  const Text(' friend requests.'),
-                                  IconButton(
-                                    onPressed: () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            const FriendRequestPage(),
-                                      ),
+                            Text('View your friend requests'),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Text('Incoming/Pending Requests: '),
+                                    Text(
+                                      userData['friendRequests']
+                                          .length
+                                          .toString(),
+                                      style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold),
                                     ),
-                                    icon: const Icon(
-                                      Icons.arrow_forward_ios,
-                                      color: Colors.deepOrange,
+                                    SizedBox(width: 10),
+                                    const Text('Outgoing/Sent Requests: '),
+                                    Text(
+                                      userData['sentFriendRequests']
+                                          .length
+                                          .toString(),
+                                      style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                                IconButton(
+                                  onPressed: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const FriendsController(currentTab: 1),
                                     ),
                                   ),
-                                ],
-                              ),
+                                  icon: const Icon(
+                                    Icons.arrow_forward_ios,
+                                    color: Colors.deepOrange,
+                                  ),
+                                ),
+                              ],
+                            ),
                             const Divider(
                               thickness: 2,
                               indent: 15,
@@ -554,7 +618,7 @@ class _ProfilePageState extends State<ProfilePage> {
           child: buildCoverImage(),
         ),
         Positioned(
-          top: top,
+          top: top - 80,
           child: buildProfileImage(),
         ),
         Positioned(
@@ -579,7 +643,7 @@ class _ProfilePageState extends State<ProfilePage> {
           child: Image.asset(
             'lib/assets/images/$selectedBackgroundOption',
             width: double.infinity,
-            height: coverHeight,
+            height: coverHeight - 60,
             fit: BoxFit.cover,
           ),
         ),

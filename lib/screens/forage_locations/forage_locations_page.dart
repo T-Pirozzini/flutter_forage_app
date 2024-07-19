@@ -78,23 +78,7 @@ class _ForageLocationsState extends State<ForageLocations> {
         titleTextStyle:
             GoogleFonts.philosopher(fontSize: 24, fontWeight: FontWeight.bold),
         centerTitle: true,
-        backgroundColor: Colors.deepOrange.shade400,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const HomePage(
-                  lat: 0,
-                  lng: 0,
-                  followUser: true,
-                  currentIndex: 0,
-                ),
-              ),
-            );
-          },
-        ),
+        backgroundColor: Colors.deepOrange.shade400,        
       ),
       body: Column(
         children: [
@@ -218,7 +202,7 @@ class _ForageLocationsState extends State<ForageLocations> {
                 }
               },
             ),
-          ),          
+          ),
         ],
       ),
     );
