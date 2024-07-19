@@ -6,7 +6,8 @@ import 'package:flutter_forager_app/screens/friends/friends_page.dart';
 import 'package:flutter_forager_app/screens/profile/profile_page.dart';
 
 class FriendsController extends StatefulWidget {
-  const FriendsController({super.key});
+  final int currentTab;
+  const FriendsController({super.key, required this.currentTab});
 
   @override
   State<FriendsController> createState() => _TimeSheetControllerState();
@@ -18,7 +19,8 @@ class _TimeSheetControllerState extends State<FriendsController> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 2,
+      initialIndex: widget.currentTab,
       child: Scaffold(
         backgroundColor: const Color(0xFFDFD3C3),
         appBar: AppBar(
@@ -30,7 +32,6 @@ class _TimeSheetControllerState extends State<FriendsController> {
             tabs: [
               Tab(text: 'Your Friends'),
               Tab(text: 'Requests'),
-              Tab(text: 'Your Profile'),
             ],
           ),
         ),
@@ -38,7 +39,6 @@ class _TimeSheetControllerState extends State<FriendsController> {
           children: [
             FriendsPage(),
             FriendRequestPage(),
-            ProfilePage(),
           ],
         ),
       ),

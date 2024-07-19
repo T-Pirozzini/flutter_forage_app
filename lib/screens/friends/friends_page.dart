@@ -23,6 +23,7 @@ class _FriendsPageState extends State<FriendsPage> {
         builder: (context) => ForageLocations(
           userId: friendId,
           userName: friendName,
+          userLocations: true,
         ),
       ),
     ).then((_) => onPop()); // Invoke the callback when page is popped
@@ -306,107 +307,6 @@ class _FriendsPageState extends State<FriendsPage> {
                             },
                           ),
                         ),
-                        // Expanded(
-                        //   child: ListView.builder(
-                        //     itemCount: userData['friends'].length,
-                        //     itemBuilder: (context, index) {
-                        //       final friendObject = userData['friends'][index];
-                        //       if (friendObject != null &&
-                        //           friendObject is Map<String, dynamic>) {
-                        //         final friendId = friendObject['email'];
-                        //         return FutureBuilder<DocumentSnapshot>(
-                        //           future: FirebaseFirestore.instance
-                        //               .collection('Users')
-                        //               .doc(friendId)
-                        //               .get(),
-                        //           builder: (context, snapshot) {
-                        //             if (snapshot.hasData) {
-                        //               final friendData = snapshot.data!.data();
-                        //               if (friendData != null &&
-                        //                   friendData is Map<String, dynamic>) {
-                        //                 final friendEmail = friendData['email'];
-                        //                 final friendUsername =
-                        //                     friendData['username'];
-                        //                 final friendProfilePic =
-                        //                     friendData['profilePic'];
-                        //                 final friendTotal =
-                        //                     friendData['friends'].length;
-                        //                 final friendObject = {
-                        //                   'email': friendEmail,
-                        //                   'username': friendUsername,
-                        //                   'profilePic': friendProfilePic,
-                        //                   'friends': friendTotal,
-                        //                 };
-
-                        //                 return GestureDetector(
-                        //                   onTap: () => goToForageLocationsPage(
-                        //                       friendId, friendUsername),
-                        //                   child: Dismissible(
-                        //                     key: UniqueKey(),
-                        //                     direction:
-                        //                         DismissDirection.endToStart,
-                        //                     background: Container(
-                        //                       color: Colors.red.shade400,
-                        //                       alignment: Alignment.centerRight,
-                        //                       padding: const EdgeInsets.only(
-                        //                           right: 16),
-                        //                       child: const Icon(Icons.delete,
-                        //                           color: Colors.white),
-                        //                     ),
-                        //                     confirmDismiss: (direction) async {
-                        //                       bool shouldDelete =
-                        //                           await _deleteFriendConfirmation();
-                        //                       if (shouldDelete) {
-                        //                         // Delete the friend from the user's data
-                        //                         FirebaseFirestore.instance
-                        //                             .collection('Users')
-                        //                             .doc(currentUser.email)
-                        //                             .update({
-                        //                           'friends':
-                        //                               FieldValue.arrayRemove(
-                        //                                   [friendObject]),
-                        //                         });
-                        //                         // Delete the user from the friend's data
-                        //                         FirebaseFirestore.instance
-                        //                             .collection('Users')
-                        //                             .doc(friendId)
-                        //                             .update({
-                        //                           'friends':
-                        //                               FieldValue.arrayRemove(
-                        //                                   [friendObject]),
-                        //                         });
-                        //                         ScaffoldMessenger.of(context)
-                        //                             .showSnackBar(
-                        //                           const SnackBar(
-                        //                             content:
-                        //                                 Text('Friend deleted'),
-                        //                           ),
-                        //                         );
-                        //                       }
-                        //                       return null;
-                        //                     },
-                        //                     child: Card(
-                        //                       child: ListTile(
-                        //                         title: Text(friendUsername),
-                        //                         subtitle: Text(friendEmail),
-                        //                         trailing: const Icon(
-                        //                             Icons.double_arrow),
-                        //                         iconColor:
-                        //                             Colors.deepOrange.shade400,
-                        //                       ),
-                        //                     ),
-                        //                   ),
-                        //                 );
-                        //               }
-                        //             }
-                        //             return const SizedBox();
-                        //           },
-                        //         );
-                        //       }
-                        //       return null;
-                        //     },
-                        //   ),
-                        // ),
                       ],
                     );
                   } else {
