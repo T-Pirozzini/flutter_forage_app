@@ -63,8 +63,8 @@ dependencies:
   firebase_storage: ^11.2.4
 
   # Speedial deps
-  image_picker: ^0.8.7+5
-  riverpod: ^2.5.1
+  image_picker: ^0.8.7+5  
+  flutter_riverpod: ^2.5.1
 
 dev_dependencies:
   flutter_test:
