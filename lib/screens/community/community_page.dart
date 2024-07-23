@@ -143,6 +143,17 @@ class _CommunityPageState extends State<CommunityPage> {
       ),
       body: Column(
         children: [
+          Container(
+            height: 50,
+            width: double.infinity,
+            color: Colors.grey.shade300,
+            child: Column(
+              children: [
+                Text("Care to share your secret spots with us?"),
+                Text('Like and/or bookmark forage locations and go explore!'),
+              ],
+            ),
+          ),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance

@@ -1,40 +1,60 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:flutter_forager_app/models/recipe.dart';
+import 'package:flutter_forager_app/providers/recipe_provider.dart';
+import 'package:flutter_forager_app/screens/recipes/recipe_card.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'add_recipe_page.dart';
 
-class RecipesPage extends StatefulWidget {
+class RecipesPage extends ConsumerWidget {
   const RecipesPage({super.key});
 
   @override
-  State<RecipesPage> createState() => _RecipesPageState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final recipeStream = ref.watch(recipeStreamProvider);
 
-class _RecipesPageState extends State<RecipesPage> {
-  File? _image;
-  final ImagePicker _picker = ImagePicker();
-
-  Future<void> _pickImage(ImageSource source) async {
-    final pickedFile = await _picker.pickImage(source: source);
-
-    if (pickedFile != null) {
-      setState(() {
-        _image = File(pickedFile.path);
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: Column(
-          children: [
-            Text('Recipes Page'),
-            SizedBox(height: 20),
-            _image == null ? Text('No image selected.') : Image.file(_image!),
-          ],
-        ),
+      appBar: AppBar(
+        title: const Text('RECIPES'),
+        titleTextStyle: GoogleFonts.philosopher(
+            fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 2.5),
+        centerTitle: true,
+        backgroundColor: Colors.grey.shade600,
+      ),
+      body: recipeStream.when(
+        data: (recipes) {
+          if (recipes.isEmpty) {
+            return Center(child: Text('No recipes found.'));
+          }
+
+          return CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Container(
+                  height: 50,
+                  color: Colors.grey.shade300,
+                  child: Column(
+                    children: [
+                      Text("Cook a meal with your foraged ingredients"),
+                      Text('and share with the community!'),
+                    ],
+                  ),
+                ),
+              ),
+              SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final recipe = recipes[index];
+                    return RecipeCard(recipe: recipe);
+                  },
+                  childCount: recipes.length,
+                ),
+              ),
+            ],
+          );
+        },
+        loading: () => Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(child: Text('Error: $err')),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.miniEndFloat,
       floatingActionButton: Padding(
