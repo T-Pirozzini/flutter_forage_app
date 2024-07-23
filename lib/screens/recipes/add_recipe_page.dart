@@ -111,7 +111,7 @@ class _AddRecipePageState extends State<AddRecipePage> {
       userName: _username!,
     );
 
-    await ref.read(recipeProvider).addRecipe(recipe);
+    await ref.read(recipeServiceProvider).addRecipe(recipe);
 
     // Clear fields after submission
     setState(() {

@@ -11,7 +11,7 @@ class RecipesPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final recipeStream = ref.watch(recipeProvider).getRecipes();
+    final recipeStream = ref.watch(recipeStreamProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -21,26 +21,40 @@ class RecipesPage extends ConsumerWidget {
         centerTitle: true,
         backgroundColor: Colors.grey.shade600,
       ),
-      body: StreamBuilder<List<Recipe>>(
-        stream: recipeStream,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+      body: recipeStream.when(
+        data: (recipes) {
+          if (recipes.isEmpty) {
             return Center(child: Text('No recipes found.'));
           }
 
-          final recipes = snapshot.data!;
-
-          return ListView.builder(
-            itemCount: recipes.length,
-            itemBuilder: (context, index) {
-              final recipe = recipes[index];
-              return RecipeCard(recipe: recipe);
-            },
+          return CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Container(
+                  height: 50,
+                  color: Colors.grey.shade300,
+                  child: Column(
+                    children: [
+                      Text("Cook a meal with your foraged ingredients"),
+                      Text('and share with the community!'),
+                    ],
+                  ),
+                ),
+              ),
+              SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final recipe = recipes[index];
+                    return RecipeCard(recipe: recipe);
+                  },
+                  childCount: recipes.length,
+                ),
+              ),
+            ],
           );
         },
+        loading: () => Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(child: Text('Error: $err')),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.miniEndFloat,
       floatingActionButton: Padding(
