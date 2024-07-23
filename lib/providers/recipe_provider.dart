@@ -13,4 +13,13 @@ class RecipeService {
   Future<void> addRecipe(Recipe recipe) async {
     await _firestore.collection('Recipes').add(recipe.toMap());
   }
+
+  Stream<List<Recipe>> getRecipes() {
+    return _firestore.collection('Recipes').snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return Recipe.fromMap(data);
+      }).toList();
+    });
+  }
 }

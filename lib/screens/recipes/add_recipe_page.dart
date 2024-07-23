@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/models/recipe.dart';
@@ -22,7 +23,31 @@ class _AddRecipePageState extends State<AddRecipePage> {
   final TextEditingController _stepController = TextEditingController();
   final List<String> _ingredients = [];
   final List<String> _steps = [];
-  final String _userId = FirebaseAuth.instance.currentUser!.email!;
+  final String _userEmail = FirebaseAuth.instance.currentUser!.email!;
+  String? _username;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUsername();
+  }
+
+  Future<void> _fetchUsername() async {
+    try {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(_userEmail)
+          .get();
+      if (userDoc.exists) {
+        setState(() {
+          _username = userDoc.get('username');
+        });
+      }
+    } catch (e) {
+      // Handle errors if needed
+      print('Error fetching username: $e');
+    }
+  }
 
   Future<void> _pickImage(ImageSource source) async {
     if (_images.length >= 3) {
@@ -82,7 +107,8 @@ class _AddRecipePageState extends State<AddRecipePage> {
       steps: _steps,
       imageUrls: imageUrls,
       timestamp: DateTime.now(),
-      userId: _userId,
+      userEmail: _userEmail,
+      userName: _username!,
     );
 
     await ref.read(recipeProvider).addRecipe(recipe);

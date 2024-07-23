@@ -4,7 +4,8 @@ class Recipe {
   final List<String> steps;
   final List<String> imageUrls;
   final DateTime timestamp;
-  final String userId;
+  final String userEmail;
+  final String userName;
 
   Recipe({
     required this.name,
@@ -12,7 +13,8 @@ class Recipe {
     required this.steps,
     required this.imageUrls,
     required this.timestamp,
-    required this.userId,
+    required this.userEmail,
+    required this.userName,
   });
 
   Map<String, dynamic> toMap() {
@@ -20,9 +22,23 @@ class Recipe {
       'name': name,
       'ingredients': ingredients,
       'steps': steps,
-      'imagePaths': imageUrls,
+      'imageUrls': imageUrls,
       'timestamp': timestamp.toIso8601String(),
-      'userId': userId,
+      'userEmail': userEmail,
+      'userName': userName,
     };
+  }
+
+  static Recipe fromMap(Map<String, dynamic> map) {
+    return Recipe(
+      name: map['name'],
+      ingredients: List<String>.from(map['ingredients']),
+      steps: List<String>.from(map['steps']),
+      imageUrls:
+          map['imageUrls'] != null ? List<String>.from(map['imageUrls']) : [],
+      timestamp: DateTime.parse(map['timestamp']),
+      userEmail: map['userEmail'],
+      userName: map['userName'],
+    );
   }
 }
