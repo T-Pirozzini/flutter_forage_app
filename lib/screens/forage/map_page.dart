@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/screens/forage/map_style.dart';
 import 'package:flutter_forager_app/screens/home/home_page.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -313,8 +314,26 @@ class MapPageState extends State<MapPage> {
     // bool _followUser = followUser;
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('FORAGE'),
+        titleTextStyle: GoogleFonts.philosopher(
+            fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 2.5),
+        centerTitle: true,
+        backgroundColor: Colors.grey.shade600,
+      ),
       body: Column(
         children: [
+          Container(
+            height: 50,
+            width: double.infinity,
+            color: Colors.grey.shade300,
+            child: Column(
+              children: [
+                Text("Explore your local area for forageable ingredients."),
+                Text('Mark the location so you can find it again!'),
+              ],
+            ),
+          ),
           Expanded(
             // Container(
             child: GoogleMap(
@@ -353,7 +372,7 @@ class MapPageState extends State<MapPage> {
             ),
           ),
           Positioned(
-            top: 20,
+            top: 120,
             left: 20,
             right: -100,
             child: Container(

@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:floating_bottom_navigation_bar/floating_bottom_navigation_bar.dart';
 import 'package:flutter_forager_app/components/ad_mob_service.dart';
-import 'package:flutter_forager_app/screens/forage/speed_dial.dart';
+import 'package:flutter_forager_app/screens/forage/marker_buttons.dart';
 import 'package:flutter_forager_app/screens/profile/profile_page.dart';
 import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
 import 'package:flutter_forager_app/screens/friends/friends_controller.dart';
@@ -247,7 +247,7 @@ class _HomePageState extends State<HomePage> {
               width: double.infinity,
               height: 50,
               child: AdWidget(ad: _banner!),
-            ),
+            ),          
           Expanded(
             child: pages[currentIndex],
           ),
