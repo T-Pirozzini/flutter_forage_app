@@ -254,12 +254,14 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
-      floatingActionButton: pages[currentIndex] is MapPage
+      floatingActionButton:       
+      pages[currentIndex] is MapPage
           ? Padding(
               padding: const EdgeInsets.fromLTRB(0, 0, 0, 20),
               child: const MarkerButtons(),
             )
           : null,
+
       extendBody: true,
       bottomNavigationBar: FloatingNavbar(
         onTap: (index) => setState(() => currentIndex = index),
