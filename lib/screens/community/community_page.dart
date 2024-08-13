@@ -133,7 +133,7 @@ class _CommunityPageState extends State<CommunityPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade200,
+      backgroundColor: Colors.blueGrey,      
       appBar: AppBar(
         title: const Text('COMMUNITY'),
         titleTextStyle: GoogleFonts.philosopher(

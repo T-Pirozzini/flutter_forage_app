@@ -1,21 +1,36 @@
+import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/components/ad_mob_service.dart';
+import 'package:flutter_forager_app/providers/marker_count_provider.dart';
 import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
 import 'package:flutter_forager_app/screens/friends/friends_controller.dart';
+import 'package:flutter_forager_app/screens/profile/info_card.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class ProfilePage extends StatefulWidget {
+class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
 
   @override
-  State<ProfilePage> createState() => _ProfilePageState();
+  _ProfilePageState createState() => _ProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> {
+class _ProfilePageState extends ConsumerState<ProfilePage> {
   // current user
   final currentUser = FirebaseAuth.instance.currentUser!;
+
+  @override
+  void initState() {
+    super.initState();
+    final markerCountNotifier = ref.read(markerCountProvider.notifier);
+    final nonOwnerMarkerCountNotifier =
+        ref.read(nonOwnerMarkerCountProvider.notifier);
+
+    markerCountNotifier.updateMarkerCount(currentUser.email!, true);
+    nonOwnerMarkerCountNotifier.updateNonOwnerMarkerCount(currentUser.email!);
+  }
 
   // all users
   final usersCollection = FirebaseFirestore.instance.collection('Users');
@@ -274,9 +289,11 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = FirebaseAuth.instance.currentUser!;
+    final markerCount = ref.watch(markerCountProvider);
+    final nonOwnerMarkerCount = ref.watch(nonOwnerMarkerCountProvider);
+
     return Scaffold(
-      backgroundColor: Colors.deepOrange.shade100,
+      backgroundColor: Colors.blueGrey,
       appBar: AppBar(
         title: const Text('PROFILE', style: TextStyle(letterSpacing: 2.5)),
         titleTextStyle:
@@ -304,9 +321,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
                   return Center(
                     child: ListView(
-                      padding: const EdgeInsets.only(
-                        top: 20,
-                      ),
+                      padding: const EdgeInsets.only(top: 20),
                       children: [
                         Column(
                           children: [
@@ -319,15 +334,23 @@ class _ProfilePageState extends State<ProfilePage> {
                                     userData['username'],
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
+                                      color: Colors.white,
                                       fontSize: 24,
                                     ),
                                   ),
                                 ),
                                 IconButton(
                                   onPressed: () => editField('username'),
-                                  icon: const Icon(
-                                    Icons.edit,
-                                    color: Colors.deepOrange,
+                                  icon: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.white,
+                                    ),
+                                    child: const Icon(
+                                      Icons.edit,
+                                      color: Colors.deepOrange,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -336,7 +359,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               userData['email'],
                               style: const TextStyle(
                                 fontSize: 14,
-                                color: Colors.black87,
+                                color: Colors.white70,
                               ),
                             ),
                           ],
@@ -374,128 +397,24 @@ class _ProfilePageState extends State<ProfilePage> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('View your Forage Locations'),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Row(
-                                  children: [
-                                    const Text('You have '),
-                                    Text(
-                                      'Add # of markers in here with Riverpod',
-                                      style: const TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                    const Text(' location(s).'),
-                                  ],
-                                ),
-                                IconButton(
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => ForageLocations(
-                                          userId: currentUser.email!,
-                                          userName:
-                                              currentUser.email!.split("@")[0],
-                                          userLocations: true,
-                                        ),
-                                      ),
-                                    );
-                                    AdMobService.showInterstitialAd();
-                                  },
-                                  icon: const Icon(
-                                    Icons.arrow_forward_ios,
-                                    color: Colors.deepOrange,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Divider(
-                              thickness: 2,
-                              indent: 15,
-                              endIndent: 15,
-                              color: Colors.white,
-                            ),
-                            Text('View your Community Bookmarked Locations'),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Row(
-                                  children: [
-                                    const Text('You have '),
-                                    Text(
-                                      'Add # of markers in here with Riverpod',
-                                      style: const TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                    const Text(' location(s).'),
-                                  ],
-                                ),
-                                IconButton(
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => ForageLocations(
-                                          userId: currentUser.email!,
-                                          userName: "Bookmarked Locations",
-                                          userLocations: false,
-                                        ),
-                                      ),
-                                    );
-                                    AdMobService.showInterstitialAd();
-                                  },
-                                  icon: const Icon(
-                                    Icons.arrow_forward_ios,
-                                    color: Colors.deepOrange,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Divider(
-                              thickness: 2,
-                              indent: 15,
-                              endIndent: 15,
-                              color: Colors.white,
-                            ),
-                            Text('View your Friends Locations'),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Image.asset('lib/assets/images/friends.png',
-                                        width: 30, color: Colors.deepOrange),
-                                    const SizedBox(width: 10),
-                                    const Text('You have '),
-                                    Text(
-                                      userData['friends'].length.toString(),
-                                      style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                    const Text(' friend(s).'),
-                                  ],
-                                ),
-                                IconButton(
-                                  onPressed: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          const FriendsController(
-                                              currentTab: 0),
+                            InfoCard(
+                              icon: Icons.location_on,
+                              text: 'Your Forage Locations',
+                              countText: '$markerCount saved location(s).',
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ForageLocations(
+                                      userId: currentUser.email!,
+                                      userName:
+                                          currentUser.email!.split("@")[0],
+                                      userLocations: true,
                                     ),
                                   ),
-                                  icon: const Icon(
-                                    Icons.arrow_forward_ios,
-                                    color: Colors.deepOrange,
-                                  ),
-                                ),
-                              ],
+                                );
+                                AdMobService.showInterstitialAd();
+                              },
                             ),
                             const Divider(
                               thickness: 2,
@@ -503,48 +422,26 @@ class _ProfilePageState extends State<ProfilePage> {
                               endIndent: 15,
                               color: Colors.white,
                             ),
-                            Text('View your friend requests'),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Row(
-                                  children: [
-                                    const Text('Incoming/Pending Requests: '),
-                                    Text(
-                                      userData['friendRequests']
-                                          .length
-                                          .toString(),
-                                      style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                    SizedBox(width: 10),
-                                    const Text('Outgoing/Sent Requests: '),
-                                    Text(
-                                      userData['sentFriendRequests']
-                                          .length
-                                          .toString(),
-                                      style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                  ],
-                                ),
-                                IconButton(
-                                  onPressed: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          const FriendsController(
-                                              currentTab: 1),
+
+// View your Community Bookmarked Locations
+                            InfoCard(
+                              icon: Icons.bookmark,
+                              text: 'Community Locations',
+                              countText:
+                                  '$nonOwnerMarkerCount bookmarked location(s).',
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ForageLocations(
+                                      userId: currentUser.email!,
+                                      userName: "Bookmarked Locations",
+                                      userLocations: false,
                                     ),
                                   ),
-                                  icon: const Icon(
-                                    Icons.arrow_forward_ios,
-                                    color: Colors.deepOrange,
-                                  ),
-                                ),
-                              ],
+                                );
+                                AdMobService.showInterstitialAd();
+                              },
                             ),
                             const Divider(
                               thickness: 2,
@@ -552,16 +449,81 @@ class _ProfilePageState extends State<ProfilePage> {
                               endIndent: 15,
                               color: Colors.white,
                             ),
-                            if (userData['posts'].length < 1)
-                              const Text('You haven\'t posted anything yet.')
-                            else
-                              Text(userData['posts'].toString()),
+
+// View your Friends Locations
+                            InfoCard(
+                              icon: Icons.group,
+                              text: 'Friends Locations',
+                              countText:
+                                  '${userData['friends'].length} friend(s).',
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const FriendsController(currentTab: 0),
+                                  ),
+                                );
+                              },
+                            ),
                             const Divider(
                               thickness: 2,
                               indent: 15,
                               endIndent: 15,
                               color: Colors.white,
                             ),
+
+// View your friend requests
+                            InfoCard(
+                              icon: Icons.person_add,
+                              text: 'Friend requests',
+                              countText:
+                                  'Incoming: ${userData['friendRequests'].length} '
+                                  'Outgoing: ${userData['sentFriendRequests'].length}',
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const FriendsController(currentTab: 1),
+                                  ),
+                                );
+                              },
+                            ),
+                            //Implement in the future - db is setup
+                            // Card(
+                            //   elevation: 2,
+                            //   margin: const EdgeInsets.symmetric(
+                            //       vertical: 8, horizontal: 16),
+                            //   shape: RoundedRectangleBorder(
+                            //     borderRadius: BorderRadius.circular(12),
+                            //   ),
+                            //   child: Padding(
+                            //     padding: const EdgeInsets.all(16),
+                            //     child: userData['posts'].length < 1
+                            //         ? const Text(
+                            //             "You haven't posted anything yet.",
+                            //             style: TextStyle(
+                            //               fontSize: 16,
+                            //               fontWeight: FontWeight.bold,
+                            //             ),
+                            //           )
+                            //         : Text(
+                            //             userData['posts'].toString(),
+                            //             style: const TextStyle(
+                            //               fontSize: 16,
+                            //               fontWeight: FontWeight.bold,
+                            //             ),
+                            //           ),
+                            //   ),
+                            // ),
+
+                            const Divider(
+                                thickness: 2,
+                                indent: 15,
+                                endIndent: 15,
+                                color: Colors.white),
+                            const SizedBox(height: 100),
                           ],
                         ),
                       ],
@@ -594,13 +556,20 @@ class _ProfilePageState extends State<ProfilePage> {
           child: buildProfileImage(),
         ),
         Positioned(
-          top: top,
-          right: 10,
+          top: top - 90,
+          right: 20,
           child: IconButton(
             onPressed: () => editProfileBackground('profileBackground'),
-            icon: const Icon(
-              Icons.edit,
-              color: Colors.deepOrange,
+            icon: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+              ),
+              child: const Icon(
+                Icons.edit,
+                color: Colors.deepOrange,
+              ),
             ),
           ),
         ),
@@ -643,13 +612,20 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ),
           Positioned(
-            top: 25,
-            right: 15,
+            top: 0,
+            right: 5,
             child: IconButton(
               onPressed: () => editProfileImage('profilePic'),
-              icon: const Icon(
-                Icons.edit,
-                color: Colors.deepOrange,
+              icon: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                ),
+                child: const Icon(
+                  Icons.edit,
+                  color: Colors.deepOrange,
+                ),
               ),
             ),
           ),

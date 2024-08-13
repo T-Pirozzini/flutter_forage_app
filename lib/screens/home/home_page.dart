@@ -238,7 +238,7 @@ class _HomePageState extends State<HomePage> {
         onAboutUsTap: goAboutUsPage,
         onCreditsTap: goCreditsPage,
         showDeleteConfirmationDialog: showDeleteConfirmationDialog,
-      ),
+      ),      
       body: Column(
         children: [
           if (_isBannerAdLoaded && _banner != null)
