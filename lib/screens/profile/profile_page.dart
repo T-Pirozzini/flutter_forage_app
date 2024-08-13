@@ -365,7 +365,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                           ],
                         ),
                         Container(
-                          height: 80,
+                          height: 100, // Adjust height as needed
                           margin: const EdgeInsets.all(8.0),
                           padding: const EdgeInsets.all(8.0),
                           decoration: BoxDecoration(
@@ -374,14 +374,17 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                             color: Colors.white,
                           ),
                           child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Flexible(
+                              Expanded(
                                 child: Text(
                                   userData['bio'],
                                   style: const TextStyle(
                                     fontSize: 18,
                                   ),
+                                  maxLines:
+                                      3, // Allows up to 3 lines, adjust as needed
+                                  overflow: TextOverflow
+                                      .ellipsis, // Adds "..." if text overflows
                                 ),
                               ),
                               IconButton(
@@ -416,12 +419,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                 AdMobService.showInterstitialAd();
                               },
                             ),
-                            const Divider(
-                              thickness: 2,
-                              indent: 15,
-                              endIndent: 15,
-                              color: Colors.white,
-                            ),
 
 // View your Community Bookmarked Locations
                             InfoCard(
@@ -443,12 +440,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                 AdMobService.showInterstitialAd();
                               },
                             ),
-                            const Divider(
-                              thickness: 2,
-                              indent: 15,
-                              endIndent: 15,
-                              color: Colors.white,
-                            ),
 
 // View your Friends Locations
                             InfoCard(
@@ -465,12 +456,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                   ),
                                 );
                               },
-                            ),
-                            const Divider(
-                              thickness: 2,
-                              indent: 15,
-                              endIndent: 15,
-                              color: Colors.white,
                             ),
 
 // View your friend requests
@@ -517,12 +502,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                             //           ),
                             //   ),
                             // ),
-
-                            const Divider(
-                                thickness: 2,
-                                indent: 15,
-                                endIndent: 15,
-                                color: Colors.white),
                             const SizedBox(height: 100),
                           ],
                         ),
