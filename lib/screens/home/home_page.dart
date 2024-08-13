@@ -64,9 +64,7 @@ class _HomePageState extends State<HomePage> {
 
   void _createBannerAd() {
     _banner = BannerAd(
-      // adUnitId: AdMobService.bannerAdUnitId!, // Uncomment this line before production
-      adUnitId:
-          'ca-app-pub-3940256099942544/6300978111', // This is a test ad unit ID
+      adUnitId: AdMobService.bannerAdUnitId!,
       size: AdSize.fullBanner,
       listener: BannerAdListener(
         onAdLoaded: (Ad ad) {

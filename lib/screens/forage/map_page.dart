@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_forager_app/components/ad_mob_service.dart';
 import 'package:flutter_forager_app/screens/forage/map_style.dart';
 import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
 import 'package:flutter_forager_app/screens/home/home_page.dart';
@@ -287,7 +288,7 @@ class MapPageState extends State<MapPage> {
               ),
             ),
           );
-          print(owner);
+          AdMobService.showInterstitialAd();
         },
       ),
       position: location,
