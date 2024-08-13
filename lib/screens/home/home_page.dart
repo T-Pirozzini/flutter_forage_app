@@ -221,12 +221,13 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'FORAGER',
-          style: TextStyle(letterSpacing: 2.5),
+        title: SizedBox(
+          height: kToolbarHeight,
+          child: Image.asset(
+            'assets/images/forager_appbar_logo.png',
+          ),
         ),
-        titleTextStyle:
-            GoogleFonts.philosopher(fontSize: 34, fontWeight: FontWeight.bold),
+        toolbarHeight: 80,
         centerTitle: true,
         backgroundColor: Colors.deepOrange.shade300,
         elevation: 2,
@@ -247,21 +248,19 @@ class _HomePageState extends State<HomePage> {
               width: double.infinity,
               height: 50,
               child: AdWidget(ad: _banner!),
-            ),          
+            ),
           Expanded(
             child: pages[currentIndex],
           ),
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
-      floatingActionButton:       
-      pages[currentIndex] is MapPage
+      floatingActionButton: pages[currentIndex] is MapPage
           ? Padding(
               padding: const EdgeInsets.fromLTRB(0, 0, 0, 20),
               child: const MarkerButtons(),
             )
           : null,
-
       extendBody: true,
       bottomNavigationBar: FloatingNavbar(
         onTap: (index) => setState(() => currentIndex = index),

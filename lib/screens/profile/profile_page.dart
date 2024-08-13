@@ -3,9 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/components/ad_mob_service.dart';
 import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
-import 'package:flutter_forager_app/screens/friends/friend_request_page.dart';
 import 'package:flutter_forager_app/screens/friends/friends_controller.dart';
-import 'package:flutter_forager_app/screens/friends/friends_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class ProfilePage extends StatefulWidget {
