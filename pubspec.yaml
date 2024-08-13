@@ -66,6 +66,7 @@ dependencies:
   image_picker: ^0.8.7+5  
   flutter_riverpod: ^2.5.1
   app_tracking_transparency: ^2.0.6
+  cached_network_image: ^3.3.1
 
 dev_dependencies:
   flutter_test:
