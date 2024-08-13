@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_forager_app/screens/forage/map_style.dart';
+import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
 import 'package:flutter_forager_app/screens/home/home_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -150,7 +151,6 @@ class MapPageState extends State<MapPage> {
     return location;
   }
 
-  // get current users marker data
   void fetchMarkerData() async {
     final currentUserEmail = currentUser.email;
 
@@ -172,12 +172,14 @@ class MapPageState extends State<MapPage> {
       final latitude = location['latitude'] as double;
       final longitude = location['longitude'] as double;
       final type = data['type'] as String;
+      final owner = data['markerOwner'];
 
       addMarker(
         name: name,
         description: description,
         location: LatLng(latitude, longitude),
         type: type,
+        owner: owner,
       );
     }
 
@@ -190,8 +192,8 @@ class MapPageState extends State<MapPage> {
     final friendsData = friendsSnapshot.data();
     if (friendsData != null && friendsData.containsKey('friends')) {
       final friendsList = friendsData['friends'] as List<dynamic>;
-      if (friendsList.isNotEmpty) {
-        final friendMap = friendsList[0] as Map<String, dynamic>;
+      for (final friend in friendsList) {
+        final friendMap = friend as Map<String, dynamic>;
         final friendEmail = friendMap['email'] as String;
 
         // Fetch markers from each friend's collection
@@ -212,12 +214,14 @@ class MapPageState extends State<MapPage> {
           final latitude = location['latitude'] as double;
           final longitude = location['longitude'] as double;
           final type = data['type'] as String;
+          final owner = data['markerOwner'];
 
           addMarker(
             name: name,
             description: description,
             location: LatLng(latitude, longitude),
             type: type,
+            owner: owner,
           );
         }
       }
@@ -243,12 +247,14 @@ class MapPageState extends State<MapPage> {
         final latitude = location['latitude'] as double;
         final longitude = location['longitude'] as double;
         final type = data['type'] as String;
+        final owner = data['markerOwner'];
 
         addMarker(
           name: name,
           description: description,
           location: LatLng(latitude, longitude),
           type: type,
+          owner: owner,
         );
       }
     });
@@ -260,6 +266,7 @@ class MapPageState extends State<MapPage> {
     required String description,
     required LatLng location,
     required String type,
+    required String owner,
   }) async {
     final markerId = MarkerId(name);
     final marker = Marker(
@@ -267,17 +274,21 @@ class MapPageState extends State<MapPage> {
       infoWindow: InfoWindow(
         title: name,
         snippet: '(tap here for more info)',
-        onTap: () => Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (BuildContext context) => HomePage(
-              lat: location.latitude,
-              lng: location.longitude,
-              followUser: false,
-              currentIndex: 1,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (BuildContext context) => ForageLocations(
+                userId: currentUser.email!,
+                userName: owner == currentUser.email
+                    ? owner.split("@")[0]
+                    : "Bookmarked Locations",
+                userLocations: owner == currentUser.email,
+              ),
             ),
-          ),
-        ),
+          );
+          print(owner);
+        },
       ),
       position: location,
       icon: await getMarkerIcon(type),
