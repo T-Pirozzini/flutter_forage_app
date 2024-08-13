@@ -64,9 +64,7 @@ class _HomePageState extends State<HomePage> {
 
   void _createBannerAd() {
     _banner = BannerAd(
-      // adUnitId: AdMobService.bannerAdUnitId!, // Uncomment this line before production
-      adUnitId:
-          'ca-app-pub-3940256099942544/6300978111', // This is a test ad unit ID
+      adUnitId: AdMobService.bannerAdUnitId!,
       size: AdSize.fullBanner,
       listener: BannerAdListener(
         onAdLoaded: (Ad ad) {
@@ -221,12 +219,13 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'FORAGER',
-          style: TextStyle(letterSpacing: 2.5),
+        title: SizedBox(
+          height: kToolbarHeight,
+          child: Image.asset(
+            'assets/images/forager_appbar_logo.png',
+          ),
         ),
-        titleTextStyle:
-            GoogleFonts.philosopher(fontSize: 34, fontWeight: FontWeight.bold),
+        toolbarHeight: 80,
         centerTitle: true,
         backgroundColor: Colors.deepOrange.shade300,
         elevation: 2,
@@ -239,7 +238,7 @@ class _HomePageState extends State<HomePage> {
         onAboutUsTap: goAboutUsPage,
         onCreditsTap: goCreditsPage,
         showDeleteConfirmationDialog: showDeleteConfirmationDialog,
-      ),
+      ),      
       body: Column(
         children: [
           if (_isBannerAdLoaded && _banner != null)
@@ -247,21 +246,19 @@ class _HomePageState extends State<HomePage> {
               width: double.infinity,
               height: 50,
               child: AdWidget(ad: _banner!),
-            ),          
+            ),
           Expanded(
             child: pages[currentIndex],
           ),
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
-      floatingActionButton:       
-      pages[currentIndex] is MapPage
+      floatingActionButton: pages[currentIndex] is MapPage
           ? Padding(
               padding: const EdgeInsets.fromLTRB(0, 0, 0, 20),
               child: const MarkerButtons(),
             )
           : null,
-
       extendBody: true,
       bottomNavigationBar: FloatingNavbar(
         onTap: (index) => setState(() => currentIndex = index),

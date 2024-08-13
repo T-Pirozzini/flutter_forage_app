@@ -14,6 +14,7 @@ class RecipesPage extends ConsumerWidget {
     final recipeStream = ref.watch(recipeStreamProvider);
 
     return Scaffold(
+      backgroundColor: Colors.blueGrey,
       appBar: AppBar(
         title: const Text('RECIPES'),
         titleTextStyle: GoogleFonts.philosopher(

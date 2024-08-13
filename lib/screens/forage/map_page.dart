@@ -1,8 +1,12 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_forager_app/components/ad_mob_service.dart';
 import 'package:flutter_forager_app/screens/forage/map_style.dart';
+import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
 import 'package:flutter_forager_app/screens/home/home_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -67,6 +71,9 @@ class MapPageState extends State<MapPage> {
 
   // create set of markers
   final Set<Marker> _markers = {};
+
+  // create set of circles
+  final Set<Circle> _circles = {};
 
   Position? currentLocation;
   late CameraPosition _kGooglePlex;
@@ -145,7 +152,6 @@ class MapPageState extends State<MapPage> {
     return location;
   }
 
-  // get current users marker data
   void fetchMarkerData() async {
     final currentUserEmail = currentUser.email;
 
@@ -167,12 +173,14 @@ class MapPageState extends State<MapPage> {
       final latitude = location['latitude'] as double;
       final longitude = location['longitude'] as double;
       final type = data['type'] as String;
+      final owner = data['markerOwner'];
 
       addMarker(
         name: name,
         description: description,
         location: LatLng(latitude, longitude),
         type: type,
+        owner: owner,
       );
     }
 
@@ -185,8 +193,8 @@ class MapPageState extends State<MapPage> {
     final friendsData = friendsSnapshot.data();
     if (friendsData != null && friendsData.containsKey('friends')) {
       final friendsList = friendsData['friends'] as List<dynamic>;
-      if (friendsList.isNotEmpty) {
-        final friendMap = friendsList[0] as Map<String, dynamic>;
+      for (final friend in friendsList) {
+        final friendMap = friend as Map<String, dynamic>;
         final friendEmail = friendMap['email'] as String;
 
         // Fetch markers from each friend's collection
@@ -207,12 +215,14 @@ class MapPageState extends State<MapPage> {
           final latitude = location['latitude'] as double;
           final longitude = location['longitude'] as double;
           final type = data['type'] as String;
+          final owner = data['markerOwner'];
 
           addMarker(
             name: name,
             description: description,
             location: LatLng(latitude, longitude),
             type: type,
+            owner: owner,
           );
         }
       }
@@ -238,12 +248,14 @@ class MapPageState extends State<MapPage> {
         final latitude = location['latitude'] as double;
         final longitude = location['longitude'] as double;
         final type = data['type'] as String;
+        final owner = data['markerOwner'];
 
         addMarker(
           name: name,
           description: description,
           location: LatLng(latitude, longitude),
           type: type,
+          owner: owner,
         );
       }
     });
@@ -255,6 +267,7 @@ class MapPageState extends State<MapPage> {
     required String description,
     required LatLng location,
     required String type,
+    required String owner,
   }) async {
     final markerId = MarkerId(name);
     final marker = Marker(
@@ -262,36 +275,59 @@ class MapPageState extends State<MapPage> {
       infoWindow: InfoWindow(
         title: name,
         snippet: '(tap here for more info)',
-        onTap: () => Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (BuildContext context) => HomePage(
-              lat: location.latitude,
-              lng: location.longitude,
-              followUser: false,
-              currentIndex: 1,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (BuildContext context) => ForageLocations(
+                userId: currentUser.email!,
+                userName: owner == currentUser.email
+                    ? owner.split("@")[0]
+                    : "Bookmarked Locations",
+                userLocations: owner == currentUser.email,
+              ),
             ),
-          ),
-        ),
+          );
+          AdMobService.showInterstitialAd();
+        },
       ),
       position: location,
       icon: await getMarkerIcon(type),
+    );
+
+    // Create the corresponding circle
+    final circle = Circle(
+      circleId: CircleId('circle_$name'),
+      center: location,
+      radius: 200, // Adjust radius as needed
+      fillColor: Colors.pinkAccent.withOpacity(0.3),
+      strokeColor: Colors.pinkAccent,
+      strokeWidth: 2,
     );
 
     if (!mounted) return;
 
     setState(() {
       _markers.add(marker);
+      _circles.add(circle);
     });
   }
 
-  // get marker icon
   Future<BitmapDescriptor> getMarkerIcon(String type) async {
-    const double markerSize = 2.0;
-    return BitmapDescriptor.fromAssetImage(
-      const ImageConfiguration(size: Size(markerSize, markerSize)),
-      'lib/assets/images/${type.toLowerCase()}_marker.png',
+    const double markerSize = 100.0; // Adjust to your desired size
+    final ByteData byteData = await rootBundle
+        .load('lib/assets/images/${type.toLowerCase()}_marker.png');
+    final ui.Codec codec = await ui.instantiateImageCodec(
+      byteData.buffer.asUint8List(),
+      targetWidth: markerSize.toInt(),
+      targetHeight: markerSize.toInt(),
     );
+    final ui.FrameInfo frameInfo = await codec.getNextFrame();
+    final ByteData? byteDataBuffer =
+        await frameInfo.image.toByteData(format: ui.ImageByteFormat.png);
+    final Uint8List markerIcon = byteDataBuffer!.buffer.asUint8List();
+
+    return BitmapDescriptor.fromBytes(markerIcon);
   }
 
   // go to place
@@ -337,7 +373,7 @@ class MapPageState extends State<MapPage> {
           Expanded(
             // Container(
             child: GoogleMap(
-              mapType: MapType.normal,
+              mapType: MapType.terrain,
               markers: _markers,
               initialCameraPosition: _kGooglePlex,
               onMapCreated: (GoogleMapController controller) {
@@ -345,6 +381,7 @@ class MapPageState extends State<MapPage> {
                 controller.setMapStyle(mapstyle);
               },
               padding: const EdgeInsets.only(bottom: 60, left: 10),
+              circles: _circles,
             ),
           ),
         ],
