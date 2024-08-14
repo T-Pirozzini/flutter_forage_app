@@ -1,7 +1,9 @@
+import 'package:flutter_forager_app/models/ingredient.dart';
+
 class Recipe {
   final String id;
   final String name;
-  final List<String> ingredients;
+  final List<Ingredient> ingredients;
   final List<String> steps;
   final List<String> imageUrls;
   final DateTime timestamp;
@@ -22,7 +24,7 @@ class Recipe {
   Map<String, dynamic> toMap() {
     return {
       'name': name,
-      'ingredients': ingredients,
+      'ingredients': ingredients.map((ingredient) => ingredient.toMap()).toList(),
       'steps': steps,
       'imageUrls': imageUrls,
       'timestamp': timestamp.toIso8601String(),
@@ -35,7 +37,9 @@ class Recipe {
     return Recipe(
       id: id,
       name: map['name'],
-      ingredients: List<String>.from(map['ingredients']),
+      ingredients: (map['ingredients'] as List)
+          .map((ingredientMap) => Ingredient.fromMap(ingredientMap))
+          .toList(),
       steps: List<String>.from(map['steps']),
       imageUrls:
           map['imageUrls'] != null ? List<String>.from(map['imageUrls']) : [],
