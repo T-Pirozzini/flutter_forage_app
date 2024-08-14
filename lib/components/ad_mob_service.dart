@@ -6,11 +6,11 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 class AdMobService {
   static String? get bannerAdUnitId {
     if (Platform.isAndroid) {
-      return 'ca-app-pub-3940256099942544/6300978111'; // Test ad unit ID
-      // return 'ca-app-pub-8699226690238380/2859427622'; // production ad unit ID
+      // return 'ca-app-pub-3940256099942544/6300978111'; // Test ad unit ID
+      return 'ca-app-pub-8699226690238380/2859427622'; // production ad unit ID
     } else if (Platform.isIOS) {
-      return 'ca-app-pub-8699226690238380/8111754306';
-      // return ' ca-app-pub-8699226690238380/8111754306' ; // production ad unit ID
+      // return 'ca-app-pub-8699226690238380/8111754306';
+      return ' ca-app-pub-8699226690238380/8111754306'; // production ad unit ID
     }
     return null;
   }
@@ -27,11 +27,11 @@ class AdMobService {
 
   static String? get interstitialAdUnitId {
     if (Platform.isAndroid) {
-      return 'ca-app-pub-3940256099942544/1033173712'; // Test ad unit ID
-      // return 'ca-app-pub-8699226690238380/9665198761'; // production ad unit ID
+      // return 'ca-app-pub-3940256099942544/1033173712'; // Test ad unit ID
+      return 'ca-app-pub-8699226690238380/9665198761'; // production ad unit ID
     } else if (Platform.isIOS) {
-      return 'ca-app-pub-3940256099942544/4411468910'; // Test ad unit ID
-      // return 'ca-app-pub-8699226690238380/3632912923'; // production ad unit ID
+      // return 'ca-app-pub-3940256099942544/4411468910'; // Test ad unit ID
+      return 'ca-app-pub-8699226690238380/3632912923'; // production ad unit ID
     }
     return null;
   }
