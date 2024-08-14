@@ -20,7 +20,11 @@ class RecipeService {
   }
 
   Stream<List<Recipe>> getRecipes() {
-    return _firestore.collection('Recipes').snapshots().map((snapshot) {
+    return _firestore
+        .collection('Recipes')
+        .orderBy('timestamp', descending: true) // Order by timestamp descending
+        .snapshots()
+        .map((snapshot) {
       return snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
         return Recipe.fromMap(doc.id, data);

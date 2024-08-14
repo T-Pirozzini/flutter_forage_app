@@ -2,8 +2,8 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_forager_app/models/ingredient.dart';
 import 'package:flutter_forager_app/models/recipe.dart';
-import 'package:flutter_forager_app/providers/recipe_provider.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,10 +21,11 @@ class _AddRecipePageState extends State<AddRecipePage> {
   final TextEditingController _ingredientController = TextEditingController();
   final TextEditingController _quantityController = TextEditingController();
   final TextEditingController _stepController = TextEditingController();
-  final List<String> _ingredients = [];
+  final List<Ingredient> _ingredients = [];
   final List<String> _steps = [];
   final String _userEmail = FirebaseAuth.instance.currentUser!.email!;
   String? _username;
+  bool _isForaged = false;
 
   @override
   void initState() {
@@ -85,13 +86,19 @@ class _AddRecipePageState extends State<AddRecipePage> {
   }
 
   void _addIngredient() {
-    final ingredient = _ingredientController.text.trim();
+    final ingredientName = _ingredientController.text.trim();
     final quantity = _quantityController.text.trim();
-    if (ingredient.isNotEmpty && quantity.isNotEmpty) {
+    if (ingredientName.isNotEmpty && quantity.isNotEmpty) {
+      final ingredient = Ingredient(
+        name: ingredientName,
+        quantity: quantity,
+        isForaged: _isForaged,
+      );
       setState(() {
-        _ingredients.add('$quantity $ingredient');
+        _ingredients.add(ingredient);
         _ingredientController.clear();
         _quantityController.clear();
+        _isForaged = false; // Reset for next input
       });
     }
   }
@@ -101,14 +108,14 @@ class _AddRecipePageState extends State<AddRecipePage> {
       _images.map((image) => _uploadImageToFirebaseStorage(image)),
     );
 
-    final recipesCollection = FirebaseFirestore.instance.collection('recipes');
+    final recipesCollection = FirebaseFirestore.instance.collection('Recipes');
     final docRef =
         recipesCollection.doc(); // Generate a document reference with a new ID
 
     final recipe = Recipe(
       id: docRef.id, // Use the generated ID
       name: _nameController.text.trim(),
-      ingredients: _ingredients,
+      ingredients: _ingredients, // This is already a list of Ingredient objects
       steps: _steps,
       imageUrls: imageUrls,
       timestamp: DateTime.now(),
@@ -177,6 +184,7 @@ class _AddRecipePageState extends State<AddRecipePage> {
               Row(
                 children: [
                   Expanded(
+                    flex: 1,
                     child: TextField(
                       controller: _quantityController,
                       decoration: InputDecoration(labelText: 'Quantity'),
@@ -184,10 +192,25 @@ class _AddRecipePageState extends State<AddRecipePage> {
                   ),
                   SizedBox(width: 10),
                   Expanded(
+                    flex: 3,
                     child: TextField(
                       controller: _ingredientController,
                       decoration: InputDecoration(labelText: 'Ingredient'),
                     ),
+                  ),
+                  SizedBox(width: 10),
+                  Column(
+                    children: [
+                      Text('Foraged?'),
+                      Checkbox(
+                        value: _isForaged,
+                        onChanged: (bool? value) {
+                          setState(() {
+                            _isForaged = value ?? false;
+                          });
+                        },
+                      ),
+                    ],
                   ),
                   IconButton(
                     icon: Icon(Icons.add),
@@ -197,8 +220,10 @@ class _AddRecipePageState extends State<AddRecipePage> {
               ),
               Wrap(
                 children: _ingredients.map((ingredient) {
+                  final source = ingredient.isForaged ? 'Foraged' : 'Bought';
                   return Chip(
-                    label: Text(ingredient),
+                    label: Text(
+                        '${ingredient.quantity} ${ingredient.name} ($source)'),
                     onDeleted: () {
                       setState(() {
                         _ingredients.remove(ingredient);

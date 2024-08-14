@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_forager_app/models/recipe.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
 class CommentsPage extends StatefulWidget {
   final Recipe recipe;
@@ -63,8 +65,14 @@ class _CommentsPageState extends State<CommentsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Comments'),
-        backgroundColor: Colors.grey.shade600,
+        title: Text(
+          'COMMENTS',
+          style: TextStyle(letterSpacing: 2.5),
+        ),
+        titleTextStyle:
+            GoogleFonts.philosopher(fontSize: 24, fontWeight: FontWeight.bold),
+        centerTitle: true,
+        backgroundColor: Colors.deepOrange.shade300,
       ),
       body: Column(
         children: [
@@ -79,24 +87,71 @@ class _CommentsPageState extends State<CommentsPage> {
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 10),
-                Text(
-                  'Submitted by: ${widget.recipe.userName}',
-                  style: TextStyle(fontStyle: FontStyle.italic),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Submitted by: ${widget.recipe.userName}',
+                      style: TextStyle(fontStyle: FontStyle.italic),
+                    ),
+                    Text(
+                      '${DateFormat.yMMMd().format(widget.recipe.timestamp)}',
+                      style: TextStyle(fontStyle: FontStyle.italic),
+                    ),
+                  ],
                 ),
                 SizedBox(height: 10),
-                Text(
-                  'Ingredients:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Ingredients:',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          for (var ingredient in widget.recipe.ingredients)
+                            Row(
+                              children: [
+                                Icon(
+                                  ingredient.isForaged
+                                      ? Icons.eco
+                                      : Icons.shopping_cart,
+                                  color: ingredient.isForaged
+                                      ? Colors.green
+                                      : Colors.grey,
+                                  size: 20,
+                                ),
+                                SizedBox(width: 5),
+                                Text(
+                                  '${ingredient.quantity} ${ingredient.name}',
+                                  style: TextStyle(fontSize: 12),
+                                ),
+                              ],
+                            ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Instructions:',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          for (var step in widget.recipe.steps.asMap().entries)
+                            Text('${step.key + 1}. ${step.value}',
+                                style: TextStyle(fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                for (var ingredient in widget.recipe.ingredients)
-                  Text('- $ingredient'),
                 SizedBox(height: 10),
-                Text(
-                  'Instructions:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                for (var step in widget.recipe.steps.asMap().entries)
-                  Text('${step.key + 1}. ${step.value}'),
               ],
             ),
           ),
@@ -127,12 +182,11 @@ class _CommentsPageState extends State<CommentsPage> {
                     return ListTile(
                       title: Text(comment['userName']),
                       subtitle: Text(comment['message']),
-                      trailing: Text(
-                        (comment['timestamp'] as Timestamp?)
-                                ?.toDate()
-                                .toString() ??
-                            '',
-                      ),
+                      trailing: comment['timestamp'] != null
+                          ? Text(
+                              '${DateFormat.yMMMd().format((comment['timestamp'] as Timestamp).toDate())}',
+                            )
+                          : Text('Just now'),
                     );
                   },
                 );

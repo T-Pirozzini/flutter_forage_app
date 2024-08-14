@@ -64,6 +64,8 @@ class RecipesPage extends ConsumerWidget {
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 80),
         child: FloatingActionButton(
+          foregroundColor: Colors.white,
+          backgroundColor: Colors.deepOrange,
           onPressed: () {
             Navigator.push(
               context,
