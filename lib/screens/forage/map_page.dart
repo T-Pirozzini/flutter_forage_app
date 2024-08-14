@@ -313,31 +313,31 @@ class MapPageState extends State<MapPage> {
     });
   }
 
-  Future<BitmapDescriptor> getMarkerIcon(String type) async {
-    const double markerSize = 100.0; // Adjust to your desired size
-    final ByteData byteData = await rootBundle
-        .load('lib/assets/images/${type.toLowerCase()}_marker.png');
-    final ui.Codec codec = await ui.instantiateImageCodec(
-      byteData.buffer.asUint8List(),
-      targetWidth: markerSize.toInt(),
-      targetHeight: markerSize.toInt(),
-    );
-    final ui.FrameInfo frameInfo = await codec.getNextFrame();
-    final ByteData? byteDataBuffer =
-        await frameInfo.image.toByteData(format: ui.ImageByteFormat.png);
-    final Uint8List markerIcon = byteDataBuffer!.buffer.asUint8List();
+  // Future<BitmapDescriptor> getMarkerIcon(String type) async {
+  //   const double markerSize = 100.0; // Adjust to your desired size
+  //   final ByteData byteData = await rootBundle
+  //       .load('lib/assets/images/${type.toLowerCase()}_marker.png');
+  //   final ui.Codec codec = await ui.instantiateImageCodec(
+  //     byteData.buffer.asUint8List(),
+  //     targetWidth: markerSize.toInt(),
+  //     targetHeight: markerSize.toInt(),
+  //   );
+  //   final ui.FrameInfo frameInfo = await codec.getNextFrame();
+  //   final ByteData? byteDataBuffer =
+  //       await frameInfo.image.toByteData(format: ui.ImageByteFormat.png);
+  //   final Uint8List markerIcon = byteDataBuffer!.buffer.asUint8List();
 
-    return BitmapDescriptor.fromBytes(markerIcon);
-  }
+  //   return BitmapDescriptor.fromBytes(markerIcon);
+  // }
 
   // get marker icon
-  // Future<BitmapDescriptor> getMarkerIcon(String type) async {
-  //   const double markerSize = 2.0;
-  //   return BitmapDescriptor.fromAssetImage(
-  //     const ImageConfiguration(size: Size(markerSize, markerSize)),
-  //     'lib/assets/images/${type.toLowerCase()}_marker.png',
-  //   );
-  // }
+  Future<BitmapDescriptor> getMarkerIcon(String type) async {
+    const double markerSize = 2.0;
+    return BitmapDescriptor.fromAssetImage(
+      const ImageConfiguration(size: Size(markerSize, markerSize)),
+      'lib/assets/images/${type.toLowerCase()}_marker.png',
+    );
+  }
 
   // go to place
   Future<void> _goToPlace(Map<String, dynamic> place) async {
