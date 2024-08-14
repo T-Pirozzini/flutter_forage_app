@@ -148,6 +148,7 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.blueGrey,
       appBar: AppBar(
         title: const Text('FRIEND REQUESTS'),
         titleTextStyle:
@@ -171,6 +172,8 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(8)),
                   ),
+                  filled: true, // Enable the fill color
+                  fillColor: Colors.white, // Set the fill color to white
                 ),
               ),
             ),
@@ -228,7 +231,8 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
                       Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: Text('Accept Friend Requests?',
-                            style: TextStyle(fontSize: 24)),
+                            style:
+                                TextStyle(fontSize: 24, color: Colors.white)),
                       ),
                     _buildFriendRequestsSection(userData['friendRequests']),
                     // Sent Friend Requests Section
@@ -236,7 +240,8 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
                       Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: Text('Sent Friend Requests',
-                            style: TextStyle(fontSize: 24)),
+                            style:
+                                TextStyle(fontSize: 24, color: Colors.white)),
                       ),
                     _buildSentFriendRequestsSection(
                         userData['sentFriendRequests']),

@@ -26,9 +26,9 @@ class _TimeSheetControllerState extends State<FriendsController> {
         appBar: AppBar(
           toolbarHeight: 0,
           bottom: const TabBar(
-            labelColor: Colors.white,
+            labelColor: Colors.black,
             unselectedLabelColor: Colors.black,
-            indicatorColor: Colors.white,
+            indicatorColor: Colors.blueGrey,
             tabs: [
               Tab(text: 'Your Friends'),
               Tab(text: 'Requests'),

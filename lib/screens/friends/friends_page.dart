@@ -73,6 +73,16 @@ class _FriendsPageState extends State<FriendsPage> {
         .get();
   }
 
+  Future<int> fetchLocationCount(String userId) async {
+    QuerySnapshot snapshot = await FirebaseFirestore.instance
+        .collection('Users')
+        .doc(userId) 
+        .collection('Markers') 
+        .where('markerOwner', isEqualTo: userId) 
+        .get();
+    return snapshot.size; 
+  }
+
   String formatTimeAgo(Timestamp timestamp) {
     // Convert Firestore Timestamp to DateTime
     final friendTimestamp = timestamp.toDate();
@@ -98,7 +108,7 @@ class _FriendsPageState extends State<FriendsPage> {
     final currentUsername = FirebaseAuth.instance.currentUser!.email!;
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade200,
+      backgroundColor: Colors.blueGrey,
       appBar: AppBar(
         title: const Text(
           'FRIENDS',
@@ -188,117 +198,142 @@ class _FriendsPageState extends State<FriendsPage> {
                                       friendSince = 'Unknown';
                                     }
 
-                                    return GestureDetector(
-                                      onTap: () => goToForageLocationsPage(
-                                          friendId,
-                                          friendUsername,
-                                          () => setState(() {})),
-                                      child: Dismissible(
-                                        key: UniqueKey(),
-                                        direction: DismissDirection.endToStart,
-                                        background: Container(
-                                          color: Colors.red.shade400,
-                                          alignment: Alignment.centerRight,
-                                          padding:
-                                              const EdgeInsets.only(right: 16),
-                                          child: const Icon(Icons.delete,
-                                              color: Colors.white),
-                                        ),
-                                        confirmDismiss: (direction) async {
-                                          bool shouldDelete =
-                                              await _deleteFriendConfirmation();
-                                          if (shouldDelete) {
-                                            // Delete the friend from the user's data
-                                            FirebaseFirestore.instance
-                                                .collection('Users')
-                                                .doc(currentUser.email)
-                                                .update({
-                                              'friends': FieldValue.arrayRemove(
-                                                  [friendObject]),
-                                            });
-                                            // Delete the user from the friend's data
-                                            FirebaseFirestore.instance
-                                                .collection('Users')
-                                                .doc(friendId)
-                                                .update({
-                                              'friends': FieldValue.arrayRemove(
-                                                  [friendObject]),
-                                            });
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              const SnackBar(
-                                                content: Text('Friend deleted'),
+                                    return FutureBuilder<int>(
+                                      future: fetchLocationCount(friendEmail),
+                                      builder: (context, locationSnapshot) {
+                                        if (locationSnapshot.connectionState ==
+                                            ConnectionState.waiting) {
+                                          return const Center(
+                                              child:
+                                                  CircularProgressIndicator());
+                                        }
+                                        final locationCount =
+                                            locationSnapshot.data ?? 0;
+
+                                        return GestureDetector(
+                                          onTap: () => goToForageLocationsPage(
+                                              friendId,
+                                              friendUsername,
+                                              () => setState(() {})),
+                                          child: Dismissible(
+                                            key: UniqueKey(),
+                                            direction:
+                                                DismissDirection.endToStart,
+                                            background: Container(
+                                              color: Colors.red.shade400,
+                                              alignment: Alignment.centerRight,
+                                              padding: const EdgeInsets.only(
+                                                  right: 16),
+                                              child: const Icon(Icons.delete,
+                                                  color: Colors.white),
+                                            ),
+                                            confirmDismiss: (direction) async {
+                                              bool shouldDelete =
+                                                  await _deleteFriendConfirmation();
+                                              if (shouldDelete) {
+                                                // Delete the friend from the user's data
+                                                FirebaseFirestore.instance
+                                                    .collection('Users')
+                                                    .doc(currentUser.email)
+                                                    .update({
+                                                  'friends':
+                                                      FieldValue.arrayRemove(
+                                                          [friendObject]),
+                                                });
+                                                // Delete the user from the friend's data
+                                                FirebaseFirestore.instance
+                                                    .collection('Users')
+                                                    .doc(friendId)
+                                                    .update({
+                                                  'friends':
+                                                      FieldValue.arrayRemove(
+                                                          [friendObject]),
+                                                });
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  const SnackBar(
+                                                    content:
+                                                        Text('Friend deleted'),
+                                                  ),
+                                                );
+                                              }
+                                              return null;
+                                            },
+                                            child: Card(
+                                              child: ListTile(
+                                                title: Row(
+                                                  children: [
+                                                    const Icon(Icons
+                                                        .account_circle_outlined),
+                                                    SizedBox(width: 5),
+                                                    Text(
+                                                        '$friendUsername ($friendSince)'),
+                                                  ],
+                                                ),
+                                                subtitle: Column(
+                                                  children: [
+                                                    Row(
+                                                      children: [
+                                                        const Icon(
+                                                          Icons.group_outlined,
+                                                          color:
+                                                              Colors.deepOrange,
+                                                        ),
+                                                        Text(
+                                                          "Friends: ${friendData['friends'].length}",
+                                                          style:
+                                                              const TextStyle(
+                                                                  fontSize: 12),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    Row(
+                                                      children: [
+                                                        const Icon(
+                                                          Icons
+                                                              .info_outline_rounded,
+                                                          color:
+                                                              Colors.deepOrange,
+                                                        ),
+                                                        Text('$friendBio'),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                                trailing: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.end,
+                                                  children: [
+                                                    Row(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        const Icon(
+                                                          Icons
+                                                              .pin_drop_outlined,
+                                                          color:
+                                                              Colors.deepOrange,
+                                                        ),
+                                                        Text(
+                                                          '$locationCount Locations',
+                                                          style:
+                                                              const TextStyle(
+                                                                  fontSize: 12),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    SizedBox(height: 2),
+                                                    const Icon(
+                                                        Icons.double_arrow),
+                                                  ],
+                                                ),
+                                                iconColor:
+                                                    Colors.deepOrange.shade400,
                                               ),
-                                            );
-                                          }
-                                          return null;
-                                        },
-                                        child: Card(
-                                          child: ListTile(
-                                            title: Row(
-                                              children: [
-                                                const Icon(Icons
-                                                    .account_circle_outlined),
-                                                SizedBox(width: 5),
-                                                Text(
-                                                    '$friendUsername ($friendSince)'),
-                                              ],
                                             ),
-                                            subtitle: Column(
-                                              children: [
-                                                Row(
-                                                  children: [
-                                                    const Icon(
-                                                      Icons.group_outlined,
-                                                      color: Colors.deepOrange,
-                                                    ),
-                                                    Text(
-                                                      "Friends: ${friendData['friends'].length}",
-                                                      style: const TextStyle(
-                                                          fontSize: 12),
-                                                    ),
-                                                  ],
-                                                ),
-                                                Row(
-                                                  children: [
-                                                    const Icon(
-                                                      Icons
-                                                          .info_outline_rounded,
-                                                      color: Colors.deepOrange,
-                                                    ),
-                                                    Text('$friendBio'),
-                                                  ],
-                                                ),
-                                              ],
-                                            ),
-                                            trailing: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.end,
-                                              children: [
-                                                Row(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    const Icon(
-                                                      Icons.pin_drop_outlined,
-                                                      color: Colors.deepOrange,
-                                                    ),
-                                                    Text(
-                                                      '10 Locations',
-                                                      style: const TextStyle(
-                                                          fontSize: 12),
-                                                    ),
-                                                  ],
-                                                ),
-                                                SizedBox(height: 2),
-                                                const Icon(Icons.double_arrow),
-                                              ],
-                                            ),
-                                            iconColor:
-                                                Colors.deepOrange.shade400,
                                           ),
-                                        ),
-                                      ),
+                                        );
+                                      },
                                     );
                                   },
                                 );

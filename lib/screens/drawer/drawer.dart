@@ -61,12 +61,18 @@ class CustomDrawer extends StatelessWidget {
                     onTap: onAboutUsTap,
                   ),
                   // Credits tile
-                  CustomListTile(
-                    icon: Icons.handshake_rounded,
-                    text: 'CREDITS',
-                    onTap: onCreditsTap,
-                  ),
-                  UserFeedback(userName: userName, userEmail: currentUserEmail)
+                  // CustomListTile(
+                  //   icon: Icons.handshake_rounded,
+                  //   text: 'CREDITS',
+                  //   onTap: onCreditsTap,
+                  // ),
+
+                  UserFeedback(userName: userName, userEmail: currentUserEmail),
+                  const Divider(
+                      thickness: 1,
+                      color: Colors.white,
+                      indent: 20,
+                      endIndent: 30),
                 ],
               ),
 
