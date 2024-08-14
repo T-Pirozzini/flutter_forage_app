@@ -101,7 +101,12 @@ class _AddRecipePageState extends State<AddRecipePage> {
       _images.map((image) => _uploadImageToFirebaseStorage(image)),
     );
 
+    final recipesCollection = FirebaseFirestore.instance.collection('recipes');
+    final docRef =
+        recipesCollection.doc(); // Generate a document reference with a new ID
+
     final recipe = Recipe(
+      id: docRef.id, // Use the generated ID
       name: _nameController.text.trim(),
       ingredients: _ingredients,
       steps: _steps,
@@ -111,7 +116,8 @@ class _AddRecipePageState extends State<AddRecipePage> {
       userName: _username!,
     );
 
-    await ref.read(recipeServiceProvider).addRecipe(recipe);
+    // Save the recipe to Firestore using the generated document reference
+    await docRef.set(recipe.toMap());
 
     // Clear fields after submission
     setState(() {

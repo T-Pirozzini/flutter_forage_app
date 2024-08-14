@@ -13,16 +13,16 @@ class CustomListTile extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(10.0, 10, 0, 10),
+          padding: const EdgeInsets.fromLTRB(10.0, 0, 0, 0),
           child: ListTile(
             leading: Icon(
               icon,
               color: Colors.white,
-              size: 32,
+              size: 24,
             ),
             title: Text(text,
                 style: const TextStyle(
-                    color: Colors.white, fontSize: 16, letterSpacing: 2)),
+                    color: Colors.white, fontSize: 14, letterSpacing: 2)),
             onTap: onTap,
           ),
         ),

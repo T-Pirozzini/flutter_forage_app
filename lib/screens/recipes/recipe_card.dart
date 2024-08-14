@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/models/recipe.dart';
+import 'package:flutter_forager_app/screens/recipes/comments_page.dart';
 
 class RecipeCard extends StatefulWidget {
   final Recipe recipe;
@@ -144,6 +145,21 @@ class _RecipeCardState extends State<RecipeCard> {
             Text(
               'Timestamp: ${widget.recipe.timestamp}',
               style: TextStyle(fontStyle: FontStyle.italic),
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CommentsPage(recipe: widget.recipe),
+                    ),
+                  );
+                },
+                icon: Icon(Icons.comment),
+                label: Text('View Comments'),
+              ),
             ),
           ],
         ),
