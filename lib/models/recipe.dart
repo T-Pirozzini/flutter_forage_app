@@ -1,4 +1,5 @@
 class Recipe {
+  final String id;
   final String name;
   final List<String> ingredients;
   final List<String> steps;
@@ -8,6 +9,7 @@ class Recipe {
   final String userName;
 
   Recipe({
+    required this.id,
     required this.name,
     required this.ingredients,
     required this.steps,
@@ -29,8 +31,9 @@ class Recipe {
     };
   }
 
-  static Recipe fromMap(Map<String, dynamic> map) {
+  static Recipe fromMap(String id, Map<String, dynamic> map) {
     return Recipe(
+      id: id,
       name: map['name'],
       ingredients: List<String>.from(map['ingredients']),
       steps: List<String>.from(map['steps']),

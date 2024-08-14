@@ -51,6 +51,9 @@ class RecipesPage extends ConsumerWidget {
                   childCount: recipes.length,
                 ),
               ),
+              SliverToBoxAdapter(
+                child: SizedBox(height: 100), // Add this to provide extra space
+              ),
             ],
           );
         },

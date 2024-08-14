@@ -298,7 +298,7 @@ class _MarkerButtonsState extends State<MarkerButtons> {
     final markerCount = markerQuerySnapshot.size;
     print(markerCount);
 
-    if (markerCount <= 9) {
+    if (markerCount <= 10) {
       if (markerImageUrl != null) {
         FirebaseFirestore.instance
             .collection('Users')

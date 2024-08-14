@@ -21,6 +21,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   // current user
   final currentUser = FirebaseAuth.instance.currentUser!;
 
+  // all users
+  final usersCollection = FirebaseFirestore.instance.collection('Users');
+
+  // profile UI
+  final double coverHeight = 200.0;
+  final double profileHeight = 100.0;
+
   @override
   void initState() {
     super.initState();
@@ -30,14 +37,20 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
     markerCountNotifier.updateMarkerCount(currentUser.email!, true);
     nonOwnerMarkerCountNotifier.updateNonOwnerMarkerCount(currentUser.email!);
+    loadUserProfileImages();
   }
 
-  // all users
-  final usersCollection = FirebaseFirestore.instance.collection('Users');
-
-  // profile UI
-  final double coverHeight = 200.0;
-  final double profileHeight = 100.0;
+  void loadUserProfileImages() async {
+    final docSnapshot = await usersCollection.doc(currentUser.email).get();
+    if (docSnapshot.exists) {
+      final userData = docSnapshot.data() as Map<String, dynamic>;
+      setState(() {
+        selectedBackgroundOption =
+            userData['profileBackground'] ?? selectedBackgroundOption;
+        selectedProfileOption = userData['profilePic'] ?? selectedProfileOption;
+      });
+    }
+  }
 
   // edit text field - generic
   Future<void> editField(String field) async {
@@ -132,6 +145,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               return GestureDetector(
                 onTap: () {
                   setState(() {
+                    Navigator.of(context).pop(newValue);
                     selectedBackgroundOption = option;
                     newValue = option;
                   });
@@ -420,7 +434,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               },
                             ),
 
-// View your Community Bookmarked Locations
+                            // View your Community Bookmarked Locations
                             InfoCard(
                               icon: Icons.bookmark,
                               text: 'Community Locations',
@@ -441,7 +455,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               },
                             ),
 
-// View your Friends Locations
+                            // View your Friends Locations
                             InfoCard(
                               icon: Icons.group,
                               text: 'Friends Locations',
@@ -458,7 +472,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               },
                             ),
 
-// View your friend requests
+                            // View your friend requests
                             InfoCard(
                               icon: Icons.person_add,
                               text: 'Friend requests',

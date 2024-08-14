@@ -330,6 +330,15 @@ class MapPageState extends State<MapPage> {
     return BitmapDescriptor.fromBytes(markerIcon);
   }
 
+  // get marker icon
+  // Future<BitmapDescriptor> getMarkerIcon(String type) async {
+  //   const double markerSize = 2.0;
+  //   return BitmapDescriptor.fromAssetImage(
+  //     const ImageConfiguration(size: Size(markerSize, markerSize)),
+  //     'lib/assets/images/${type.toLowerCase()}_marker.png',
+  //   );
+  // }
+
   // go to place
   Future<void> _goToPlace(Map<String, dynamic> place) async {
     followUser = false;

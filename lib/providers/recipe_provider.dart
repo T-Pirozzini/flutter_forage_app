@@ -23,9 +23,8 @@ class RecipeService {
     return _firestore.collection('Recipes').snapshots().map((snapshot) {
       return snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
-        return Recipe.fromMap(data);
+        return Recipe.fromMap(doc.id, data);
       }).toList();
     });
   }
 }
-
