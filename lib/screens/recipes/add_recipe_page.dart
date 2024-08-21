@@ -187,7 +187,7 @@ class _AddRecipePageState extends State<AddRecipePage> {
                     flex: 1,
                     child: TextField(
                       controller: _quantityController,
-                      decoration: InputDecoration(labelText: 'Quantity'),
+                      decoration: InputDecoration(labelText: 'Quantity'),                 
                     ),
                   ),
                   SizedBox(width: 10),
