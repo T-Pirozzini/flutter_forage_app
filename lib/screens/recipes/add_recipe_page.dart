@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_forager_app/models/ingredient.dart';
 import 'package:flutter_forager_app/models/recipe.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
@@ -21,10 +22,21 @@ class _AddRecipePageState extends State<AddRecipePage> {
   final TextEditingController _ingredientController = TextEditingController();
   final TextEditingController _quantityController = TextEditingController();
   final TextEditingController _stepController = TextEditingController();
+  final TextEditingController _inspirationController = TextEditingController();
   final List<Ingredient> _ingredients = [];
   final List<String> _steps = [];
+  final List<String> measurements = [
+    'whole',
+    'teaspoon(s)',
+    'tablespoon(s)',
+    'cup(s)',
+    'ounce(s)',
+    'gram(s)',
+    'millilitre(s)'
+  ];
   final String _userEmail = FirebaseAuth.instance.currentUser!.email!;
   String? _username;
+  String _selectedUnit = 'whole';
   bool _isForaged = false;
 
   @override
@@ -88,10 +100,12 @@ class _AddRecipePageState extends State<AddRecipePage> {
   void _addIngredient() {
     final ingredientName = _ingredientController.text.trim();
     final quantity = _quantityController.text.trim();
+    final unit = _selectedUnit;
     if (ingredientName.isNotEmpty && quantity.isNotEmpty) {
       final ingredient = Ingredient(
         name: ingredientName,
         quantity: quantity,
+        unit: unit,
         isForaged: _isForaged,
       );
       setState(() {
@@ -101,6 +115,34 @@ class _AddRecipePageState extends State<AddRecipePage> {
         _isForaged = false; // Reset for next input
       });
     }
+  }
+
+  void _showMeasurementPicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          height: 250,
+          child: ListWheelScrollView(
+            itemExtent: 50,
+            diameterRatio: 1.5,
+            physics: FixedExtentScrollPhysics(),
+            children: measurements.map((measurement) {
+              return Center(
+                  child: Text(
+                measurement,
+                style: TextStyle(fontSize: 20),
+              ));
+            }).toList(),
+            onSelectedItemChanged: (index) {
+              setState(() {
+                _selectedUnit = measurements[index];
+              });
+            },
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _submitRecipe(WidgetRef ref) async {
@@ -151,145 +193,269 @@ class _AddRecipePageState extends State<AddRecipePage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                controller: _nameController,
-                decoration: InputDecoration(labelText: 'Recipe Name'),
-              ),
-              SizedBox(height: 10),
-              Text('Photos:',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              SizedBox(height: 10),
-              Row(
-                children: [
-                  for (var image in _images)
-                    Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: Image.file(image,
-                          width: 80, height: 80, fit: BoxFit.cover),
+        child: Column(
+          children: [
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: _nameController,
+                      decoration: InputDecoration(labelText: 'Recipe Name'),
                     ),
-                  if (_images.length < 3)
-                    IconButton(
-                      icon: Icon(Icons.add_a_photo),
-                      onPressed: () => _pickImage(ImageSource.gallery),
+                    SizedBox(height: 10),
+                    Text('Photos:',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 10),
+                    Row(
+                      children: [
+                        for (var image in _images)
+                          Padding(
+                            padding: const EdgeInsets.all(4.0),
+                            child: Image.file(image,
+                                width: 80, height: 80, fit: BoxFit.cover),
+                          ),
+                        if (_images.length < 3)
+                          IconButton(
+                            icon: Icon(Icons.add_a_photo),
+                            onPressed: () => _pickImage(ImageSource.gallery),
+                          ),
+                      ],
                     ),
-                ],
-              ),
-              SizedBox(height: 20),
-              Text('Ingredients:',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              Row(
-                children: [
-                  Expanded(
-                    flex: 1,
-                    child: TextField(
-                      controller: _quantityController,
-                      decoration: InputDecoration(labelText: 'Quantity'),
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  Expanded(
-                    flex: 3,
-                    child: TextField(
-                      controller: _ingredientController,
-                      decoration: InputDecoration(labelText: 'Ingredient'),
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  Column(
-                    children: [
-                      Text('Foraged?'),
-                      Checkbox(
-                        value: _isForaged,
-                        onChanged: (bool? value) {
-                          setState(() {
-                            _isForaged = value ?? false;
-                          });
-                        },
+                    SizedBox(height: 20),
+                    Text('Inspiration:',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold)),
+                    TextField(
+                      controller: _inspirationController,
+                      decoration: InputDecoration(
+                        labelText:
+                            'Tell us about your recipe and your ingredients...',
+                        border: OutlineInputBorder(),
                       ),
-                    ],
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.add),
-                    onPressed: _addIngredient,
-                  ),
-                ],
-              ),
-              Wrap(
-                children: _ingredients.map((ingredient) {
-                  final source = ingredient.isForaged ? 'Foraged' : 'Bought';
-                  return Chip(
-                    label: Text(
-                        '${ingredient.quantity} ${ingredient.name} ($source)'),
-                    onDeleted: () {
-                      setState(() {
-                        _ingredients.remove(ingredient);
-                      });
-                    },
-                  );
-                }).toList(),
-              ),
-              SizedBox(height: 20),
-              Text('Instructions:',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _stepController,
-                      decoration: InputDecoration(labelText: 'Enter step'),
+                      maxLines: null,
+                      keyboardType: TextInputType.multiline,
                     ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.add),
-                    onPressed: () {
-                      final step = _stepController.text.trim();
-                      if (step.isNotEmpty) {
-                        setState(() {
-                          _steps.add(step);
-                          _stepController.clear();
-                        });
-                      }
-                    },
-                  ),
-                ],
-              ),
-              SizedBox(height: 20),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: _steps.asMap().entries.map((entry) {
-                  final index = entry.key + 1;
-                  final step = entry.value;
-                  return Row(
-                    children: [
-                      Text('Step $index: $step'),
-                      IconButton(
-                        icon: Icon(Icons.delete),
-                        onPressed: () {
-                          setState(() {
-                            _steps.remove(step);
-                          });
-                        },
-                      ),
-                    ],
-                  );
-                }).toList(),
-              ),
-              Center(
-                child: Consumer(
-                  builder: (context, ref, _) {
-                    return ElevatedButton(
-                      onPressed: () => _submitRecipe(ref),
-                      child: Text('Submit Recipe'),
-                    );
-                  },
+                    SizedBox(height: 20),
+                    Text('Ingredients:',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold)),
+                    Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            Expanded(
+                              flex: 1,
+                              child: Column(
+                                children: [
+                                  Text(
+                                    'Quantity',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  TextField(
+                                    controller: _quantityController,
+                                    decoration: InputDecoration(labelText: '#'),
+                                    keyboardType: TextInputType.number,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(width: 10),
+                            Expanded(
+                              flex: 2,
+                              child: Column(
+                                children: [
+                                  Text(
+                                    'Unit',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  // Unit measurement scroll wheel placeholder
+                                  GestureDetector(
+                                    onTap: () =>
+                                        _showMeasurementPicker(context),
+                                    child: Container(
+                                      height:
+                                          50, // Adjust height for better visibility
+                                      width:
+                                          80, // Adjust width for better visibility
+                                      decoration: BoxDecoration(
+                                        color: Colors.lightBlue,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text(
+                                          _selectedUnit ?? "Tap to Select",
+                                          style: TextStyle(
+                                              fontSize: 16,
+                                              color: Colors.white),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(width: 10),
+                            Expanded(
+                              flex: 3,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Ingredient',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  TextField(
+                                    controller: _ingredientController,
+                                    decoration: InputDecoration(
+                                        labelText: 'Enter an ingredient'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Column(
+                              children: [
+                                Text('Foraged?'),
+                                Checkbox(
+                                  value: _isForaged,
+                                  onChanged: (bool? value) {
+                                    setState(() {
+                                      _isForaged = value ?? false;
+                                    });
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 4),
+                        Align(
+                          alignment: Alignment.center,
+                          child: ElevatedButton.icon(
+                            onPressed: _addIngredient,
+                            icon: Icon(Icons.add),
+                            label: Text('Add Ingredient'),
+                            style: ElevatedButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                    8.0), // Rounded corners
+                                side: BorderSide(
+                                    color: Colors.black,
+                                    width: 2.0), // Border color and width
+                              ),
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 16.0,
+                                  vertical: 12.0), // Button padding
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Wrap(
+                      children: _ingredients.map((ingredient) {
+                        final source =
+                            ingredient.isForaged ? 'Foraged' : 'Bought';
+                        return Chip(
+                          label: Text(
+                              '${ingredient.quantity} ${ingredient.name} ($source)'),
+                          onDeleted: () {
+                            setState(() {
+                              _ingredients.remove(ingredient);
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    SizedBox(height: 20),
+                    Text('Instructions:',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold)),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _stepController,
+                            decoration:
+                                InputDecoration(labelText: 'Enter step'),
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.add),
+                          onPressed: () {
+                            final step = _stepController.text.trim();
+                            if (step.isNotEmpty) {
+                              setState(() {
+                                _steps.add(step);
+                                _stepController.clear();
+                              });
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 20),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: _steps.asMap().entries.map((entry) {
+                        final index = entry.key + 1;
+                        final step = entry.value;
+                        return Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Step $index: $step',
+                                maxLines: null,
+                                overflow: TextOverflow.visible,
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.delete),
+                              onPressed: () {
+                                setState(() {
+                                  _steps.remove(step);
+                                });
+                              },
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+            Center(
+              child: Consumer(
+                builder: (context, ref, _) {
+                  return ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Colors.deepOrange,
+                      backgroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 24.0, vertical: 12.0),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12.0),
+                      ),
+                      elevation: 5,
+                    ),
+                    onPressed: () => _submitRecipe(ref),
+                    child: Text('Submit Recipe'),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
