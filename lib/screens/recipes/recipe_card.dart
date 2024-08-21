@@ -94,7 +94,7 @@ class _RecipeCardState extends State<RecipeCard> {
                       ),
                       SizedBox(width: 5),
                       Text(
-                        '${ingredient.quantity} ${ingredient.name}',
+                        '${ingredient.quantity} ${ingredient.unit} ${ingredient.name}',
                         style: TextStyle(fontSize: 16),
                       ),
                     ],
