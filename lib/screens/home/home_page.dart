@@ -1,15 +1,14 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:floating_bottom_navigation_bar/floating_bottom_navigation_bar.dart';
 import 'package:flutter_forager_app/components/ad_mob_service.dart';
+import 'package:flutter_forager_app/models/user.dart';
 import 'package:flutter_forager_app/screens/forage/marker_buttons.dart';
 import 'package:flutter_forager_app/screens/profile/profile_page.dart';
 import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
-import 'package:flutter_forager_app/screens/friends/friends_controller.dart';
-import 'package:flutter_forager_app/screens/home/dashboard_page.dart';
 import 'package:flutter_forager_app/screens/recipes/recipes_page.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../auth/auth_page.dart';
 import '../drawer/drawer.dart';
@@ -80,19 +79,6 @@ class _HomePageState extends State<HomePage> {
       request: const AdRequest(),
     )..load();
   }
-
-  // // navigate to profile page
-  // void goToProfilePage() {
-  //   // pop menu drawer
-  //   Navigator.pop(context);
-  //   // go to new page
-  //   Navigator.push(
-  //     context,
-  //     MaterialPageRoute(
-  //       builder: (context) => const ProfilePage(),
-  //     ),
-  //   );
-  // }
 
   // navigate to profile page
   void goToAboutPage() {
@@ -206,13 +192,21 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final pages = [
-      ProfilePage(),
-      // DashboardPage(),
+      StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('Users')
+            .doc(FirebaseAuth.instance.currentUser!.email)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) return CircularProgressIndicator();
+
+          final userData = snapshot.data!.data() as Map<String, dynamic>;
+          final user = UserModel.fromFirestore(userData);
+
+          return ProfilePage(user: user);
+        },
+      ),
       MapPage(lat: lat, lng: lng, followUser: followUser),
-      // ForageLocations(
-      //     userId: currentUser.email!,
-      //     userName: currentUser.email!.split("@")[0]),
-      // const FriendsController(currentTab: 0),
       RecipesPage(),
       const CommunityPage(),
     ];
@@ -238,7 +232,7 @@ class _HomePageState extends State<HomePage> {
         onAboutUsTap: goAboutUsPage,
         onCreditsTap: goCreditsPage,
         showDeleteConfirmationDialog: showDeleteConfirmationDialog,
-      ),      
+      ),
       body: Column(
         children: [
           if (_isBannerAdLoaded && _banner != null)
@@ -273,8 +267,6 @@ class _HomePageState extends State<HomePage> {
           FloatingNavbarItem(
               icon: FontAwesomeIcons.doorOpen, title: 'Dashboard'),
           FloatingNavbarItem(icon: FontAwesomeIcons.compass, title: 'Forage'),
-          // FloatingNavbarItem(icon: Icons.hotel_class_sharp, title: 'Locations'),
-          // FloatingNavbarItem(icon: Icons.group, title: 'Friends'),
           FloatingNavbarItem(
               icon: FontAwesomeIcons.kitchenSet, title: 'Recipes'),
           FloatingNavbarItem(

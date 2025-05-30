@@ -1,17 +1,22 @@
 import 'dart:ui';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/components/ad_mob_service.dart';
+import 'package:flutter_forager_app/models/user.dart';
 import 'package:flutter_forager_app/providers/marker_count_provider.dart';
 import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
 import 'package:flutter_forager_app/screens/friends/friends_controller.dart';
 import 'package:flutter_forager_app/screens/profile/info_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
-  const ProfilePage({Key? key}) : super(key: key);
+  final UserModel user;
+
+  const ProfilePage({required this.user, Key? key}) : super(key: key);
 
   @override
   _ProfilePageState createState() => _ProfilePageState();
@@ -209,6 +214,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     'profileImage4.jpg',
     'profileImage5.jpg',
     'profileImage6.jpg',
+    'profileImage7.jpg',
+    'profileImage8.jpg',
+    'profileImage9.jpg',
+    'profileImage10.jpg',
   ];
 
   // initial profile image
@@ -222,18 +231,20 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       builder: (context) => AlertDialog(
         backgroundColor: Colors.grey[900],
         title: Text(
-          "Edit $field",
+          "Select Profile Image",
           style: const TextStyle(color: Colors.white),
         ),
         content: SizedBox(
-          height: 420,
-          width: 300,
+          height: 500,
+          width: 350,
           child: GridView.builder(
             shrinkWrap: true,
             itemCount: imageProfileOptions.length,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
+              crossAxisCount: 3,
               childAspectRatio: 1.0,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
             ),
             itemBuilder: (context, index) {
               final option = imageProfileOptions[index];
@@ -246,10 +257,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   });
                 },
                 child: Container(
-                  height: 20,
-                  width: 20,
-                  margin: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
                     image: DecorationImage(
                       image: AssetImage('lib/assets/images/$option'),
                       fit: BoxFit.cover,
@@ -287,12 +296,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
     // update in Firestore
     if (newValue.trim().isNotEmpty) {
-      // only update if there is something in the textfield
-      await usersCollection.doc(currentUser.email).update(
-        {
-          field: newValue,
-        },
-      );
+      await usersCollection.doc(currentUser.email).update({field: newValue});
     }
   }
 
@@ -489,33 +493,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                 );
                               },
                             ),
-                            //Implement in the future - db is setup
-                            // Card(
-                            //   elevation: 2,
-                            //   margin: const EdgeInsets.symmetric(
-                            //       vertical: 8, horizontal: 16),
-                            //   shape: RoundedRectangleBorder(
-                            //     borderRadius: BorderRadius.circular(12),
-                            //   ),
-                            //   child: Padding(
-                            //     padding: const EdgeInsets.all(16),
-                            //     child: userData['posts'].length < 1
-                            //         ? const Text(
-                            //             "You haven't posted anything yet.",
-                            //             style: TextStyle(
-                            //               fontSize: 16,
-                            //               fontWeight: FontWeight.bold,
-                            //             ),
-                            //           )
-                            //         : Text(
-                            //             userData['posts'].toString(),
-                            //             style: const TextStyle(
-                            //               fontSize: 16,
-                            //               fontWeight: FontWeight.bold,
-                            //             ),
-                            //           ),
-                            //   ),
-                            // ),
                             const SizedBox(height: 100),
                           ],
                         ),
