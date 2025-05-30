@@ -2,6 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/components/button.dart';
 import 'package:flutter_forager_app/screens/forage/text_field.dart';
+import 'package:flutter_forager_app/screens/home/home_page.dart';
+import 'reset_password_page.dart';
 
 class LoginPage extends StatefulWidget {
   final Function()? onTap;
@@ -30,25 +32,34 @@ class _LoginPageState extends State<LoginPage> {
         password: passwordTextController.text,
       );
       // pop loading circle
-      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context); // Remove loading dialog
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+              builder: (context) => const HomePage(
+                    lat: 0,
+                    lng: 0,
+                    followUser: true,
+                    currentIndex: 0,
+                  )),
+        );
+      }
     } on FirebaseAuthException catch (e) {
+      if (mounted) Navigator.pop(context); // Remove loading dialog
+
+      String errorMessage;
       if (e.code == 'user-not-found') {
-        // pop loading circle
-        if (context.mounted) Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No user found for that email.')),
-        );
+        errorMessage = 'No user found for that email.';
       } else if (e.code == 'wrong-password') {
-        // pop loading circle
-        if (context.mounted) Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Wrong password provided.')),
-        );
+        errorMessage = 'Wrong password provided.';
       } else {
-        // pop loading circle
-        if (context.mounted) Navigator.pop(context);
+        errorMessage = 'The email is formatted incorrectly.';
+      }
+
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('The email is formatted incorrectly.')),
+          SnackBar(content: Text(errorMessage)),
         );
       }
     }
@@ -104,6 +115,24 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 10),
                   MyButton(onTap: signIn, text: 'Sign In'),
+                  const SizedBox(height: 10),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ResetPasswordPage(),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      'Forgot Password?',
+                      style: TextStyle(
+                        color: Colors.blue,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 10),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,

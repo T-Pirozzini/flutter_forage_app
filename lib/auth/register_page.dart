@@ -44,14 +44,25 @@ class _RegisterPageState extends State<RegisterPage> {
           .doc(userCredential.user!.email)
           .set({
         'username': emailTextController.text.split('@')[0],
-        'bio': 'Fill in your bio here ...',
-        'profilePic': '',
-        'profileBackground': '',
+        'bio': 'Fill in your bio here...',
         'email': emailTextController.text.toLowerCase(),
+        'profilePic': 'profileImage1.jpg', // Default image
+        'profileBackground': 'backgroundProfileImage1.jpg',
+
+        // Social
         'friends': [],
         'friendRequests': [],
         'sentFriendRequests': [],
-        'posts': [],
+
+        // Future features
+        'badges': [], 
+        'streak': 0, 
+        'totalForages': 0,
+        'preferences': {
+          'notifications': true,
+          'privateProfile': false,
+        },
+        'createdAt': FieldValue.serverTimestamp(), 
       });
 
       // pop loading circle
