@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_forager_app/components/ad_mob_service.dart';
+import 'package:flutter_forager_app/theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'auth/auth_page.dart';
@@ -28,7 +29,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-   @override
+  @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -44,14 +45,13 @@ class _MyAppState extends State<MyApp> {
         FocusScope.of(context).requestFocus(FocusNode());
       },
       child: MaterialApp(
-        theme: ThemeData(
-            primarySwatch: Colors.deepOrange,
-            textTheme: GoogleFonts.alegreyaSansTextTheme()),
+        theme: primaryTheme,
+        // ThemeData(
+        //     primarySwatch: Colors.deepOrange,
+        //     textTheme: GoogleFonts.alegreyaSansTextTheme()),
         home: const AuthPage(),
         debugShowCheckedModeBanner: false,
       ),
     );
   }
 }
-
-

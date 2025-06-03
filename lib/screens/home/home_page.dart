@@ -218,11 +218,7 @@ class _HomePageState extends State<HomePage> {
           child: Image.asset(
             'assets/images/forager_appbar_logo.png',
           ),
-        ),
-        toolbarHeight: 80,
-        centerTitle: true,
-        backgroundColor: Colors.deepOrange.shade300,
-        elevation: 2,
+        ),        
       ),
       drawer: CustomDrawer(
         // onProfileTap: goToProfilePage,

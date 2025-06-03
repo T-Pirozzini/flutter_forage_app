@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_forager_app/components/screen_heading.dart';
 import 'package:flutter_forager_app/models/recipe.dart';
 import 'package:flutter_forager_app/providers/recipe_provider.dart';
 import 'package:flutter_forager_app/screens/recipes/recipe_card.dart';
@@ -14,14 +15,6 @@ class RecipesPage extends ConsumerWidget {
     final recipeStream = ref.watch(recipeStreamProvider);
 
     return Scaffold(
-      backgroundColor: Colors.blueGrey,
-      appBar: AppBar(
-        title: const Text('RECIPES'),
-        titleTextStyle: GoogleFonts.philosopher(
-            fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 2.5),
-        centerTitle: true,
-        backgroundColor: Colors.grey.shade600,
-      ),
       body: recipeStream.when(
         data: (recipes) {
           if (recipes.isEmpty) {
@@ -30,6 +23,11 @@ class RecipesPage extends ConsumerWidget {
 
           return CustomScrollView(
             slivers: [
+              SliverToBoxAdapter(
+                child: ScreenHeading(
+                    title:
+                        'Recipes'),
+              ),
               SliverToBoxAdapter(
                 child: Container(
                   height: 50,
