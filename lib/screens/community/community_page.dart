@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_forager_app/components/screen_heading.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -133,16 +134,9 @@ class _CommunityPageState extends State<CommunityPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blueGrey,      
-      appBar: AppBar(
-        title: const Text('COMMUNITY'),
-        titleTextStyle: GoogleFonts.philosopher(
-            fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 2.5),
-        centerTitle: true,
-        backgroundColor: Colors.grey.shade600,
-      ),
       body: Column(
         children: [
+          ScreenHeading(title: 'Community'),
           Container(
             height: 50,
             width: double.infinity,

@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_forager_app/components/ad_mob_service.dart';
+import 'package:flutter_forager_app/components/screen_heading.dart';
 import 'package:flutter_forager_app/screens/forage/map_style.dart';
 import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
 import 'package:flutter_forager_app/screens/home/home_page.dart';
@@ -330,15 +331,6 @@ class MapPageState extends State<MapPage> {
     return BitmapDescriptor.fromBytes(markerIcon);
   }
 
-  // get marker icon
-  // Future<BitmapDescriptor> getMarkerIcon(String type) async {
-  //   const double markerSize = 2.0;
-  //   return BitmapDescriptor.fromAssetImage(
-  //     const ImageConfiguration(size: Size(markerSize, markerSize)),
-  //     'lib/assets/images/${type.toLowerCase()}_marker.png',
-  //   );
-  // }
-
   // go to place
   Future<void> _goToPlace(Map<String, dynamic> place) async {
     followUser = false;
@@ -359,15 +351,9 @@ class MapPageState extends State<MapPage> {
     // bool _followUser = followUser;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('FORAGE'),
-        titleTextStyle: GoogleFonts.philosopher(
-            fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 2.5),
-        centerTitle: true,
-        backgroundColor: Colors.grey.shade600,
-      ),
       body: Column(
         children: [
+          ScreenHeading(title: 'Forage'),
           Container(
             height: 50,
             width: double.infinity,

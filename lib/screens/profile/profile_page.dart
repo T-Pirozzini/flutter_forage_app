@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/components/ad_mob_service.dart';
+import 'package:flutter_forager_app/components/screen_heading.dart';
 import 'package:flutter_forager_app/models/user.dart';
 import 'package:flutter_forager_app/providers/marker_count_provider.dart';
 import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
@@ -310,17 +311,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final markerCount = ref.watch(markerCountProvider);
     final nonOwnerMarkerCount = ref.watch(nonOwnerMarkerCountProvider);
 
-    return Scaffold(
-      backgroundColor: Colors.blueGrey,
-      appBar: AppBar(
-        title: const Text('PROFILE', style: TextStyle(letterSpacing: 2.5)),
-        titleTextStyle:
-            GoogleFonts.philosopher(fontSize: 24, fontWeight: FontWeight.bold),
-        centerTitle: true,
-        backgroundColor: Colors.grey.shade600,
-      ),
+    return Scaffold(    
       body: Column(
         children: [
+          ScreenHeading(title: 'Profile'),
           buildTop(),
           Expanded(
             child: StreamBuilder<DocumentSnapshot>(
