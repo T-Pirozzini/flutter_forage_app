@@ -32,7 +32,8 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage>
+    with SingleTickerProviderStateMixin {
   final currentUser = FirebaseAuth.instance.currentUser!;
   late bool followUser;
   int currentIndex = 0;
@@ -40,6 +41,9 @@ class _HomePageState extends State<HomePage> {
   double lng = 0;
   BannerAd? _banner;
   bool _isBannerAdLoaded = false;
+
+  late AnimationController _animationController;
+  late Animation<Color?> _borderColorAnimation;
 
   @override
   void initState() {
@@ -50,6 +54,22 @@ class _HomePageState extends State<HomePage> {
     currentIndex = widget.currentIndex;
     _createBannerAd();
     AdMobService.loadInterstitialAd();
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+
+    _borderColorAnimation = ColorTween(
+      begin: Colors.transparent,
+      end: AppColors.textColor,
+    ).animate(_animationController);
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   void _createBannerAd() {
@@ -82,35 +102,45 @@ class _HomePageState extends State<HomePage> {
           actions: [
             Padding(
               padding: const EdgeInsets.all(12.0),
-              child: FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primaryAccent,
-                  foregroundColor: AppColors.textColor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  elevation: 2,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(FontAwesomeIcons.compass,
-                        color: AppColors.textColor, size: 32),
-                    const SizedBox(height: 4),
-                    Text('Go Forage!',
-                        style: TextStyle(color: AppColors.textColor)),
-                  ],
-                ),
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => MapPage(
-                      lat: lat,
-                      lng: lng,
-                      followUser: followUser,
+              child: AnimatedBuilder(
+                animation: _borderColorAnimation,
+                builder: (context, child) {
+                  return FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primaryAccent,
+                      foregroundColor: AppColors.textColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(
+                          color:
+                              _borderColorAnimation.value ?? Colors.transparent,
+                          width: 3,
+                        ),
+                      ),
+                      elevation: 2,
                     ),
-                  ),
-                ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(FontAwesomeIcons.compass,
+                            color: AppColors.textColor, size: 32),
+                        const SizedBox(height: 4),
+                        Text('Go Forage!',
+                            style: TextStyle(color: AppColors.textColor)),
+                      ],
+                    ),
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => MapPage(
+                          lat: lat,
+                          lng: lng,
+                          followUser: followUser,
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ],

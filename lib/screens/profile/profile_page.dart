@@ -7,10 +7,15 @@ import 'package:flutter_forager_app/models/user.dart';
 import 'package:flutter_forager_app/providers/marker_count_provider.dart';
 import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
 import 'package:flutter_forager_app/screens/friends/friends_controller.dart';
-import 'package:flutter_forager_app/screens/profile/info_card.dart';
-import 'package:flutter_forager_app/shared/styled_text.dart';
+import 'package:flutter_forager_app/screens/profile/components/about_me.dart';
+import 'package:flutter_forager_app/screens/profile/components/edit_profile_dialog.dart';
+import 'package:flutter_forager_app/screens/profile/components/info_card.dart';
+import 'package:flutter_forager_app/screens/profile/components/user_heading.dart';
+import 'package:flutter_forager_app/screens/recipes/recipes_page.dart';
+
 import 'package:flutter_forager_app/theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   final UserModel user;
@@ -61,6 +66,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   String selectedProfileOption = 'profileImage1.jpg';
   String username = '';
   String bio = '';
+  bool get _isCurrentUser => widget.user.uid == currentUser.uid;
+  bool get _isFriend => widget.user.friends.contains(currentUser.uid);
 
   @override
   void initState() {
@@ -89,225 +96,30 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 
   Future<void> showProfileEditDialog() async {
-    String newUsername = username;
-    String newBio = bio;
-    String newProfileImage = selectedProfileOption;
-    String newBackgroundImage = selectedBackgroundOption;
-
     await showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          return Dialog(
-            backgroundColor: Colors.grey[900],
-            insetPadding: const EdgeInsets.all(20),
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      "Edit Profile",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
+      builder: (context) => EditProfileDialog(
+        username: username,
+        bio: bio,
+        selectedProfileOption: selectedProfileOption,
+        selectedBackgroundOption: selectedBackgroundOption,
+        imageProfileOptions: imageProfileOptions,
+        imageBackgroundOptions: imageBackgroundOptions,
+        onSave:
+            (newUsername, newBio, newProfileImage, newBackgroundImage) async {
+          setState(() {
+            username = newUsername.trim().isNotEmpty ? newUsername : username;
+            bio = newBio.trim().isNotEmpty ? newBio : bio;
+            selectedProfileOption = newProfileImage;
+            selectedBackgroundOption = newBackgroundImage;
+          });
 
-                    // Username field
-                    TextField(
-                      autofocus: true,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        labelText: "Username",
-                        labelStyle: const TextStyle(color: Colors.white),
-                        hintText: "Enter new username",
-                        hintStyle: const TextStyle(color: Colors.grey),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      onChanged: (value) => newUsername = value,
-                      controller: TextEditingController(text: username),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Bio field
-                    TextField(
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        labelText: "Bio",
-                        labelStyle: const TextStyle(color: Colors.white),
-                        hintText: "Tell us about yourself",
-                        hintStyle: const TextStyle(color: Colors.grey),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      onChanged: (value) => newBio = value,
-                      controller: TextEditingController(text: bio),
-                      maxLines: 3,
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Profile Image Selection
-                    const Text(
-                      "Select Profile Image",
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      height: 180, // Smaller fixed height
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.grey),
-                      ),
-                      child: Scrollbar(
-                        child: GridView.builder(
-                          padding: const EdgeInsets.all(8),
-                          itemCount: imageProfileOptions.length,
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 4,
-                            childAspectRatio: 1.0,
-                            crossAxisSpacing: 8,
-                            mainAxisSpacing: 8,
-                          ),
-                          itemBuilder: (context, index) {
-                            final option = imageProfileOptions[index];
-                            return GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  newProfileImage = option;
-                                });
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(8),
-                                  image: DecorationImage(
-                                    image:
-                                        AssetImage('lib/assets/images/$option'),
-                                    fit: BoxFit.cover,
-                                  ),
-                                  border: newProfileImage == option
-                                      ? Border.all(
-                                          color: Colors.deepOrange, width: 3)
-                                      : null,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Background Image Selection
-                    const Text(
-                      "Select Background Image",
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      height: 180, // Smaller fixed height
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.grey),
-                      ),
-                      child: Scrollbar(
-                        child: GridView.builder(
-                          padding: const EdgeInsets.all(8),
-                          itemCount: imageBackgroundOptions.length,
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            childAspectRatio: 1.0,
-                            crossAxisSpacing: 8,
-                            mainAxisSpacing: 8,
-                          ),
-                          itemBuilder: (context, index) {
-                            final option = imageBackgroundOptions[index];
-                            return GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  newBackgroundImage = option;
-                                });
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(8),
-                                  image: DecorationImage(
-                                    image:
-                                        AssetImage('lib/assets/images/$option'),
-                                    fit: BoxFit.cover,
-                                  ),
-                                  border: newBackgroundImage == option
-                                      ? Border.all(
-                                          color: Colors.deepOrange, width: 3)
-                                      : null,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Action buttons
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          child: const Text(
-                            'Cancel',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                        const SizedBox(width: 10),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.secondaryColor,
-                          ),
-                          child: const Text(
-                            'Save',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          onPressed: () async {
-                            // Update local state
-                            setState(() {
-                              username = newUsername.trim().isNotEmpty
-                                  ? newUsername
-                                  : username;
-                              bio = newBio.trim().isNotEmpty ? newBio : bio;
-                              selectedProfileOption = newProfileImage;
-                              selectedBackgroundOption = newBackgroundImage;
-                            });
-
-                            // Update in Firestore
-                            await usersCollection
-                                .doc(currentUser.email)
-                                .update({
-                              'username': username,
-                              'bio': bio,
-                              'profilePic': selectedProfileOption,
-                              'profileBackground': selectedBackgroundOption,
-                            });
-
-                            Navigator.pop(context);
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
+          await usersCollection.doc(currentUser.email).update({
+            'username': username,
+            'bio': bio,
+            'profilePic': selectedProfileOption,
+            'profileBackground': selectedBackgroundOption,
+          });
         },
       ),
     );
@@ -334,7 +146,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       body: Column(
         children: [
           ScreenHeading(title: 'Profile'),
-          buildTop(),
+          UserHeading(
+            selectedBackgroundOption: selectedBackgroundOption,
+            selectedProfileOption: selectedProfileOption,
+            username: username,
+          ),
+          // buildTop(),
           const SizedBox(height: 50),
           Expanded(
             child: StreamBuilder<DocumentSnapshot>(
@@ -356,106 +173,220 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   return Center(
                     child: ListView(
                       children: [
-                        Container(
-                          height: 100,
-                          margin: const EdgeInsets.all(8.0),
-                          padding: const EdgeInsets.all(8.0),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.black),
-                            borderRadius: BorderRadius.circular(10),
-                            color: Colors.white,
-                          ),
-                          child: Text(
-                            bio,
-                            style: const TextStyle(
-                              fontSize: 18,
-                            ),
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
+                        AboutMe(bio: bio),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            InfoCard(
-                              icon: Icons.location_on,
-                              text: 'Your Forage Locations',
-                              countText: '$markerCount saved location(s).',
-                              onTap: () {
-                                Navigator.push(
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                              child: Text(
+                                'ACTIVITY STATS',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 1.2,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ),
+                            // Stats Grid
+                            GridView.count(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              crossAxisCount: 2,
+                              childAspectRatio: 1.5,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              mainAxisSpacing: 12,
+                              crossAxisSpacing: 12,
+                              children: [
+                                _buildStatCard(
                                   context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ForageLocations(
-                                      userId: currentUser.email!,
-                                      userName:
-                                          currentUser.email!.split("@")[0],
-                                      userLocations: true,
+                                  icon: Icons.location_on,
+                                  title: 'Locations',
+                                  value: widget.user.forageStats['locations']
+                                          ?.toString() ??
+                                      '0',
+                                  onTap: () {
+                                    if (_isCurrentUser || _isFriend) {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => ForageLocations(
+                                            userId: widget.user.uid,
+                                            userName: widget.user.username,
+                                            userLocations: true,
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  enabled: _isCurrentUser || _isFriend,
+                                ),
+                                _buildStatCard(
+                                  context,
+                                  icon: Icons.menu_book,
+                                  title: 'Recipes',
+                                  value: widget.user.savedRecipes.length
+                                      .toString(),
+                                  onTap: () {
+                                    if (_isCurrentUser || _isFriend) {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                const RecipesPage()),
+                                      );
+                                    }
+                                  },
+                                  enabled: _isCurrentUser || _isFriend,
+                                ),
+                                _buildStatCard(
+                                  context,
+                                  icon: Icons.people,
+                                  title: 'Friends',
+                                  value: widget.user.friends.length.toString(),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const FriendsController(
+                                                currentTab: 0),
+                                      ),
+                                    );
+                                  },
+                                  enabled: true,
+                                ),
+                                _buildStatCard(
+                                  context,
+                                  icon: Icons.calendar_today,
+                                  title: 'Member Since',
+                                  value: DateFormat('MMM yyyy')
+                                      .format(widget.user.createdAt.toDate()),
+                                  onTap: null,
+                                  enabled: false,
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            // Friend Action Button
+                            if (!_isCurrentUser)
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16),
+                                child: _buildFriendActionButton(context),
+                              ),
+
+                            // Friend Requests Button (for current user)
+                            if (_isCurrentUser &&
+                                widget.user.friendRequests.isNotEmpty)
+                              Padding(
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                                child: OutlinedButton.icon(
+                                  icon: const Icon(Icons.person_add, size: 20),
+                                  label: Text(
+                                    'Friend Requests (${widget.user.friendRequests.length})',
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.deepOrange,
+                                    side: const BorderSide(
+                                        color: Colors.deepOrange),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
                                   ),
-                                );
-                                AdMobService.showInterstitialAd();
-                              },
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const FriendsController(
+                                                currentTab: 1),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+
+                            // Section Header
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                              child: Text(
+                                'ACTIONS',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 1.2,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
                             ),
-                            InfoCard(
-                              icon: Icons.bookmark,
-                              text: 'Community Locations',
-                              countText:
-                                  '$nonOwnerMarkerCount bookmarked location(s).',
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ForageLocations(
-                                      userId: currentUser.email!,
-                                      userName: "Bookmarked Locations",
-                                      userLocations: false,
-                                    ),
-                                  ),
-                                );
-                                AdMobService.showInterstitialAd();
-                              },
+
+                            // Action Cards
+                            Column(
+                              children: [
+                                InfoCard(
+                                  icon: Icons.location_on,
+                                  text: 'Your Forage Locations',
+                                  countText: '$markerCount saved',
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => ForageLocations(
+                                          userId: currentUser.email!,
+                                          userName:
+                                              currentUser.email!.split("@")[0],
+                                          userLocations: true,
+                                        ),
+                                      ),
+                                    );
+                                    AdMobService.showInterstitialAd();
+                                  },
+                                ),
+                                InfoCard(
+                                  icon: Icons.bookmark,
+                                  text: 'Community Locations',
+                                  countText: '$nonOwnerMarkerCount bookmarked',
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => ForageLocations(
+                                          userId: currentUser.email!,
+                                          userName: "Bookmarked Locations",
+                                          userLocations: false,
+                                        ),
+                                      ),
+                                    );
+                                    AdMobService.showInterstitialAd();
+                                  },
+                                ),
+                              ],
                             ),
-                            InfoCard(
-                              icon: Icons.group,
-                              text: 'Friends Locations',
-                              countText:
-                                  '${userData['friends'].length} friend(s).',
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const FriendsController(currentTab: 0),
-                                  ),
-                                );
-                              },
-                            ),
-                            InfoCard(
-                              icon: Icons.person_add,
-                              text: 'Friend requests',
-                              countText:
-                                  'Incoming: ${userData['friendRequests'].length} '
-                                  'Outgoing: ${userData['sentFriendRequests'].length}',
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const FriendsController(currentTab: 1),
-                                  ),
-                                );
-                              },
-                            ),
+
                             const SizedBox(height: 100),
                           ],
                         ),
                       ],
                     ),
                   );
-                } else {
-                  return const Center(
-                    child: CircularProgressIndicator(),
+                } else if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      'Error loading profile data',
+                      style: TextStyle(color: Colors.red),
+                    ),
                   );
+                } else {
+                  return const Center(child: CircularProgressIndicator());
                 }
               },
             ),
@@ -465,79 +396,149 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     );
   }
 
-  Widget buildTop() {
-    final top = coverHeight - profileHeight / 2 - 25;
-    return Stack(
-      clipBehavior: Clip.none,
-      alignment: Alignment.center,
-      children: [
-        Container(
-          child: buildCoverImage(),
+  Widget _buildStatCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String value,
+    VoidCallback? onTap,
+    bool enabled = true,
+  }) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      color: enabled ? Colors.white : Colors.grey[100],
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: enabled ? onTap : null,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon,
+                  size: 24, color: enabled ? Colors.deepOrange : Colors.grey),
+              const SizedBox(height: 8),
+              Text(value,
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: enabled ? Colors.black : Colors.grey)),
+              const SizedBox(height: 4),
+              Text(title,
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: enabled ? Colors.grey[600] : Colors.grey)),
+            ],
+          ),
         ),
-        Positioned(
-          top: top - 80,
-          child: buildProfileImage(),
-        ),
-        Positioned(
-          top: top + 20,
-          child: Container(
-              padding: EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: AppColors.primaryAccent.withValues(alpha: 0.8),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: StyledTitle(username.isNotEmpty ? username : 'Username')),
-        )
-      ],
+      ),
     );
   }
 
-  Widget buildCoverImage() => ClipPath(
-        clipper: _BottomCurveClipper(),
-        child: Container(
-          color: Colors.white,
-          child: Image.asset(
-            'lib/assets/images/$selectedBackgroundOption',
-            width: double.infinity,
-            height: coverHeight - 60,
-            fit: BoxFit.cover,
-          ),
-        ),
-      );
+  Widget _buildFriendActionButton(BuildContext context) {
+    // final isFriend = widget.user.friends.contains(currentUser.uid);
+    // final hasSentRequest =
+    //     widget.user.friendRequests.containsKey(currentUser.uid);
+    // final hasReceivedRequest =
+    //     widget.user.friendRequests.containsValue(currentUser.uid);
 
-  Widget buildProfileImage() => Container(
-        padding: const EdgeInsets.all(8.0),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: Colors.white,
-            width: 4.0,
-          ),
-        ),
-        child: ClipOval(
-          child: Image.asset(
-            'lib/assets/images/$selectedProfileOption',
-            width: profileHeight,
-            height: profileHeight,
-            fit: BoxFit.cover,
-          ),
-        ),
-      );
-}
+    final isFriend = true;
+    final hasSentRequest = false;
+    final hasReceivedRequest = false;
 
-// curve for the background image
-class _BottomCurveClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    path.lineTo(0, size.height - 80);
-    path.quadraticBezierTo(
-        size.width / 2, size.height * 1.3, size.width, size.height - 80);
-    path.lineTo(size.width, 0);
-    path.close();
-    return path;
+    if (isFriend) {
+      return ElevatedButton.icon(
+        icon: const Icon(Icons.check, size: 20),
+        label: const Text('Friends'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.green[50],
+          foregroundColor: Colors.green,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        onPressed: null,
+      );
+    } else if (hasSentRequest) {
+      return OutlinedButton.icon(
+        icon: const Icon(Icons.person_add_disabled, size: 20),
+        label: const Text('Request Sent'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.orange,
+          side: const BorderSide(color: Colors.orange),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        onPressed: () {
+          // Cancel friend request logic
+        },
+      );
+    } else if (hasReceivedRequest) {
+      return Row(
+        children: [
+          Expanded(
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.check, size: 20),
+              label: const Text('Accept'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green[50],
+                foregroundColor: Colors.green,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.horizontal(
+                    left: Radius.circular(12),
+                  ),
+                ),
+              ),
+              onPressed: () {
+                // Accept friend request logic
+              },
+            ),
+          ),
+          const SizedBox(width: 1),
+          Expanded(
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.close, size: 20),
+              label: const Text('Decline'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red[50],
+                foregroundColor: Colors.red,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.horizontal(
+                    right: Radius.circular(12),
+                  ),
+                ),
+              ),
+              onPressed: () {
+                // Decline friend request logic
+              },
+            ),
+          ),
+        ],
+      );
+    } else {
+      return ElevatedButton.icon(
+        icon: const Icon(Icons.person_add, size: 20),
+        label: const Text('Add Friend'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.deepOrange[50],
+          foregroundColor: Colors.deepOrange,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        onPressed: () {
+          // Send friend request logic
+        },
+      );
+    }
   }
-
-  @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }

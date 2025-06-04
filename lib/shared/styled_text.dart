@@ -51,3 +51,19 @@ class StyledTitle extends StatelessWidget {
     );
   }
 }
+
+class StyledActionText extends StatelessWidget {
+  const StyledActionText(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: GoogleFonts.eduNswActFoundation(
+        textStyle: Theme.of(context).textTheme.titleSmall,
+      ),
+    );
+  }
+}

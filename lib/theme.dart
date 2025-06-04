@@ -13,41 +13,76 @@ class AppColors {
 }
 
 ThemeData primaryTheme = ThemeData(
-  // app bar theme colors
-  appBarTheme: AppBarTheme().copyWith(
-    backgroundColor: AppColors.secondaryColor,
-    foregroundColor: AppColors.textColor,
-    // surfaceTintColor: Colors.transparent,
-    centerTitle: true,
-    toolbarHeight: 100,
-    elevation: 2,
-    iconTheme: IconThemeData(color: AppColors.textColor, size: 32.0),
-  ),
-
-  // scaffold color
-  scaffoldBackgroundColor: AppColors.primaryColor,
-
-  // drawer styles
-  drawerTheme: DrawerThemeData(),
-
-  // text theme
-  textTheme: TextTheme().copyWith(
-    bodyMedium: TextStyle(
-      color: AppColors.textColor,
-      fontSize: 16,
-      letterSpacing: 1,
+    // app bar theme colors
+    appBarTheme: AppBarTheme().copyWith(
+      backgroundColor: AppColors.secondaryColor,
+      foregroundColor: AppColors.textColor,
+      // surfaceTintColor: Colors.transparent,
+      centerTitle: true,
+      toolbarHeight: 100,
+      elevation: 2,
+      iconTheme: IconThemeData(color: AppColors.textColor, size: 32.0),
     ),
-    headlineMedium: TextStyle(
-      color: AppColors.titleColor,
-      fontSize: 16,
-      fontWeight: FontWeight.bold,
-      letterSpacing: 1,
+
+    // scaffold color
+    scaffoldBackgroundColor: AppColors.primaryColor,
+
+    // drawer styles
+    drawerTheme: DrawerThemeData(),
+
+    // text theme
+    textTheme: TextTheme().copyWith(
+      bodyMedium: TextStyle(
+        color: AppColors.textColor,
+        fontSize: 16,
+        letterSpacing: 1,
+      ),
+      headlineMedium: TextStyle(
+        color: AppColors.titleColor,
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1,
+      ),
+      titleMedium: TextStyle(
+        color: AppColors.secondaryColor,
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 2,
+      ),
+      titleSmall: TextStyle(
+        color: AppColors.textColor,
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 2,
+      ),
     ),
-    titleMedium: TextStyle(
-      color: AppColors.secondaryColor,
-      fontSize: 18,
-      fontWeight: FontWeight.bold,
-      letterSpacing: 2,
+
+    // dialog theme
+    dialogTheme: DialogThemeData().copyWith(
+      backgroundColor: AppColors.primaryAccent,
+      titleTextStyle: TextStyle(
+        color: AppColors.titleColor,
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+      ),
+      contentTextStyle: TextStyle(
+        color: AppColors.textColor,
+        fontSize: 16,
+      ),
     ),
-  ),
-);
+
+    // text
+    inputDecorationTheme: InputDecorationTheme().copyWith(
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8.0),
+        borderSide: BorderSide(color: AppColors.secondaryAccent, width: 1.0),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8.0),
+        borderSide: BorderSide(color: AppColors.secondaryColor, width: 2.0),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8.0),
+        borderSide: BorderSide(color: AppColors.secondaryAccent, width: 1.0),
+      ),
+    ));
