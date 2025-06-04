@@ -1,22 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:floating_bottom_navigation_bar/floating_bottom_navigation_bar.dart';
 import 'package:flutter_forager_app/components/ad_mob_service.dart';
 import 'package:flutter_forager_app/models/user.dart';
-import 'package:flutter_forager_app/screens/forage/marker_buttons.dart';
 import 'package:flutter_forager_app/screens/profile/profile_page.dart';
 import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
 import 'package:flutter_forager_app/screens/recipes/recipes_page.dart';
+import 'package:flutter_forager_app/theme.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import '../../auth/auth_page.dart';
 import '../drawer/drawer.dart';
-import '../drawer/about_page.dart';
-import '../drawer/about_us_page.dart';
 import '../community/community_page.dart';
-import '../drawer/credits_page.dart';
 import '../forage/map_page.dart';
+import 'package:convex_bottom_bar/convex_bottom_bar.dart';
 
 class HomePage extends StatefulWidget {
   final double lat;
@@ -24,28 +20,24 @@ class HomePage extends StatefulWidget {
   final int currentIndex;
   final bool followUser;
 
-  const HomePage(
-      {super.key,
-      required this.lat,
-      required this.lng,
-      required this.followUser,
-      required this.currentIndex});
+  const HomePage({
+    super.key,
+    required this.lat,
+    required this.lng,
+    required this.followUser,
+    required this.currentIndex,
+  });
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  // get current user id
-  final currentUserId = FirebaseAuth.instance.currentUser!.uid;
-  // get current user
   final currentUser = FirebaseAuth.instance.currentUser!;
-  // bottom navigation bar
   late bool followUser;
   int currentIndex = 0;
   double lat = 0;
   double lng = 0;
-
   BannerAd? _banner;
   bool _isBannerAdLoaded = false;
 
@@ -56,7 +48,6 @@ class _HomePageState extends State<HomePage> {
     lat = widget.lat;
     lng = widget.lng;
     currentIndex = widget.currentIndex;
-
     _createBannerAd();
     AdMobService.loadInterstitialAd();
   }
@@ -66,64 +57,132 @@ class _HomePageState extends State<HomePage> {
       adUnitId: AdMobService.bannerAdUnitId!,
       size: AdSize.fullBanner,
       listener: BannerAdListener(
-        onAdLoaded: (Ad ad) {
-          setState(() {
-            _isBannerAdLoaded = true;
-          });
-        },
-        onAdFailedToLoad: (Ad ad, LoadAdError error) {
-          // Handle the error
-          ad.dispose();
-        },
+        onAdLoaded: (Ad ad) => setState(() => _isBannerAdLoaded = true),
+        onAdFailedToLoad: (Ad ad, LoadAdError error) => ad.dispose(),
       ),
       request: const AdRequest(),
     )..load();
   }
 
-  // navigate to profile page
-  void goToAboutPage() {
-    // pop menu drawer
-    Navigator.pop(context);
-    // go to new page
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const AboutPage(),
+  @override
+  Widget build(BuildContext context) {
+    final pages = [
+      _buildProfileStream(),
+      RecipesPage(),
+      const CommunityPage(),
+    ];
+
+    return SafeArea(
+      child: Scaffold(
+        appBar: AppBar(
+          title: Image.asset(
+            'assets/images/forager_appbar_logo.png',
+            height: kToolbarHeight,
+          ),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primaryAccent,
+                  foregroundColor: AppColors.textColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  elevation: 2,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(FontAwesomeIcons.compass,
+                        color: AppColors.textColor, size: 32),
+                    const SizedBox(height: 4),
+                    Text('Go Forage!',
+                        style: TextStyle(color: AppColors.textColor)),
+                  ],
+                ),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MapPage(
+                      lat: lat,
+                      lng: lng,
+                      followUser: followUser,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        drawer: CustomDrawer(
+          onSignOutTap: _signOut,
+          onForageLocationsTap: _goToForageLocationsPage,
+          onAboutTap: goToAboutPage,
+          onAboutUsTap: goAboutUsPage,
+          onCreditsTap: goCreditsPage,
+          showDeleteConfirmationDialog: _showDeleteConfirmationDialog,
+        ),
+        body: Column(
+          children: [
+            if (_isBannerAdLoaded && _banner != null)
+              Container(
+                width: double.infinity,
+                height: 50,
+                child: AdWidget(ad: _banner!),
+              ),
+            Expanded(child: pages[currentIndex]),
+          ],
+        ),
+        bottomNavigationBar: ConvexAppBar(
+          style: TabStyle.reactCircle,
+          items: const [
+            TabItem(
+              icon: Icons.home,
+              title: 'Dashboard',
+            ),
+            TabItem(icon: Icons.menu_book, title: 'Recipes'),
+            TabItem(icon: Icons.people, title: 'Community'),
+          ],
+          initialActiveIndex: currentIndex,
+          color: AppColors.textColor,
+          backgroundColor: AppColors.primaryAccent,
+          activeColor: AppColors.secondaryColor,
+          curveSize: 100,
+          top: -30,
+          onTap: (int i) => setState(() => currentIndex = i),
+          curve: Curves.easeInOutQuad,
+        ),
+        extendBody: true,
       ),
     );
   }
 
-  // navigate to profile page
-  void goAboutUsPage() {
-    // pop menu drawer
-    Navigator.pop(context);
-    // go to new page
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const AboutUsPage(),
-      ),
+  Widget _buildProfileStream() {
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('Users')
+          .doc(currentUser.email)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || snapshot.hasError) {
+          return const Center(child: Text('Error loading profile'));
+        }
+        return ProfilePage(user: UserModel.fromFirestore(snapshot.data!));
+      },
     );
   }
 
-  // navigate to credits page
-  void goCreditsPage() {
-    // pop menu drawer
-    Navigator.pop(context);
-    // go to new page
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const CreditsPage(),
-      ),
-    );
-  }
+  // Navigation methods
+  void goToAboutPage() => Navigator.popAndPushNamed(context, '/about');
+  void goAboutUsPage() => Navigator.popAndPushNamed(context, '/about-us');
+  void goCreditsPage() => Navigator.popAndPushNamed(context, '/credits');
 
-  // navigate to forage locations page
-  void goToForageLocationsPage() {
-    // pop menu drawer
+  void _goToForageLocationsPage() {
     Navigator.pop(context);
-    // go to new page
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -136,139 +195,40 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // sign user out
-  void signOut() async {
+  Future<void> _signOut() async {
     await FirebaseAuth.instance.signOut();
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => AuthPage()),
-    );
+    Navigator.pushReplacementNamed(context, '/auth');
   }
 
-  void showDeleteConfirmationDialog() {
+  void _showDeleteConfirmationDialog() {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Confirm Account Deletion'),
-          content: Text(
-            'We are sad to see you go. Are you sure you would like to delete your account? This action will be permanent.',
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Account Deletion'),
+        content:
+            const Text('This action will permanently delete your account.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
           ),
-          actions: <Widget>[
-            TextButton(
-              child: Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: Text('Delete'),
-              onPressed: () {
-                deleteAccount();
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
+          TextButton(
+            onPressed: () => _deleteAccount(),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
     );
   }
 
-  void deleteAccount() async {
+  Future<void> _deleteAccount() async {
     try {
-      // Delete the user's account
       await FirebaseAuth.instance.currentUser?.delete();
-
-      // Navigate to AuthPage after successful deletion
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => AuthPage()),
-      );
+      Navigator.pushReplacementNamed(context, '/auth');
     } catch (e) {
-      print('Error deleting account: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error deleting account: $e')),
+      );
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final pages = [
-      StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('Users')
-            .doc(FirebaseAuth.instance.currentUser!.email)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) return CircularProgressIndicator();
-
-          final userData = snapshot.data!.data() as Map<String, dynamic>;
-          final user = UserModel.fromFirestore(userData);
-
-          return ProfilePage(user: user);
-        },
-      ),
-      MapPage(lat: lat, lng: lng, followUser: followUser),
-      RecipesPage(),
-      const CommunityPage(),
-    ];
-
-    return Scaffold(
-      appBar: AppBar(
-        title: SizedBox(
-          height: kToolbarHeight,
-          child: Image.asset(
-            'assets/images/forager_appbar_logo.png',
-          ),
-        ),        
-      ),
-      drawer: CustomDrawer(
-        // onProfileTap: goToProfilePage,
-        onSignOutTap: signOut,
-        onForageLocationsTap: goToForageLocationsPage,
-        onAboutTap: goToAboutPage,
-        onAboutUsTap: goAboutUsPage,
-        onCreditsTap: goCreditsPage,
-        showDeleteConfirmationDialog: showDeleteConfirmationDialog,
-      ),
-      body: Column(
-        children: [
-          if (_isBannerAdLoaded && _banner != null)
-            Container(
-              width: double.infinity,
-              height: 50,
-              child: AdWidget(ad: _banner!),
-            ),
-          Expanded(
-            child: pages[currentIndex],
-          ),
-        ],
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
-      floatingActionButton: pages[currentIndex] is MapPage
-          ? Padding(
-              padding: const EdgeInsets.fromLTRB(0, 0, 0, 20),
-              child: const MarkerButtons(),
-            )
-          : null,
-      extendBody: true,
-      bottomNavigationBar: FloatingNavbar(
-        onTap: (index) => setState(() => currentIndex = index),
-        currentIndex: currentIndex,
-        backgroundColor: Colors.grey.shade800,
-        selectedItemColor: Colors.black,
-        selectedBackgroundColor: Colors.deepOrange.shade300,
-        unselectedItemColor: Colors.white,
-        iconSize: 14,
-        margin: EdgeInsets.fromLTRB(0, 0, 0, 0),
-        items: [
-          FloatingNavbarItem(
-              icon: FontAwesomeIcons.doorOpen, title: 'Dashboard'),
-          FloatingNavbarItem(icon: FontAwesomeIcons.compass, title: 'Forage'),
-          FloatingNavbarItem(
-              icon: FontAwesomeIcons.kitchenSet, title: 'Recipes'),
-          FloatingNavbarItem(
-              icon: FontAwesomeIcons.cameraRetro, title: 'Community'),
-        ],
-      ),
-    );
   }
 }

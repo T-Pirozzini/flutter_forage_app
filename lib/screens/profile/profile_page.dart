@@ -1,5 +1,3 @@
-import 'dart:ui';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -10,9 +8,9 @@ import 'package:flutter_forager_app/providers/marker_count_provider.dart';
 import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
 import 'package:flutter_forager_app/screens/friends/friends_controller.dart';
 import 'package:flutter_forager_app/screens/profile/info_card.dart';
+import 'package:flutter_forager_app/shared/styled_text.dart';
+import 'package:flutter_forager_app/theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   final UserModel user;
@@ -34,6 +32,36 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   final double coverHeight = 200.0;
   final double profileHeight = 100.0;
 
+  // background image options
+  List<String> imageBackgroundOptions = [
+    'backgroundProfileImage1.jpg',
+    'backgroundProfileImage2.jpg',
+    'backgroundProfileImage3.jpg',
+    'backgroundProfileImage4.jpg',
+    'backgroundProfileImage5.jpg',
+    'backgroundProfileImage6.jpg',
+  ];
+
+  // Profile image options
+  List<String> imageProfileOptions = [
+    'profileImage1.jpg',
+    'profileImage2.jpg',
+    'profileImage3.jpg',
+    'profileImage4.jpg',
+    'profileImage5.jpg',
+    'profileImage6.jpg',
+    'profileImage7.jpg',
+    'profileImage8.jpg',
+    'profileImage9.jpg',
+    'profileImage10.jpg',
+  ];
+
+  // initial values
+  String selectedBackgroundOption = 'backgroundProfileImage1.jpg';
+  String selectedProfileOption = 'profileImage1.jpg';
+  String username = '';
+  String bio = '';
+
   @override
   void initState() {
     super.initState();
@@ -54,251 +82,235 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         selectedBackgroundOption =
             userData['profileBackground'] ?? selectedBackgroundOption;
         selectedProfileOption = userData['profilePic'] ?? selectedProfileOption;
+        username = userData['username'] ?? '';
+        bio = userData['bio'] ?? '';
       });
     }
   }
 
-  // edit text field - generic
-  Future<void> editField(String field) async {
-    String newValue = "";
+  Future<void> showProfileEditDialog() async {
+    String newUsername = username;
+    String newBio = bio;
+    String newProfileImage = selectedProfileOption;
+    String newBackgroundImage = selectedBackgroundOption;
+
     await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: Text(
-          "Edit $field",
-          style: const TextStyle(color: Colors.white),
-        ),
-        content: TextField(
-          autofocus: true,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: "Enter new $field",
-            hintStyle: const TextStyle(color: Colors.grey),
-          ),
-          onChanged: (value) {
-            newValue = value;
-          },
-        ),
-        actions: [
-          // cancel button
-          TextButton(
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.white),
-            ),
-            onPressed: () => Navigator.pop(context),
-          ),
-
-          // save button
-          TextButton(
-            child: const Text(
-              'Save',
-              style: TextStyle(color: Colors.white),
-            ),
-            onPressed: () => Navigator.of(context).pop(newValue),
-          ),
-        ],
-      ),
-    );
-    // update in Firestore
-    if (newValue.trim().isNotEmpty) {
-      // only update if there is something in the textfield
-      await usersCollection.doc(currentUser.email).update(
-        {
-          field: newValue,
-        },
-      );
-    }
-  }
-
-  // background image options
-  List<String> imageBackgroundOptions = [
-    'backgroundProfileImage1.jpg',
-    'backgroundProfileImage2.jpg',
-    'backgroundProfileImage3.jpg',
-    'backgroundProfileImage4.jpg',
-    'backgroundProfileImage5.jpg',
-    'backgroundProfileImage6.jpg',
-  ];
-
-  // initial background image
-  String selectedBackgroundOption = 'backgroundProfileImage1.jpg';
-
-  // edit profile background image
-  Future<void> editProfileBackground(String field) async {
-    String newValue = "";
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: Text(
-          "Edit $field",
-          style: const TextStyle(color: Colors.white),
-        ),
-        content: SizedBox(
-          height: 420,
-          width: 300,
-          child: GridView.builder(
-            shrinkWrap: true,
-            itemCount: imageBackgroundOptions.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 1.0,
-            ),
-            itemBuilder: (context, index) {
-              final option = imageBackgroundOptions[index];
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    Navigator.of(context).pop(newValue);
-                    selectedBackgroundOption = option;
-                    newValue = option;
-                  });
-                },
-                child: Container(
-                  height: 20,
-                  width: 20,
-                  margin: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    image: DecorationImage(
-                      image: AssetImage('lib/assets/images/$option'),
-                      fit: BoxFit.cover,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return Dialog(
+            backgroundColor: Colors.grey[900],
+            insetPadding: const EdgeInsets.all(20),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      "Edit Profile",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    border: selectedBackgroundOption == option
-                        ? Border.all(color: Colors.deepOrange, width: 4)
-                        : null,
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-        actions: [
-          // cancel button
-          TextButton(
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.white),
-            ),
-            onPressed: () => Navigator.pop(context),
-          ),
+                    const SizedBox(height: 20),
 
-          // save button
-          TextButton(
-            child: const Text(
-              'Save',
-              style: TextStyle(color: Colors.white),
-            ),
-            onPressed: () => Navigator.of(context).pop(newValue),
-          ),
-        ],
-      ),
-    );
-
-    // update in Firestore
-    if (newValue.trim().isNotEmpty) {
-      // only update if there is something in the textfield
-      await usersCollection.doc(currentUser.email).update(
-        {
-          field: newValue,
-        },
-      );
-    }
-  }
-
-  // Profile image options
-  List<String> imageProfileOptions = [
-    'profileImage1.jpg',
-    'profileImage2.jpg',
-    'profileImage3.jpg',
-    'profileImage4.jpg',
-    'profileImage5.jpg',
-    'profileImage6.jpg',
-    'profileImage7.jpg',
-    'profileImage8.jpg',
-    'profileImage9.jpg',
-    'profileImage10.jpg',
-  ];
-
-  // initial profile image
-  String selectedProfileOption = 'profileImage1.jpg';
-
-  // edit profile image
-  Future<void> editProfileImage(String field) async {
-    String newValue = "";
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: Text(
-          "Select Profile Image",
-          style: const TextStyle(color: Colors.white),
-        ),
-        content: SizedBox(
-          height: 500,
-          width: 350,
-          child: GridView.builder(
-            shrinkWrap: true,
-            itemCount: imageProfileOptions.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              childAspectRatio: 1.0,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-            ),
-            itemBuilder: (context, index) {
-              final option = imageProfileOptions[index];
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    Navigator.of(context).pop(newValue);
-                    selectedProfileOption = option;
-                    newValue = option;
-                  });
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    image: DecorationImage(
-                      image: AssetImage('lib/assets/images/$option'),
-                      fit: BoxFit.cover,
+                    // Username field
+                    TextField(
+                      autofocus: true,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        labelText: "Username",
+                        labelStyle: const TextStyle(color: Colors.white),
+                        hintText: "Enter new username",
+                        hintStyle: const TextStyle(color: Colors.grey),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      onChanged: (value) => newUsername = value,
+                      controller: TextEditingController(text: username),
                     ),
-                    border: selectedProfileOption == option
-                        ? Border.all(color: Colors.deepOrange, width: 4)
-                        : null,
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-        actions: [
-          // cancel button
-          TextButton(
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.white),
-            ),
-            onPressed: () => Navigator.pop(context),
-          ),
+                    const SizedBox(height: 16),
 
-          // save button
-          TextButton(
-            child: const Text(
-              'Save',
-              style: TextStyle(color: Colors.white),
+                    // Bio field
+                    TextField(
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        labelText: "Bio",
+                        labelStyle: const TextStyle(color: Colors.white),
+                        hintText: "Tell us about yourself",
+                        hintStyle: const TextStyle(color: Colors.grey),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      onChanged: (value) => newBio = value,
+                      controller: TextEditingController(text: bio),
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Profile Image Selection
+                    const Text(
+                      "Select Profile Image",
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 180, // Smaller fixed height
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.grey),
+                      ),
+                      child: Scrollbar(
+                        child: GridView.builder(
+                          padding: const EdgeInsets.all(8),
+                          itemCount: imageProfileOptions.length,
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 4,
+                            childAspectRatio: 1.0,
+                            crossAxisSpacing: 8,
+                            mainAxisSpacing: 8,
+                          ),
+                          itemBuilder: (context, index) {
+                            final option = imageProfileOptions[index];
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  newProfileImage = option;
+                                });
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  image: DecorationImage(
+                                    image:
+                                        AssetImage('lib/assets/images/$option'),
+                                    fit: BoxFit.cover,
+                                  ),
+                                  border: newProfileImage == option
+                                      ? Border.all(
+                                          color: Colors.deepOrange, width: 3)
+                                      : null,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Background Image Selection
+                    const Text(
+                      "Select Background Image",
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 180, // Smaller fixed height
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.grey),
+                      ),
+                      child: Scrollbar(
+                        child: GridView.builder(
+                          padding: const EdgeInsets.all(8),
+                          itemCount: imageBackgroundOptions.length,
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            childAspectRatio: 1.0,
+                            crossAxisSpacing: 8,
+                            mainAxisSpacing: 8,
+                          ),
+                          itemBuilder: (context, index) {
+                            final option = imageBackgroundOptions[index];
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  newBackgroundImage = option;
+                                });
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  image: DecorationImage(
+                                    image:
+                                        AssetImage('lib/assets/images/$option'),
+                                    fit: BoxFit.cover,
+                                  ),
+                                  border: newBackgroundImage == option
+                                      ? Border.all(
+                                          color: Colors.deepOrange, width: 3)
+                                      : null,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Action buttons
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          child: const Text(
+                            'Cancel',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                        const SizedBox(width: 10),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.secondaryColor,
+                          ),
+                          child: const Text(
+                            'Save',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          onPressed: () async {
+                            // Update local state
+                            setState(() {
+                              username = newUsername.trim().isNotEmpty
+                                  ? newUsername
+                                  : username;
+                              bio = newBio.trim().isNotEmpty ? newBio : bio;
+                              selectedProfileOption = newProfileImage;
+                              selectedBackgroundOption = newBackgroundImage;
+                            });
+
+                            // Update in Firestore
+                            await usersCollection
+                                .doc(currentUser.email)
+                                .update({
+                              'username': username,
+                              'bio': bio,
+                              'profilePic': selectedProfileOption,
+                              'profileBackground': selectedBackgroundOption,
+                            });
+
+                            Navigator.pop(context);
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
-            onPressed: () => Navigator.of(context).pop(newValue),
-          ),
-        ],
+          );
+        },
       ),
     );
-
-    // update in Firestore
-    if (newValue.trim().isNotEmpty) {
-      await usersCollection.doc(currentUser.email).update({field: newValue});
-    }
   }
 
   // back to main page
@@ -311,11 +323,19 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final markerCount = ref.watch(markerCountProvider);
     final nonOwnerMarkerCount = ref.watch(nonOwnerMarkerCountProvider);
 
-    return Scaffold(    
+    return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: AppColors.secondaryColor,
+        onPressed: showProfileEditDialog,
+        child: Icon(Icons.edit, color: AppColors.textColor),
+        mini: true,
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.miniEndTop,
       body: Column(
         children: [
           ScreenHeading(title: 'Profile'),
           buildTop(),
+          const SizedBox(height: 50),
           Expanded(
             child: StreamBuilder<DocumentSnapshot>(
               stream: FirebaseFirestore.instance
@@ -330,54 +350,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       userData['profileBackground'] ?? selectedBackgroundOption;
                   selectedProfileOption =
                       userData['profilePic'] ?? selectedProfileOption;
+                  username = userData['username'] ?? '';
+                  bio = userData['bio'] ?? '';
 
                   return Center(
                     child: ListView(
-                      padding: const EdgeInsets.only(top: 20),
                       children: [
-                        Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 40.0),
-                                  child: Text(
-                                    userData['username'],
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                      fontSize: 24,
-                                    ),
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: () => editField('username'),
-                                  icon: Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: Colors.white,
-                                    ),
-                                    child: const Icon(
-                                      Icons.edit,
-                                      color: Colors.deepOrange,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Text(
-                              userData['email'],
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.white70,
-                              ),
-                            ),
-                          ],
-                        ),
                         Container(
-                          height: 100, // Adjust height as needed
+                          height: 100,
                           margin: const EdgeInsets.all(8.0),
                           padding: const EdgeInsets.all(8.0),
                           decoration: BoxDecoration(
@@ -385,28 +365,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                             borderRadius: BorderRadius.circular(10),
                             color: Colors.white,
                           ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  userData['bio'],
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                  ),
-                                  maxLines:
-                                      3, // Allows up to 3 lines, adjust as needed
-                                  overflow: TextOverflow
-                                      .ellipsis, // Adds "..." if text overflows
-                                ),
-                              ),
-                              IconButton(
-                                onPressed: () => editField('bio'),
-                                icon: const Icon(
-                                  Icons.edit,
-                                  color: Colors.deepOrange,
-                                ),
-                              ),
-                            ],
+                          child: Text(
+                            bio,
+                            style: const TextStyle(
+                              fontSize: 18,
+                            ),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         Column(
@@ -431,8 +396,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                 AdMobService.showInterstitialAd();
                               },
                             ),
-
-                            // View your Community Bookmarked Locations
                             InfoCard(
                               icon: Icons.bookmark,
                               text: 'Community Locations',
@@ -452,8 +415,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                 AdMobService.showInterstitialAd();
                               },
                             ),
-
-                            // View your Friends Locations
                             InfoCard(
                               icon: Icons.group,
                               text: 'Friends Locations',
@@ -469,8 +430,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                 );
                               },
                             ),
-
-                            // View your friend requests
                             InfoCard(
                               icon: Icons.person_add,
                               text: 'Friend requests',
@@ -520,23 +479,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           child: buildProfileImage(),
         ),
         Positioned(
-          top: top - 90,
-          right: 20,
-          child: IconButton(
-            onPressed: () => editProfileBackground('profileBackground'),
-            icon: Container(
-              padding: const EdgeInsets.all(4),
+          top: top + 20,
+          child: Container(
+              padding: EdgeInsets.all(4),
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white,
+                color: AppColors.primaryAccent.withValues(alpha: 0.8),
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(
-                Icons.edit,
-                color: Colors.deepOrange,
-              ),
-            ),
-          ),
-        ),
+              child: StyledTitle(username.isNotEmpty ? username : 'Username')),
+        )
       ],
     );
   }
@@ -554,46 +505,23 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         ),
       );
 
-  Widget buildProfileImage() => Stack(
-        alignment: Alignment.bottomRight,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8.0), // Add padding around the circle
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white,
-                width: 4.0,
-              ),
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                'lib/assets/images/$selectedProfileOption',
-                width: profileHeight,
-                height: profileHeight,
-                fit: BoxFit.cover,
-              ),
-            ),
+  Widget buildProfileImage() => Container(
+        padding: const EdgeInsets.all(8.0),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: Colors.white,
+            width: 4.0,
           ),
-          Positioned(
-            top: 0,
-            right: 5,
-            child: IconButton(
-              onPressed: () => editProfileImage('profilePic'),
-              icon: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
-                ),
-                child: const Icon(
-                  Icons.edit,
-                  color: Colors.deepOrange,
-                ),
-              ),
-            ),
+        ),
+        child: ClipOval(
+          child: Image.asset(
+            'lib/assets/images/$selectedProfileOption',
+            width: profileHeight,
+            height: profileHeight,
+            fit: BoxFit.cover,
           ),
-        ],
+        ),
       );
 }
 

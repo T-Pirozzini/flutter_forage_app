@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   static Color primaryColor = Colors.blueGrey;
-  static Color primaryAccent = Colors.blueGrey.shade300;
+  static Color primaryAccent = Colors.grey.shade900;
   static Color secondaryColor = Colors.deepOrange.shade300;
   static Color secondaryAccent = Colors.deepOrange.shade200;
   static Color titleBarColor = Colors.grey.shade600;
@@ -29,4 +29,25 @@ ThemeData primaryTheme = ThemeData(
 
   // drawer styles
   drawerTheme: DrawerThemeData(),
+
+  // text theme
+  textTheme: TextTheme().copyWith(
+    bodyMedium: TextStyle(
+      color: AppColors.textColor,
+      fontSize: 16,
+      letterSpacing: 1,
+    ),
+    headlineMedium: TextStyle(
+      color: AppColors.titleColor,
+      fontSize: 16,
+      fontWeight: FontWeight.bold,
+      letterSpacing: 1,
+    ),
+    titleMedium: TextStyle(
+      color: AppColors.secondaryColor,
+      fontSize: 18,
+      fontWeight: FontWeight.bold,
+      letterSpacing: 2,
+    ),
+  ),
 );
