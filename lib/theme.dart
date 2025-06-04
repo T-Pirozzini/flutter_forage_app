@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   static Color primaryColor = Colors.blueGrey;
-  static Color primaryAccent = Colors.blueGrey.shade300;
+  static Color primaryAccent = Colors.grey.shade900;
   static Color secondaryColor = Colors.deepOrange.shade300;
   static Color secondaryAccent = Colors.deepOrange.shade200;
   static Color titleBarColor = Colors.grey.shade600;

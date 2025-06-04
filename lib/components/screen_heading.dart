@@ -11,7 +11,7 @@ class ScreenHeading extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 50,
-      color: AppColors.titleBarColor,
+      color: AppColors.primaryAccent,
       alignment: Alignment.center,
       child: Text(
         title.toUpperCase(),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -7,11 +8,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_forager_app/components/ad_mob_service.dart';
 import 'package:flutter_forager_app/components/screen_heading.dart';
 import 'package:flutter_forager_app/screens/forage/map_style.dart';
+import 'package:flutter_forager_app/screens/forage/marker_buttons.dart';
 import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
-import 'package:flutter_forager_app/screens/home/home_page.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'search_field.dart';
 
@@ -346,6 +347,163 @@ class MapPageState extends State<MapPage> {
     );
   }
 
+  void _showMarkerTypeSelection(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Select Marker Type', style: TextStyle(fontSize: 20)),
+            SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildMarkerTypeButton(
+                    context, 'Plant', 'lib/assets/images/plant.png'),
+                _buildMarkerTypeButton(
+                    context, 'Berries', 'lib/assets/images/berries.png'),
+                _buildMarkerTypeButton(
+                    context, 'Mushroom', 'lib/assets/images/mushroom.png'),
+                _buildMarkerTypeButton(
+                    context, 'Tree', 'lib/assets/images/tree.png'),
+                _buildMarkerTypeButton(
+                    context, 'Fish', 'lib/assets/images/fish.png'),
+                _buildMarkerTypeButton(
+                    context, 'Shellfish', 'lib/assets/images/shellfish.png'),
+                _buildMarkerTypeButton(
+                    context, 'Nuts', 'lib/assets/images/nuts.png'),
+              ],
+            ),
+            SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAddMarkerDialog(String markerType) async {
+    final position = await _getCurrentPosition();
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController();
+    final descController = TextEditingController();
+    File? selectedImage;
+
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text('Add $markerType Location'),
+          content: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: nameController,
+                    decoration: InputDecoration(labelText: 'Location Name'),
+                    validator: (val) => val!.isEmpty ? 'Required' : null,
+                  ),
+                  TextFormField(
+                    controller: descController,
+                    decoration: InputDecoration(labelText: 'Description'),
+                    maxLines: 3,
+                  ),
+                  SizedBox(height: 16),
+                  if (selectedImage != null)
+                    Image.file(selectedImage!, height: 100),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final image = await ImagePicker()
+                          .pickImage(source: ImageSource.gallery);
+                      if (image != null) {
+                        setState(() => selectedImage = File(image.path));
+                      }
+                    },
+                    child: Text('Add Image'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  _saveMarker(
+                    nameController.text,
+                    descController.text,
+                    markerType,
+                    selectedImage,
+                    position,
+                  );
+                  Navigator.pop(context);
+                }
+              },
+              child: Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _saveMarker(
+    String name,
+    String description,
+    String type,
+    File? image,
+    Position position,
+  ) async {
+    String? imageUrl;
+
+    if (image != null) {
+      // Upload image logic here
+    }
+
+    // Save to Firestore
+    await FirebaseFirestore.instance
+        .collection('Users')
+        .doc(currentUser.email)
+        .collection('Markers')
+        .add({
+      'name': name,
+      'description': description,
+      'type': type,
+      'image': imageUrl ?? 'default_image_url',
+      'location': GeoPoint(position.latitude, position.longitude),
+      'timestamp': FieldValue.serverTimestamp(),
+      'markerOwner': currentUser.email,
+    });
+
+    // Refresh markers
+    fetchMarkerData();
+  }
+
+  Widget _buildMarkerTypeButton(
+      BuildContext context, String type, String imagePath) {
+    return InkWell(
+      onTap: () {
+        Navigator.pop(context); // Close the bottom sheet
+        _showAddMarkerDialog(type);
+      },
+      child: Column(
+        children: [
+          Image.asset(imagePath, width: 50, height: 50),
+          SizedBox(height: 4),
+          Text(type),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // bool _followUser = followUser;
@@ -387,6 +545,7 @@ class MapPageState extends State<MapPage> {
             bottom: 145.0,
             right: 18.0,
             child: FloatingActionButton(
+              heroTag: 'locationButton',
               onPressed: () {
                 setState(
                   () {
@@ -418,6 +577,16 @@ class MapPageState extends State<MapPage> {
                   ),
                 ],
               ),
+            ),
+          ),
+          Positioned(
+            bottom: 80.0,
+            left: 18.0,
+            child: FloatingActionButton(
+              heroTag: 'add_marker_fab',
+              onPressed: () => _showMarkerTypeSelection(context),
+              backgroundColor: Colors.deepOrange.shade300,
+              child: const Icon(Icons.add, color: Colors.white),
             ),
           ),
         ],

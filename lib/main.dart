@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_forager_app/components/ad_mob_service.dart';
 import 'package:flutter_forager_app/theme.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'auth/auth_page.dart';
 import 'firebase_options.dart';
@@ -45,10 +44,7 @@ class _MyAppState extends State<MyApp> {
         FocusScope.of(context).requestFocus(FocusNode());
       },
       child: MaterialApp(
-        theme: primaryTheme,
-        // ThemeData(
-        //     primarySwatch: Colors.deepOrange,
-        //     textTheme: GoogleFonts.alegreyaSansTextTheme()),
+        theme: primaryTheme,        
         home: const AuthPage(),
         debugShowCheckedModeBanner: false,
       ),
