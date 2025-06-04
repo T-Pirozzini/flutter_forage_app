@@ -80,15 +80,35 @@ class _HomePageState extends State<HomePage> {
             height: kToolbarHeight,
           ),
           actions: [
-            IconButton(
-              icon: const Icon(FontAwesomeIcons.compass),
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => MapPage(
-                    lat: lat,
-                    lng: lng,
-                    followUser: followUser,
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primaryAccent,
+                  foregroundColor: AppColors.textColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  elevation: 2,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(FontAwesomeIcons.compass,
+                        color: AppColors.textColor, size: 32),
+                    const SizedBox(height: 4),
+                    Text('Go Forage!',
+                        style: TextStyle(color: AppColors.textColor)),
+                  ],
+                ),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MapPage(
+                      lat: lat,
+                      lng: lng,
+                      followUser: followUser,
+                    ),
                   ),
                 ),
               ),
@@ -119,7 +139,7 @@ class _HomePageState extends State<HomePage> {
           items: const [
             TabItem(
               icon: Icons.home,
-              title: 'Home',
+              title: 'Dashboard',
             ),
             TabItem(icon: Icons.menu_book, title: 'Recipes'),
             TabItem(icon: Icons.people, title: 'Community'),

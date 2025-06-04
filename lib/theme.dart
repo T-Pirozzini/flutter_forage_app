@@ -29,4 +29,25 @@ ThemeData primaryTheme = ThemeData(
 
   // drawer styles
   drawerTheme: DrawerThemeData(),
+
+  // text theme
+  textTheme: TextTheme().copyWith(
+    bodyMedium: TextStyle(
+      color: AppColors.textColor,
+      fontSize: 16,
+      letterSpacing: 1,
+    ),
+    headlineMedium: TextStyle(
+      color: AppColors.titleColor,
+      fontSize: 16,
+      fontWeight: FontWeight.bold,
+      letterSpacing: 1,
+    ),
+    titleMedium: TextStyle(
+      color: AppColors.secondaryColor,
+      fontSize: 18,
+      fontWeight: FontWeight.bold,
+      letterSpacing: 2,
+    ),
+  ),
 );
