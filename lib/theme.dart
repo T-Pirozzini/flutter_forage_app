@@ -10,6 +10,14 @@ class AppColors {
   static Color textColor = Colors.grey.shade100;
   static Color successColor = Color.fromRGBO(9, 149, 110, 1);
   static Color highlightColor = Color.fromRGBO(212, 172, 13, 1);
+  static Gradient primaryGradient = LinearGradient(
+    colors: [
+      Colors.blueGrey, // Dark blue
+      Colors.blueGrey.shade300, // Lighter blue
+    ],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
 }
 
 ThemeData primaryTheme = ThemeData(
