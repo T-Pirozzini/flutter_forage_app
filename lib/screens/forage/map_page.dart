@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/components/ad_mob_service.dart';
 import 'package:flutter_forager_app/screens/forage/map_permissions.dart';
 import 'package:flutter_forager_app/screens/forage_locations/forage_location_info_page.dart';
+import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -487,7 +488,7 @@ class _MapPageState extends State<MapPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Forage Map'),
+        title: StyledHeading('Forage Map'),
       ),
       body: Column(
         children: [
@@ -509,6 +510,13 @@ class _MapPageState extends State<MapPage> {
           setState(() {
             _mapController.followUser = !_mapController.followUser;
           });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(_mapController.followUser
+                  ? 'Now following your location'
+                  : 'Stopped following your location'),
+            ),
+          );
           if (_mapController.followUser) {
             await _moveCameraToPosition(_mapController.currentPosition);
           }
