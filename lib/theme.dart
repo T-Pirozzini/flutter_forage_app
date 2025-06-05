@@ -40,9 +40,19 @@ ThemeData primaryTheme = ThemeData(
 
     // text theme
     textTheme: TextTheme().copyWith(
+      bodySmall: TextStyle(
+        color: AppColors.titleColor,
+        fontSize: 12,
+        letterSpacing: 1,
+      ),
       bodyMedium: TextStyle(
         color: AppColors.textColor,
         fontSize: 16,
+        letterSpacing: 1,
+      ),
+      bodyLarge: TextStyle(
+        color: AppColors.primaryAccent,
+        fontSize: 18,
         letterSpacing: 1,
       ),
       headlineMedium: TextStyle(
@@ -51,10 +61,22 @@ ThemeData primaryTheme = ThemeData(
         fontWeight: FontWeight.bold,
         letterSpacing: 1,
       ),
+      headlineSmall: TextStyle(
+        color: AppColors.primaryAccent,
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        letterSpacing: 1,
+      ),
+      headlineLarge: TextStyle(
+        color: AppColors.primaryAccent,
+        fontSize: 32,
+        fontWeight: FontWeight.w400,
+        letterSpacing: 1,
+      ),
       titleMedium: TextStyle(
-        color: AppColors.secondaryColor,
+        color: AppColors.titleColor,
         fontSize: 18,
-        fontWeight: FontWeight.bold,
+        fontWeight: FontWeight.normal,
         letterSpacing: 2,
       ),
       titleSmall: TextStyle(

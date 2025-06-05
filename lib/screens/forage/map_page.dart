@@ -3,12 +3,14 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_forager_app/components/ad_mob_service.dart';
 import 'package:flutter_forager_app/components/screen_heading.dart';
 import 'package:flutter_forager_app/screens/forage/map_style.dart';
 import 'package:flutter_forager_app/screens/forage/marker_buttons.dart';
+import 'package:flutter_forager_app/screens/forage_locations/forage_location_info_page.dart';
 import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -157,36 +159,68 @@ class MapPageState extends State<MapPage> {
   void fetchMarkerData() async {
     final currentUserEmail = currentUser.email;
 
-    // Fetch markers from the current user's collection
+    // Clear existing markers (keeping only the current position marker)
+    setState(() {
+      _markers.removeWhere(
+          (marker) => marker.markerId != const MarkerId('currentPosition'));
+    });
+
+    // Set up real-time listener for user's markers first
+    FirebaseFirestore.instance
+        .collection('Users')
+        .doc(currentUserEmail)
+        .collection('Markers')
+        .snapshots()
+        .listen((snapshot) {
+      if (!mounted) return;
+
+      // Clear only user's markers (keeping current position and friends' markers)
+      _markers.removeWhere((marker) =>
+          marker.markerId.value.startsWith('${currentUserEmail}_') &&
+          marker.markerId != const MarkerId('currentPosition'));
+
+      // Add/update user's markers
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final location = data['location'] as Map<String, dynamic>;
+        addMarker(
+          name: data['name'] ?? 'Unnamed Location',
+          description: data['description'] ?? '',
+          location: LatLng(
+            (location['latitude'] as num).toDouble(),
+            (location['longitude'] as num).toDouble(),
+          ),
+          type: data['type'] ?? 'plant',
+          owner: data['markerOwner'] ?? currentUserEmail!,
+          imageUrls: (data['images'] as List<dynamic>?)?.cast<String>() ?? [],
+        );
+      }
+    });
+
+    // Initial load of user's markers
     final userMarkerSnapshot = await FirebaseFirestore.instance
         .collection('Users')
         .doc(currentUserEmail)
         .collection('Markers')
         .get();
 
-    final userMarkerDocs = userMarkerSnapshot.docs;
-
-    // Process each document and add markers
-    for (final doc in userMarkerDocs) {
+    for (final doc in userMarkerSnapshot.docs) {
       final data = doc.data();
-      final name = data['name'] as String;
-      final description = data['description'] as String;
       final location = data['location'] as Map<String, dynamic>;
-      final latitude = location['latitude'] as double;
-      final longitude = location['longitude'] as double;
-      final type = data['type'] as String;
-      final owner = data['markerOwner'];
-
-      addMarker(
-        name: name,
-        description: description,
-        location: LatLng(latitude, longitude),
-        type: type,
-        owner: owner,
+      await addMarker(
+        name: data['name'] ?? 'Unnamed Location',
+        description: data['description'] ?? '',
+        location: LatLng(
+          (location['latitude'] as num).toDouble(),
+          (location['longitude'] as num).toDouble(),
+        ),
+        type: data['type'] ?? 'plant',
+        owner: data['markerOwner'] ?? currentUserEmail!,
+        imageUrls: (data['images'] as List<dynamic>?)?.cast<String>() ?? [],
       );
     }
 
-    // Fetch friends' list
+    // Load friends' markers
     final friendsSnapshot = await FirebaseFirestore.instance
         .collection('Users')
         .doc(currentUserEmail)
@@ -195,72 +229,39 @@ class MapPageState extends State<MapPage> {
     final friendsData = friendsSnapshot.data();
     if (friendsData != null && friendsData.containsKey('friends')) {
       final friendsList = friendsData['friends'] as List<dynamic>;
-      for (final friend in friendsList) {
-        final friendMap = friend as Map<String, dynamic>;
-        final friendEmail = friendMap['email'] as String;
 
-        // Fetch markers from each friend's collection
-        final friendMarkerSnapshot = await FirebaseFirestore.instance
-            .collection('Users')
-            .doc(friendEmail)
-            .collection('Markers')
-            .get();
+      // Process friends in parallel
+      await Future.wait(friendsList.map((friend) async {
+        try {
+          final friendEmail =
+              (friend as Map<String, dynamic>)['email'] as String;
+          final friendMarkerSnapshot = await FirebaseFirestore.instance
+              .collection('Users')
+              .doc(friendEmail)
+              .collection('Markers')
+              .get();
 
-        final friendMarkerDocs = friendMarkerSnapshot.docs;
-
-        // Process each friend's document and add markers
-        for (final doc in friendMarkerDocs) {
-          final data = doc.data();
-          final name = data['name'] as String;
-          final description = data['description'] as String;
-          final location = data['location'] as Map<String, dynamic>;
-          final latitude = location['latitude'] as double;
-          final longitude = location['longitude'] as double;
-          final type = data['type'] as String;
-          final owner = data['markerOwner'];
-
-          addMarker(
-            name: name,
-            description: description,
-            location: LatLng(latitude, longitude),
-            type: type,
-            owner: owner,
-          );
+          for (final doc in friendMarkerSnapshot.docs) {
+            final data = doc.data();
+            final location = data['location'] as Map<String, dynamic>;
+            await addMarker(
+              name: data['name'] ?? 'Unnamed Location',
+              description: data['description'] ?? '',
+              location: LatLng(
+                (location['latitude'] as num).toDouble(),
+                (location['longitude'] as num).toDouble(),
+              ),
+              type: data['type'] ?? 'plant',
+              owner: data['markerOwner'] ?? friendEmail,
+              imageUrls:
+                  (data['images'] as List<dynamic>?)?.cast<String>() ?? [],
+            );
+          }
+        } catch (e) {
+          debugPrint('Error loading friend markers: $e');
         }
-      }
-    } else {
-      print('Error accessing friends docs');
+      }));
     }
-
-    // Subscribe to changes in the current user's collection for real-time updates
-    FirebaseFirestore.instance
-        .collection('Users')
-        .doc(currentUserEmail)
-        .collection('Markers')
-        .snapshots()
-        .listen((snapshot) {
-      _markers.removeWhere(
-          (marker) => marker.markerId.value.startsWith(currentUserEmail!));
-
-      for (final doc in snapshot.docs) {
-        final data = doc.data();
-        final name = data['name'] as String;
-        final description = data['description'] as String;
-        final location = data['location'] as Map<String, dynamic>;
-        final latitude = location['latitude'] as double;
-        final longitude = location['longitude'] as double;
-        final type = data['type'] as String;
-        final owner = data['markerOwner'];
-
-        addMarker(
-          name: name,
-          description: description,
-          location: LatLng(latitude, longitude),
-          type: type,
-          owner: owner,
-        );
-      }
-    });
   }
 
   // add markers
@@ -270,8 +271,9 @@ class MapPageState extends State<MapPage> {
     required LatLng location,
     required String type,
     required String owner,
+    List<String>? imageUrls,
   }) async {
-    final markerId = MarkerId(name);
+    final markerId = MarkerId('${owner}_${name}_${location.latitude}');
     final marker = Marker(
       markerId: markerId,
       infoWindow: InfoWindow(
@@ -281,12 +283,16 @@ class MapPageState extends State<MapPage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (BuildContext context) => ForageLocations(
-                userId: currentUser.email!,
-                userName: owner == currentUser.email
-                    ? owner.split("@")[0]
-                    : "Bookmarked Locations",
-                userLocations: owner == currentUser.email,
+              builder: (context) => ForageLocationInfo(
+                name: name,
+                description: description,
+                lat: location.latitude,
+                lng: location.longitude,
+                timestamp: DateTime.now().toString(),
+                type: type,
+                markerOwner: owner,
+                imageUrls:
+                    imageUrls ?? [], // You'll need to fetch this from Firestore
               ),
             ),
           );
@@ -389,7 +395,7 @@ class MapPageState extends State<MapPage> {
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController();
     final descController = TextEditingController();
-    File? selectedImage;
+    List<File> selectedImages = [];
 
     await showDialog(
       context: context,
@@ -413,17 +419,42 @@ class MapPageState extends State<MapPage> {
                     maxLines: 3,
                   ),
                   SizedBox(height: 16),
-                  if (selectedImage != null)
-                    Image.file(selectedImage!, height: 100),
+                  if (selectedImages.isNotEmpty)
+                    SizedBox(
+                      height: 100,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: selectedImages.length,
+                        itemBuilder: (context, index) {
+                          return Stack(
+                            children: [
+                              Image.file(selectedImages[index], height: 100),
+                              Positioned(
+                                top: 0,
+                                right: 0,
+                                child: IconButton(
+                                  icon: Icon(Icons.close, color: Colors.red),
+                                  onPressed: () => setState(() {
+                                    selectedImages.removeAt(index);
+                                  }),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
                   ElevatedButton(
                     onPressed: () async {
-                      final image = await ImagePicker()
-                          .pickImage(source: ImageSource.gallery);
-                      if (image != null) {
-                        setState(() => selectedImage = File(image.path));
+                      final images = await ImagePicker().pickMultiImage();
+                      if (images != null && images.isNotEmpty) {
+                        setState(() {
+                          selectedImages
+                              .addAll(images.map((x) => File(x.path)));
+                        });
                       }
                     },
-                    child: Text('Add Image'),
+                    child: Text('Add Images (${selectedImages.length}/3)'),
                   ),
                 ],
               ),
@@ -441,7 +472,7 @@ class MapPageState extends State<MapPage> {
                     nameController.text,
                     descController.text,
                     markerType,
-                    selectedImage,
+                    selectedImages, // Pass all images
                     position,
                   );
                   Navigator.pop(context);
@@ -455,36 +486,52 @@ class MapPageState extends State<MapPage> {
     );
   }
 
-  void _saveMarker(
+  Future<void> _saveMarker(
     String name,
     String description,
     String type,
-    File? image,
+    List<File> images,
     Position position,
   ) async {
-    String? imageUrl;
+    try {
+      List<String> imageUrls = [];
 
-    if (image != null) {
-      // Upload image logic here
+      // Upload all images in parallel
+      await Future.wait(images.map((image) async {
+        final fileName =
+            '${DateTime.now().millisecondsSinceEpoch}_${images.indexOf(image)}.jpg';
+        final storageRef =
+            FirebaseStorage.instance.ref().child('images/$fileName');
+        await storageRef.putFile(image);
+        final downloadUrl = await storageRef.getDownloadURL();
+        imageUrls.add(downloadUrl);
+      }));
+
+      await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(currentUser.email)
+          .collection('Markers')
+          .add({
+        'name': name,
+        'description': description,
+        'type': type,
+        'images': imageUrls,
+        'location': {
+          'latitude': position.latitude,
+          'longitude': position.longitude,
+        },
+        'timestamp': FieldValue.serverTimestamp(),
+        'markerOwner': currentUser.email,
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Location saved successfully!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error saving location: $e')),
+      );
     }
-
-    // Save to Firestore
-    await FirebaseFirestore.instance
-        .collection('Users')
-        .doc(currentUser.email)
-        .collection('Markers')
-        .add({
-      'name': name,
-      'description': description,
-      'type': type,
-      'image': imageUrl ?? 'default_image_url',
-      'location': GeoPoint(position.latitude, position.longitude),
-      'timestamp': FieldValue.serverTimestamp(),
-      'markerOwner': currentUser.email,
-    });
-
-    // Refresh markers
-    fetchMarkerData();
   }
 
   Widget _buildMarkerTypeButton(

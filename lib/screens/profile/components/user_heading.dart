@@ -1,23 +1,29 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_forager_app/theme.dart';
+import 'package:intl/intl.dart';
 
 class UserHeading extends StatelessWidget {
-  const UserHeading({
-    required this.username,
-    required this.selectedBackgroundOption,
-    required this.selectedProfileOption,
-    this.coverHeight = 200,
-    this.profileHeight = 100,
-  super.key});
+  const UserHeading(
+      {required this.username,
+      required this.selectedBackgroundOption,
+      required this.selectedProfileOption,
+      required this.createdAt,
+      required this.lastActive,
+      this.coverHeight = 200,
+      this.profileHeight = 100,
+      super.key});
 
   final String username;
   final String selectedBackgroundOption;
   final String selectedProfileOption;
   final double coverHeight;
   final double profileHeight;
+  final Timestamp createdAt;
+  final Timestamp lastActive;
 
-    @override
+  @override
   Widget build(BuildContext context) {
     final top = coverHeight - profileHeight / 2 - 25;
 
@@ -31,16 +37,35 @@ class UserHeading extends StatelessWidget {
           child: buildProfileImage(),
         ),
         Positioned(
-          top: top + 20,
+          top: top + 45,
+          child: StyledHeading(username.isNotEmpty ? username : 'Username'),
+        ),
+        Positioned(
+          top: 20,
+          left: 20,
           child: Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: AppColors.primaryAccent.withOpacity(0.8),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: StyledTitle(username.isNotEmpty ? username : 'Username'),
-          ),
-        )
+              color: AppColors.primaryAccent.withValues(alpha: .8),
+              child: Column(
+                children: [
+                  StyledTextSmall("Member Since"),
+                  StyledTextSmall(
+                      DateFormat('MMM yyyy').format(createdAt.toDate())),
+                ],
+              )),
+        ),
+        Positioned(
+          top: 20,
+          right: 20,
+          child: Container(
+              color: AppColors.primaryAccent.withValues(alpha: .8),
+              child: Column(
+                children: [
+                  StyledTextSmall("Last Active"),
+                  StyledTextSmall(
+                      DateFormat('MMM yyyy').format(lastActive.toDate())),
+                ],
+              )),
+        ),
       ],
     );
   }
@@ -97,5 +122,3 @@ class _BottomCurveClipper extends CustomClipper<Path> {
   @override
   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
-
-

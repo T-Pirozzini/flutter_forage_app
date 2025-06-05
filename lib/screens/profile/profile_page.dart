@@ -5,6 +5,7 @@ import 'package:flutter_forager_app/components/ad_mob_service.dart';
 import 'package:flutter_forager_app/components/screen_heading.dart';
 import 'package:flutter_forager_app/models/user.dart';
 import 'package:flutter_forager_app/providers/marker_count_provider.dart';
+import 'package:flutter_forager_app/providers/marker_providers.dart';
 import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
 import 'package:flutter_forager_app/screens/friends/friends_controller.dart';
 import 'package:flutter_forager_app/screens/profile/components/about_me.dart';
@@ -67,6 +68,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   String selectedProfileOption = 'profileImage1.jpg';
   String username = '';
   String bio = '';
+  Timestamp createdAt = Timestamp.now();
+  Timestamp lastActive = Timestamp.now();
   bool get _isCurrentUser => widget.user.uid == currentUser.uid;
   bool get _isFriend => widget.user.friends.contains(currentUser.uid);
 
@@ -92,6 +95,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         selectedProfileOption = userData['profilePic'] ?? selectedProfileOption;
         username = userData['username'] ?? '';
         bio = userData['bio'] ?? '';
+        createdAt = userData['createdAt'] ?? Timestamp.now();
+        lastActive = userData['lastActive'] ?? Timestamp.now();
       });
     }
   }
@@ -133,8 +138,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final markerCount = ref.watch(markerCountProvider);
-    final nonOwnerMarkerCount = ref.watch(nonOwnerMarkerCountProvider);
+    final userMarkers = ref.watch(userMarkersProvider(currentUser.email!));
+    final communityMarkers =
+        ref.watch(communityMarkersProvider(currentUser.email!));
 
     return Container(
       decoration: BoxDecoration(
@@ -156,9 +162,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               selectedBackgroundOption: selectedBackgroundOption,
               selectedProfileOption: selectedProfileOption,
               username: username,
+              createdAt: createdAt,
+              lastActive: lastActive,
             ),
-            // buildTop(),
-            const SizedBox(height: 50),
+            const SizedBox(height: 70),
             Expanded(
               child: StreamBuilder<DocumentSnapshot>(
                 stream: FirebaseFirestore.instance
@@ -187,8 +194,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                 padding:
                                     const EdgeInsets.fromLTRB(16, 8, 16, 8),
                                 child: Center(
-                                  child: StyledText(
-                                    'ACTIVITY STATS',
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: StyledText(
+                                      'View saved locations, bookmarks, recipes or friends.',
+                                    ),
                                   ),
                                 ),
                               ),
@@ -207,25 +217,46 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                     context,
                                     icon: Icons.location_on,
                                     title: 'Locations',
-                                    value: widget.user.forageStats['locations']
-                                            ?.toString() ??
+                                    value:
+                                        userMarkers.value?.length.toString() ??
+                                            '0',
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => ForageLocations(
+                                            userId: currentUser.email!,
+                                            userName: currentUser.email!
+                                                .split("@")[0],
+                                            userLocations: true,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    enabled: true,
+                                  ),
+
+                                  // Bookmarked Locations
+                                  _buildStatCard(
+                                    context,
+                                    icon: Icons.bookmark,
+                                    title: 'Bookmarked',
+                                    value: communityMarkers.value?.length
+                                            .toString() ??
                                         '0',
                                     onTap: () {
-                                      if (_isCurrentUser || _isFriend) {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                ForageLocations(
-                                              userId: widget.user.uid,
-                                              userName: widget.user.username,
-                                              userLocations: true,
-                                            ),
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => ForageLocations(
+                                            userId: currentUser.email!,
+                                            userName: "Bookmarked Locations",
+                                            userLocations: false,
                                           ),
-                                        );
-                                      }
+                                        ),
+                                      );
                                     },
-                                    enabled: _isCurrentUser || _isFriend,
+                                    enabled: true,
                                   ),
                                   _buildStatCard(
                                     context,
@@ -263,18 +294,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                     },
                                     enabled: true,
                                   ),
-                                  _buildStatCard(
-                                    context,
-                                    icon: Icons.calendar_today,
-                                    title: 'Member Since',
-                                    value: DateFormat('MMM yyyy')
-                                        .format(widget.user.createdAt.toDate()),
-                                    onTap: null,
-                                    enabled: false,
-                                  ),
                                 ],
                               ),
-
                               const SizedBox(height: 16),
 
                               // Friend Action Button
