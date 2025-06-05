@@ -1,148 +1,351 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:ui' as ui;
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_forager_app/components/ad_mob_service.dart';
-import 'package:flutter_forager_app/components/screen_heading.dart';
-import 'package:flutter_forager_app/screens/forage/map_style.dart';
-import 'package:flutter_forager_app/screens/forage/marker_buttons.dart';
+import 'package:flutter_forager_app/screens/forage/map_permissions.dart';
 import 'package:flutter_forager_app/screens/forage_locations/forage_location_info_page.dart';
-import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'search_field.dart';
+import 'package:flutter_forager_app/screens/forage/map_style.dart';
+import 'map_controller.dart';
+import 'map_markers.dart';
+import 'map_ui.dart';
+import 'map_view.dart'; // Import the new MapView widget
 
 class MapPage extends StatefulWidget {
   final double lat;
   final double lng;
   final bool followUser;
-  const MapPage(
-      {super.key,
-      required this.lat,
-      required this.lng,
-      required this.followUser});
+
+  const MapPage({
+    super.key,
+    required this.lat,
+    required this.lng,
+    required this.followUser,
+  });
 
   @override
-  State<MapPage> createState() => MapPageState();
+  State<MapPage> createState() => _MapPageState();
 }
 
-class MapPageState extends State<MapPage> {
-  final Completer<GoogleMapController> _controller =
-      Completer<GoogleMapController>();
-  late StreamSubscription<Position> _positionStreamSubscription;
-  late Marker _currentPositionMarker;
-
-  // Method to request location permissions
-  void _requestLocationPermission() async {
-    // Check if the permission is already granted
-    if (await Permission.location.isGranted) {
-      // If already granted, proceed with location-based operations
-      _onLocationPermissionGranted();
-      return;
-    }
-
-    // Request the permission
-    final permissionStatus = await Permission.location.request();
-    if (permissionStatus.isGranted) {
-      // If the user grants the permission, proceed with location-based operations
-      _onLocationPermissionGranted();
-    } else {
-      // If the user denies the permission, handle this case gracefully (show an error, prompt to grant permission again, etc.)
-      // For example, you can display a SnackBar or showDialog to inform the user.
-      print('Location permission denied.');
-    }
-  }
-
-  void _onLocationPermissionGranted() async {
-    // You can add any location-based operations that require the user's permission here.
-    // For example, fetch the user's current location, set up geolocation services, etc.
-
-    // Fetch the user's current position
-    await _getCurrentPosition();
-
-    // Fetch marker data based on the user's location
-    fetchMarkerData();
-  }
-
-  // get current user
+class _MapPageState extends State<MapPage> {
+  late final MapController _mapController;
+  late final MapMarkerService _markerService;
+  final Completer<GoogleMapController> _mapCompleter = Completer();
+  GoogleMapController? _mapControllerInstance;
+  late CameraPosition _initialCameraPosition;
   final currentUser = FirebaseAuth.instance.currentUser!;
+  final List<StreamSubscription> _firestoreSubscriptions = [];
 
-  // create set of markers
+  // Marker state
   final Set<Marker> _markers = {};
-
-  // create set of circles
   final Set<Circle> _circles = {};
-
+  late Marker _currentPositionMarker;
+  bool _isLoading = true;
   Position? currentLocation;
-  late CameraPosition _kGooglePlex;
-  bool followUser = false;
 
   @override
   void initState() {
-    // Request location permissions
-    _requestLocationPermission();
-    _currentPositionMarker = Marker(
-      markerId: const MarkerId('currentPosition'),
-      infoWindow: const InfoWindow(title: 'Current Position'),
-      position: const LatLng(0, 0),
-      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
-    );
-    _markers.add(_currentPositionMarker);
-    _positionStreamSubscription =
-        Geolocator.getPositionStream().listen(_onPositionUpdate);
-    // get position
-    _getCurrentPosition();
-    // fetch initial marker data
-    fetchMarkerData();
-    _kGooglePlex = CameraPosition(
+    super.initState();
+    _markerService = MapMarkerService(currentUser);
+    _mapController = MapController(currentUser, followUser: widget.followUser);
+    _initialCameraPosition = CameraPosition(
       target: LatLng(widget.lat, widget.lng),
       zoom: 14,
     );
-    followUser = widget.followUser;
-    super.initState();
-  }
+    _initializeMap(); // _syncFollowUser will be called inside _initializeMap
 
-  @override
-  void dispose() {
-    _positionStreamSubscription.cancel();
-    super.dispose();
-  }
-
-  void _onPositionUpdate(Position position) async {
-    if (!mounted) return;
-    final GoogleMapController controller = await _controller.future;
-    if (followUser) {
-      controller.animateCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: LatLng(position.latitude, position.longitude),
-            zoom: 16,
-          ),
-        ),
-      );
-    }
-    final updatedMarker = Marker(
-      markerId: _currentPositionMarker.markerId,
-      infoWindow: _currentPositionMarker.infoWindow,
-      position: LatLng(position.latitude, position.longitude),
-      icon: _currentPositionMarker.icon,
-      zIndex: 100.0,
+    _currentPositionMarker = Marker(
+      markerId: const MarkerId('currentPosition'),
+      position: LatLng(widget.lat, widget.lng),
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+      zIndex: 100,
     );
+    _markers.add(_currentPositionMarker);
+  }
 
-    setState(() {
-      _markers.remove(_currentPositionMarker);
-      _markers.add(updatedMarker);
-      _currentPositionMarker = updatedMarker;
+  Future<void> _initializeMap() async {
+    try {
+      await _mapController.initialize();
+      if (!await MapPermissions.checkLocationPermission()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                  'Location permission denied. Please enable it in settings.'),
+              action: SnackBarAction(
+                label: 'Open Settings',
+                onPressed: openAppSettings,
+              ),
+            ),
+          );
+        }
+        return;
+      }
+      setState(() {
+        _initialCameraPosition = CameraPosition(
+          target: LatLng(widget.lat, widget.lng),
+          zoom: 14,
+        );
+        _isLoading = false;
+      });
+
+      // Set up listeners
+      _setupPositionListener();
+      _setupMarkerListeners();
+      _syncFollowUser(); // Moved here to ensure currentPosition is set
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error initializing map: $e')),
+        );
+      }
+    }
+  }
+
+  void _setupPositionListener() {
+    Geolocator.getPositionStream().listen((position) {
+      _updateCurrentPositionMarker(position);
+      if (_mapController.followUser) {
+        _moveCameraToPosition(position);
+      }
     });
   }
 
-  // get current position
+  void _syncFollowUser() {
+    if (_mapController.followUser) {
+      _moveCameraToPosition(_mapController.currentPosition).catchError((e) {
+        debugPrint('Error syncing initial followUser: $e');
+      });
+    }
+  }
+
+  void _setupMarkerListeners() {
+    final userSub = FirebaseFirestore.instance
+        .collection('Users')
+        .doc(currentUser.email)
+        .collection('Markers')
+        .snapshots()
+        .listen(
+            (snapshot) => _processMarkerSnapshot(snapshot, currentUser.email!));
+    _firestoreSubscriptions.add(userSub);
+
+    final friendsSub = FirebaseFirestore.instance
+        .collection('Users')
+        .doc(currentUser.email)
+        .snapshots()
+        .listen((snapshot) async {
+      if (snapshot.data()?['friends'] != null) {
+        final friends = snapshot.data()!['friends'] as List<dynamic>;
+        for (final friend in friends) {
+          String friendEmail;
+          if (friend is String) {
+            friendEmail = friend;
+          } else if (friend is Map<String, dynamic>) {
+            friendEmail = friend['email'] as String;
+          } else {
+            debugPrint('Unexpected friend data type: $friend');
+            continue;
+          }
+          final friendSub = FirebaseFirestore.instance
+              .collection('Users')
+              .doc(friendEmail)
+              .collection('Markers')
+              .snapshots()
+              .listen(
+                  (snapshot) => _processMarkerSnapshot(snapshot, friendEmail));
+          _firestoreSubscriptions.add(friendSub);
+        }
+      }
+    });
+    _firestoreSubscriptions.add(friendsSub);
+  }
+
+  void _updateCurrentPositionMarker(Position position) {
+    final updatedMarker = Marker(
+      markerId: _currentPositionMarker.markerId,
+      position: LatLng(position.latitude, position.longitude),
+      icon: _currentPositionMarker.icon,
+      zIndex: _currentPositionMarker.zIndex,
+    );
+
+    if (mounted) {
+      setState(() {
+        _markers.remove(_currentPositionMarker);
+        _markers.add(updatedMarker);
+        _currentPositionMarker = updatedMarker;
+      });
+    }
+  }
+
+  Future<void> _moveCameraToPosition(Position? position) async {
+    if (position == null) {
+      debugPrint('Cannot move camera: Position is null');
+      return;
+    }
+    final controller = await _mapCompleter.future;
+    await controller.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: LatLng(position.latitude, position.longitude),
+          zoom: 16,
+        ),
+      ),
+    );
+  }
+
+  void _processMarkerSnapshot(QuerySnapshot snapshot, String ownerEmail) {
+    setState(() {
+      final markerIdsInSnapshot =
+          snapshot.docs.map((doc) => doc['name'] as String).toSet();
+      _markers
+          .removeWhere((m) => markerIdsInSnapshot.contains(m.markerId.value));
+      _circles.removeWhere((c) => markerIdsInSnapshot
+          .contains(c.circleId.value.replaceFirst('circle_', '')));
+    });
+
+    for (final doc in snapshot.docs) {
+      _addMarkerFromData(doc.data() as Map<String, dynamic>, ownerEmail);
+    }
+  }
+
+  Future<void> _addMarkerFromData(
+      Map<String, dynamic> data, String ownerEmail) async {
+    try {
+      final location = data['location'] as Map<String, dynamic>;
+      final latLng = LatLng(
+        (location['latitude'] as num).toDouble(),
+        (location['longitude'] as num).toDouble(),
+      );
+
+      final markerId = MarkerId(data['name']);
+
+      if (_markers.any((m) => m.markerId == markerId)) return;
+
+      final marker = Marker(
+        markerId: markerId,
+        position: latLng,
+        icon: await _markerService.getMarkerIcon(data['type'] ?? 'plant'),
+        infoWindow: InfoWindow(
+          title: data['name'] ?? 'Unnamed Location',
+          snippet: '(tap for details)',
+          onTap: () => _showMarkerDetails(
+            name: data['name'],
+            description: data['description'],
+            lat: latLng.latitude,
+            lng: latLng.longitude,
+            type: data['type'],
+            owner: ownerEmail,
+            imageUrls: (data['image'] != null) ? [data['image'] as String] : [],
+          ),
+        ),
+      );
+
+      final circle = Circle(
+        circleId: CircleId('circle_${data['name']}'),
+        center: latLng,
+        radius: 200,
+        fillColor: Colors.pinkAccent.withOpacity(0.3),
+        strokeColor: Colors.pinkAccent,
+        strokeWidth: 2,
+      );
+
+      if (mounted) {
+        setState(() {
+          _markers.add(marker);
+          _circles.add(circle);
+        });
+      }
+    } catch (e) {
+      debugPrint('Error adding marker: $e');
+    }
+  }
+
+  void _showMarkerDetails({
+    required String? name,
+    required String? description,
+    required double lat,
+    required double lng,
+    required String? type,
+    required String owner,
+    required List<String> imageUrls,
+  }) {
+    AdMobService.showInterstitialAd();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ForageLocationInfo(
+          name: name ?? 'Unnamed Location',
+          description: description ?? '',
+          lat: lat,
+          lng: lng,
+          timestamp: DateTime.now().toString(),
+          type: type ?? 'plant',
+          markerOwner: owner,
+          imageUrls: imageUrls,
+        ),
+      ),
+    );
+  }
+
+  void _showMarkerTypeSelection(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Select Marker Type', style: TextStyle(fontSize: 20)),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildMarkerTypeButton(
+                    context, 'Plant', 'lib/assets/images/plant_marker.png'),
+                _buildMarkerTypeButton(
+                    context, 'Berries', 'lib/assets/images/berries_marker.png'),
+                _buildMarkerTypeButton(context, 'Mushroom',
+                    'lib/assets/images/mushroom_marker.png'),
+                _buildMarkerTypeButton(
+                    context, 'Tree', 'lib/assets/images/tree_marker.png'),
+                _buildMarkerTypeButton(
+                    context, 'Fish', 'lib/assets/images/fish_marker.png'),
+                _buildMarkerTypeButton(context, 'Shellfish',
+                    'lib/assets/images/shellfish_marker.png'),
+                _buildMarkerTypeButton(
+                    context, 'Nuts', 'lib/assets/images/nuts_marker.png'),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMarkerTypeButton(
+      BuildContext context, String type, String imagePath) {
+    return InkWell(
+      onTap: () {
+        Navigator.pop(context);
+        _showAddMarkerDialog(type);
+      },
+      child: Column(
+        children: [
+          Image.asset(imagePath, width: 50, height: 50),
+          const SizedBox(height: 4),
+          Text(type),
+        ],
+      ),
+    );
+  }
+
   Future<Position> _getCurrentPosition() async {
     final location = await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high,
@@ -156,246 +359,12 @@ class MapPageState extends State<MapPage> {
     return location;
   }
 
-  void fetchMarkerData() async {
-    final currentUserEmail = currentUser.email;
-
-    // Clear existing markers (keeping only the current position marker)
-    setState(() {
-      _markers.removeWhere(
-          (marker) => marker.markerId != const MarkerId('currentPosition'));
-    });
-
-    // Set up real-time listener for user's markers first
-    FirebaseFirestore.instance
-        .collection('Users')
-        .doc(currentUserEmail)
-        .collection('Markers')
-        .snapshots()
-        .listen((snapshot) {
-      if (!mounted) return;
-
-      // Clear only user's markers (keeping current position and friends' markers)
-      _markers.removeWhere((marker) =>
-          marker.markerId.value.startsWith('${currentUserEmail}_') &&
-          marker.markerId != const MarkerId('currentPosition'));
-
-      // Add/update user's markers
-      for (final doc in snapshot.docs) {
-        final data = doc.data();
-        final location = data['location'] as Map<String, dynamic>;
-        addMarker(
-          name: data['name'] ?? 'Unnamed Location',
-          description: data['description'] ?? '',
-          location: LatLng(
-            (location['latitude'] as num).toDouble(),
-            (location['longitude'] as num).toDouble(),
-          ),
-          type: data['type'] ?? 'plant',
-          owner: data['markerOwner'] ?? currentUserEmail!,
-          imageUrls: (data['images'] as List<dynamic>?)?.cast<String>() ?? [],
-        );
-      }
-    });
-
-    // Initial load of user's markers
-    final userMarkerSnapshot = await FirebaseFirestore.instance
-        .collection('Users')
-        .doc(currentUserEmail)
-        .collection('Markers')
-        .get();
-
-    for (final doc in userMarkerSnapshot.docs) {
-      final data = doc.data();
-      final location = data['location'] as Map<String, dynamic>;
-      await addMarker(
-        name: data['name'] ?? 'Unnamed Location',
-        description: data['description'] ?? '',
-        location: LatLng(
-          (location['latitude'] as num).toDouble(),
-          (location['longitude'] as num).toDouble(),
-        ),
-        type: data['type'] ?? 'plant',
-        owner: data['markerOwner'] ?? currentUserEmail!,
-        imageUrls: (data['images'] as List<dynamic>?)?.cast<String>() ?? [],
-      );
-    }
-
-    // Load friends' markers
-    final friendsSnapshot = await FirebaseFirestore.instance
-        .collection('Users')
-        .doc(currentUserEmail)
-        .get();
-
-    final friendsData = friendsSnapshot.data();
-    if (friendsData != null && friendsData.containsKey('friends')) {
-      final friendsList = friendsData['friends'] as List<dynamic>;
-
-      // Process friends in parallel
-      await Future.wait(friendsList.map((friend) async {
-        try {
-          final friendEmail =
-              (friend as Map<String, dynamic>)['email'] as String;
-          final friendMarkerSnapshot = await FirebaseFirestore.instance
-              .collection('Users')
-              .doc(friendEmail)
-              .collection('Markers')
-              .get();
-
-          for (final doc in friendMarkerSnapshot.docs) {
-            final data = doc.data();
-            final location = data['location'] as Map<String, dynamic>;
-            await addMarker(
-              name: data['name'] ?? 'Unnamed Location',
-              description: data['description'] ?? '',
-              location: LatLng(
-                (location['latitude'] as num).toDouble(),
-                (location['longitude'] as num).toDouble(),
-              ),
-              type: data['type'] ?? 'plant',
-              owner: data['markerOwner'] ?? friendEmail,
-              imageUrls:
-                  (data['images'] as List<dynamic>?)?.cast<String>() ?? [],
-            );
-          }
-        } catch (e) {
-          debugPrint('Error loading friend markers: $e');
-        }
-      }));
-    }
-  }
-
-  // add markers
-  Future<void> addMarker({
-    required String name,
-    required String description,
-    required LatLng location,
-    required String type,
-    required String owner,
-    List<String>? imageUrls,
-  }) async {
-    final markerId = MarkerId('${owner}_${name}_${location.latitude}');
-    final marker = Marker(
-      markerId: markerId,
-      infoWindow: InfoWindow(
-        title: name,
-        snippet: '(tap here for more info)',
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ForageLocationInfo(
-                name: name,
-                description: description,
-                lat: location.latitude,
-                lng: location.longitude,
-                timestamp: DateTime.now().toString(),
-                type: type,
-                markerOwner: owner,
-                imageUrls:
-                    imageUrls ?? [], // You'll need to fetch this from Firestore
-              ),
-            ),
-          );
-          AdMobService.showInterstitialAd();
-        },
-      ),
-      position: location,
-      icon: await getMarkerIcon(type),
-    );
-
-    // Create the corresponding circle
-    final circle = Circle(
-      circleId: CircleId('circle_$name'),
-      center: location,
-      radius: 200, // Adjust radius as needed
-      fillColor: Colors.pinkAccent.withOpacity(0.3),
-      strokeColor: Colors.pinkAccent,
-      strokeWidth: 2,
-    );
-
-    if (!mounted) return;
-
-    setState(() {
-      _markers.add(marker);
-      _circles.add(circle);
-    });
-  }
-
-  Future<BitmapDescriptor> getMarkerIcon(String type) async {
-    const double markerSize = 100.0; // Adjust to your desired size
-    final ByteData byteData = await rootBundle
-        .load('lib/assets/images/${type.toLowerCase()}_marker.png');
-    final ui.Codec codec = await ui.instantiateImageCodec(
-      byteData.buffer.asUint8List(),
-      targetWidth: markerSize.toInt(),
-      targetHeight: markerSize.toInt(),
-    );
-    final ui.FrameInfo frameInfo = await codec.getNextFrame();
-    final ByteData? byteDataBuffer =
-        await frameInfo.image.toByteData(format: ui.ImageByteFormat.png);
-    final Uint8List markerIcon = byteDataBuffer!.buffer.asUint8List();
-
-    return BitmapDescriptor.fromBytes(markerIcon);
-  }
-
-  // go to place
-  Future<void> _goToPlace(Map<String, dynamic> place) async {
-    followUser = false;
-    final double lat = place['geometry']['location']['lat'];
-    final double lng = place['geometry']['location']['lng'];
-    final GoogleMapController controller = await _controller.future;
-    final newCameraPosition = CameraPosition(
-      target: LatLng(lat, lng),
-      zoom: 14,
-    );
-    controller.animateCamera(
-      CameraUpdate.newCameraPosition(newCameraPosition),
-    );
-  }
-
-  void _showMarkerTypeSelection(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Container(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Select Marker Type', style: TextStyle(fontSize: 20)),
-            SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _buildMarkerTypeButton(
-                    context, 'Plant', 'lib/assets/images/plant.png'),
-                _buildMarkerTypeButton(
-                    context, 'Berries', 'lib/assets/images/berries.png'),
-                _buildMarkerTypeButton(
-                    context, 'Mushroom', 'lib/assets/images/mushroom.png'),
-                _buildMarkerTypeButton(
-                    context, 'Tree', 'lib/assets/images/tree.png'),
-                _buildMarkerTypeButton(
-                    context, 'Fish', 'lib/assets/images/fish.png'),
-                _buildMarkerTypeButton(
-                    context, 'Shellfish', 'lib/assets/images/shellfish.png'),
-                _buildMarkerTypeButton(
-                    context, 'Nuts', 'lib/assets/images/nuts.png'),
-              ],
-            ),
-            SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showAddMarkerDialog(String markerType) async {
+  Future<void> _showAddMarkerDialog(String markerType) async {
     final position = await _getCurrentPosition();
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController();
     final descController = TextEditingController();
-    List<File> selectedImages = [];
+    File? selectedImage;
 
     await showDialog(
       context: context,
@@ -410,51 +379,27 @@ class MapPageState extends State<MapPage> {
                 children: [
                   TextFormField(
                     controller: nameController,
-                    decoration: InputDecoration(labelText: 'Location Name'),
+                    decoration:
+                        const InputDecoration(labelText: 'Location Name'),
                     validator: (val) => val!.isEmpty ? 'Required' : null,
                   ),
                   TextFormField(
                     controller: descController,
-                    decoration: InputDecoration(labelText: 'Description'),
+                    decoration: const InputDecoration(labelText: 'Description'),
                     maxLines: 3,
                   ),
-                  SizedBox(height: 16),
-                  if (selectedImages.isNotEmpty)
-                    SizedBox(
-                      height: 100,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: selectedImages.length,
-                        itemBuilder: (context, index) {
-                          return Stack(
-                            children: [
-                              Image.file(selectedImages[index], height: 100),
-                              Positioned(
-                                top: 0,
-                                right: 0,
-                                child: IconButton(
-                                  icon: Icon(Icons.close, color: Colors.red),
-                                  onPressed: () => setState(() {
-                                    selectedImages.removeAt(index);
-                                  }),
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                    ),
+                  const SizedBox(height: 16),
+                  if (selectedImage != null)
+                    Image.file(selectedImage!, height: 100),
                   ElevatedButton(
                     onPressed: () async {
-                      final images = await ImagePicker().pickMultiImage();
-                      if (images != null && images.isNotEmpty) {
-                        setState(() {
-                          selectedImages
-                              .addAll(images.map((x) => File(x.path)));
-                        });
+                      final image = await ImagePicker()
+                          .pickImage(source: ImageSource.gallery);
+                      if (image != null) {
+                        setState(() => selectedImage = File(image.path));
                       }
                     },
-                    child: Text('Add Images (${selectedImages.length}/3)'),
+                    child: const Text('Add Image'),
                   ),
                 ],
               ),
@@ -463,22 +408,37 @@ class MapPageState extends State<MapPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Cancel'),
+              child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 if (formKey.currentState!.validate()) {
-                  _saveMarker(
-                    nameController.text,
-                    descController.text,
-                    markerType,
-                    selectedImages, // Pass all images
-                    position,
-                  );
-                  Navigator.pop(context);
+                  try {
+                    await _markerService.saveMarker(
+                      name: nameController.text,
+                      description: descController.text,
+                      type: markerType,
+                      images: selectedImage != null ? [selectedImage!] : [],
+                      position: position,
+                    );
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Location saved successfully!'),
+                        ),
+                      );
+                    }
+                    Navigator.pop(context);
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error saving location: $e')),
+                      );
+                    }
+                  }
                 }
               },
-              child: Text('Save'),
+              child: const Text('Save'),
             ),
           ],
         ),
@@ -486,159 +446,76 @@ class MapPageState extends State<MapPage> {
     );
   }
 
-  Future<void> _saveMarker(
-    String name,
-    String description,
-    String type,
-    List<File> images,
-    Position position,
-  ) async {
-    try {
-      List<String> imageUrls = [];
-
-      // Upload all images in parallel
-      await Future.wait(images.map((image) async {
-        final fileName =
-            '${DateTime.now().millisecondsSinceEpoch}_${images.indexOf(image)}.jpg';
-        final storageRef =
-            FirebaseStorage.instance.ref().child('images/$fileName');
-        await storageRef.putFile(image);
-        final downloadUrl = await storageRef.getDownloadURL();
-        imageUrls.add(downloadUrl);
-      }));
-
-      await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(currentUser.email)
-          .collection('Markers')
-          .add({
-        'name': name,
-        'description': description,
-        'type': type,
-        'images': imageUrls,
-        'location': {
-          'latitude': position.latitude,
-          'longitude': position.longitude,
-        },
-        'timestamp': FieldValue.serverTimestamp(),
-        'markerOwner': currentUser.email,
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Location saved successfully!')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error saving location: $e')),
-      );
-    }
-  }
-
-  Widget _buildMarkerTypeButton(
-      BuildContext context, String type, String imagePath) {
-    return InkWell(
-      onTap: () {
-        Navigator.pop(context); // Close the bottom sheet
-        _showAddMarkerDialog(type);
-      },
-      child: Column(
-        children: [
-          Image.asset(imagePath, width: 50, height: 50),
-          SizedBox(height: 4),
-          Text(type),
-        ],
+  Future<void> _goToPlace(Map<String, dynamic> place) async {
+    _mapController.followUser = false;
+    final double lat = place['geometry']['location']['lat'];
+    final double lng = place['geometry']['location']['lng'];
+    final controller = await _mapCompleter.future;
+    await controller.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: LatLng(lat, lng),
+          zoom: 14,
+        ),
       ),
     );
   }
 
+  void _onMapCreated(GoogleMapController controller) {
+    _mapControllerInstance = controller;
+    _mapCompleter.complete(controller);
+    controller.setMapStyle(mapstyle);
+  }
+
+  @override
+  void dispose() {
+    _mapControllerInstance?.dispose();
+    for (var sub in _firestoreSubscriptions) {
+      sub.cancel();
+    }
+    _mapController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    // bool _followUser = followUser;
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Forage Map'),
+      ),
       body: Column(
         children: [
-          ScreenHeading(title: 'Forage'),
-          Container(
-            height: 50,
-            width: double.infinity,
-            color: Colors.grey.shade300,
-            child: Column(
-              children: [
-                Text("Explore your local area for forageable ingredients."),
-                Text('Mark the location so you can find it again!'),
-              ],
-            ),
-          ),
+          const MapHeader(),
           Expanded(
-            // Container(
-            child: GoogleMap(
-              mapType: MapType.terrain,
+            child: MapView(
+              // Replace GoogleMap with MapView
+              initialCameraPosition: _initialCameraPosition,
               markers: _markers,
-              initialCameraPosition: _kGooglePlex,
-              onMapCreated: (GoogleMapController controller) {
-                _controller.complete(controller);
-                controller.setMapStyle(mapstyle);
-              },
-              padding: const EdgeInsets.only(bottom: 60, left: 10),
               circles: _circles,
+              onMapCreated: _onMapCreated,
             ),
           ),
         ],
       ),
-      floatingActionButton: Stack(
-        children: [
-          Positioned(
-            bottom: 145.0,
-            right: 18.0,
-            child: FloatingActionButton(
-              heroTag: 'locationButton',
-              onPressed: () {
-                setState(
-                  () {
-                    followUser = !followUser;
-                  },
-                );
-              },
-              shape: const RoundedRectangleBorder(),
-              mini: true,
-              backgroundColor: Colors.grey.shade800,
-              child: Icon(
-                Icons.my_location,
-                color: followUser ? Colors.deepOrange.shade300 : Colors.white,
-              ),
-            ),
-          ),
-          Positioned(
-            top: 120,
-            left: 20,
-            right: -100,
-            child: Container(
-              margin: const EdgeInsets.only(right: 150),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: SearchField(
-                      onPlaceSelected: _goToPlace,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 80.0,
-            left: 18.0,
-            child: FloatingActionButton(
-              heroTag: 'add_marker_fab',
-              onPressed: () => _showMarkerTypeSelection(context),
-              backgroundColor: Colors.deepOrange.shade300,
-              child: const Icon(Icons.add, color: Colors.white),
-            ),
-          ),
-        ],
+      floatingActionButton: MapFloatingControls(
+        followUser: _mapController.followUser,
+        onFollowPressed: () async {
+          setState(() {
+            _mapController.followUser = !_mapController.followUser;
+          });
+          if (_mapController.followUser) {
+            await _moveCameraToPosition(_mapController.currentPosition);
+          }
+        },
+        onAddMarkerPressed: () => _showMarkerTypeSelection(context),
+        onPlaceSelected: _goToPlace,
       ),
-      // this line prevents compass cutoff
       floatingActionButtonLocation: FloatingActionButtonLocation.miniStartFloat,
     );
   }

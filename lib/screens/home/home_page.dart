@@ -124,7 +124,7 @@ class _HomePageState extends State<HomePage>
                       Icon(FontAwesomeIcons.compass,
                           color: AppColors.textColor, size: 32),
                       const SizedBox(height: 4),
-                      Text('Go Forage!',
+                      Text("Let's Forage!",
                           style: TextStyle(color: AppColors.textColor)),
                     ],
                   ),
