@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/components/screen_heading.dart';
+import 'package:flutter_forager_app/shared/styled_text.dart';
+import 'package:flutter_forager_app/theme.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -138,13 +140,22 @@ class _CommunityPageState extends State<CommunityPage> {
         children: [
           ScreenHeading(title: 'Community'),
           Container(
-            height: 50,
             width: double.infinity,
-            color: Colors.grey.shade300,
+            padding:
+                const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+            color: AppColors.titleBarColor,
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text("Care to share your secret spots with us?"),
-                Text('Like and/or bookmark forage locations and go explore!'),
+                FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child:
+                        StyledText("Care to share your secret spots with us?")),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: StyledText(
+                      'Like and/or bookmark forage locations and go explore!'),
+                ),
               ],
             ),
           ),

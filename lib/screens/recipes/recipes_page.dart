@@ -3,6 +3,8 @@ import 'package:flutter_forager_app/components/screen_heading.dart';
 import 'package:flutter_forager_app/models/recipe.dart';
 import 'package:flutter_forager_app/providers/recipe_provider.dart';
 import 'package:flutter_forager_app/screens/recipes/recipe_card.dart';
+import 'package:flutter_forager_app/shared/styled_text.dart';
+import 'package:flutter_forager_app/theme.dart' show AppColors;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'add_recipe_page.dart';
@@ -24,18 +26,19 @@ class RecipesPage extends ConsumerWidget {
           return CustomScrollView(
             slivers: [
               SliverToBoxAdapter(
-                child: ScreenHeading(
-                    title:
-                        'Recipes'),
+                child: ScreenHeading(title: 'Recipes'),
               ),
               SliverToBoxAdapter(
                 child: Container(
-                  height: 50,
-                  color: Colors.grey.shade300,
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 8.0, horizontal: 16.0),
+                  color: AppColors.titleBarColor,
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text("Cook a meal with your foraged ingredients"),
-                      Text('and share with the community!'),
+                      StyledText("Cook a meal with your foraged ingredients"),
+                      StyledText('and share with the community!'),
                     ],
                   ),
                 ),

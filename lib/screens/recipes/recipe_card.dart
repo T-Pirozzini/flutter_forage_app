@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/models/recipe.dart';
 import 'package:flutter_forager_app/screens/recipes/comments_page.dart';
+import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
@@ -54,21 +55,16 @@ class _RecipeCardState extends State<RecipeCard> {
                 Center(
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
-                    child: Text(
+                    child: StyledHeadingLarge(
                       widget.recipe.name,
-                      style: GoogleFonts.josefinSans(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
                     ),
                   ),
                 ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
+                    StyledTextLarge(
                       'Submitted by: ${widget.recipe.userName}',
-                      style: TextStyle(fontStyle: FontStyle.italic),
                     ),
                     Text(
                       '${DateFormat.yMMMd().format(widget.recipe.timestamp)}',
@@ -77,11 +73,8 @@ class _RecipeCardState extends State<RecipeCard> {
                   ],
                 ),
                 SizedBox(height: 10),
-                Text(
+                StyledTextLarge(
                   'Ingredients:',
-                  style: GoogleFonts.josefinSans(
-                    fontSize: 20,
-                  ),
                 ),
                 for (var ingredient in widget.recipe.ingredients)
                   Row(
@@ -93,9 +86,8 @@ class _RecipeCardState extends State<RecipeCard> {
                         size: 20,
                       ),
                       SizedBox(width: 5),
-                      Text(
+                      StyledHeadingSmall(
                         '${ingredient.quantity} ${ingredient.name}',
-                        style: TextStyle(fontSize: 16),
                       ),
                     ],
                   ),

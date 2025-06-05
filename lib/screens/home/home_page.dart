@@ -32,7 +32,8 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage>
+    with SingleTickerProviderStateMixin {
   final currentUser = FirebaseAuth.instance.currentUser!;
   late bool followUser;
   int currentIndex = 0;
@@ -40,6 +41,9 @@ class _HomePageState extends State<HomePage> {
   double lng = 0;
   BannerAd? _banner;
   bool _isBannerAdLoaded = false;
+
+  late AnimationController _animationController;
+  late Animation<Color?> _borderColorAnimation;
 
   @override
   void initState() {
@@ -50,6 +54,22 @@ class _HomePageState extends State<HomePage> {
     currentIndex = widget.currentIndex;
     _createBannerAd();
     AdMobService.loadInterstitialAd();
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+
+    _borderColorAnimation = ColorTween(
+      begin: Colors.transparent,
+      end: Colors.white,
+    ).animate(_animationController);
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   void _createBannerAd() {
@@ -72,89 +92,97 @@ class _HomePageState extends State<HomePage> {
       const CommunityPage(),
     ];
 
-    return SafeArea(
-      child: Scaffold(
-        appBar: AppBar(
-          title: Image.asset(
-            'assets/images/forager_appbar_logo.png',
-            height: kToolbarHeight,
-          ),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primaryAccent,
-                  foregroundColor: AppColors.textColor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+    return Scaffold(
+      appBar: AppBar(
+        title: Image.asset(
+          'assets/images/forager_appbar_logo.png',
+          height: kToolbarHeight,
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: AnimatedBuilder(
+              animation: _borderColorAnimation,
+              builder: (context, child) {
+                return FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primaryAccent,
+                    foregroundColor: AppColors.textColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: BorderSide(
+                        color:
+                            _borderColorAnimation.value ?? Colors.transparent,
+                        width: 3,
+                      ),
+                    ),
+                    elevation: 2,
                   ),
-                  elevation: 2,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(FontAwesomeIcons.compass,
-                        color: AppColors.textColor, size: 32),
-                    const SizedBox(height: 4),
-                    Text('Go Forage!',
-                        style: TextStyle(color: AppColors.textColor)),
-                  ],
-                ),
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => MapPage(
-                      lat: lat,
-                      lng: lng,
-                      followUser: followUser,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(FontAwesomeIcons.compass,
+                          color: AppColors.textColor, size: 32),
+                      const SizedBox(height: 4),
+                      Text("Let's Forage!",
+                          style: TextStyle(color: AppColors.textColor)),
+                    ],
+                  ),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MapPage(
+                        lat: lat,
+                        lng: lng,
+                        followUser: followUser,
+                      ),
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
-          ],
-        ),
-        drawer: CustomDrawer(
-          onSignOutTap: _signOut,
-          onForageLocationsTap: _goToForageLocationsPage,
-          onAboutTap: goToAboutPage,
-          onAboutUsTap: goAboutUsPage,
-          onCreditsTap: goCreditsPage,
-          showDeleteConfirmationDialog: _showDeleteConfirmationDialog,
-        ),
-        body: Column(
-          children: [
-            if (_isBannerAdLoaded && _banner != null)
-              Container(
-                width: double.infinity,
-                height: 50,
-                child: AdWidget(ad: _banner!),
-              ),
-            Expanded(child: pages[currentIndex]),
-          ],
-        ),
-        bottomNavigationBar: ConvexAppBar(
-          style: TabStyle.reactCircle,
-          items: const [
-            TabItem(
-              icon: Icons.home,
-              title: 'Dashboard',
-            ),
-            TabItem(icon: Icons.menu_book, title: 'Recipes'),
-            TabItem(icon: Icons.people, title: 'Community'),
-          ],
-          initialActiveIndex: currentIndex,
-          color: AppColors.textColor,
-          backgroundColor: AppColors.primaryAccent,
-          activeColor: AppColors.secondaryColor,
-          curveSize: 100,
-          top: -30,
-          onTap: (int i) => setState(() => currentIndex = i),
-          curve: Curves.easeInOutQuad,
-        ),
-        extendBody: true,
+          ),
+        ],
       ),
+      drawer: CustomDrawer(
+        onSignOutTap: _signOut,
+        onForageLocationsTap: _goToForageLocationsPage,
+        onAboutTap: goToAboutPage,
+        onAboutUsTap: goAboutUsPage,
+        onCreditsTap: goCreditsPage,
+        showDeleteConfirmationDialog: _showDeleteConfirmationDialog,
+      ),
+      body: Column(
+        children: [
+          if (_isBannerAdLoaded && _banner != null)
+            Container(
+              width: double.infinity,
+              height: 50,
+              child: AdWidget(ad: _banner!),
+            ),
+          Expanded(child: pages[currentIndex]),
+        ],
+      ),
+      bottomNavigationBar: ConvexAppBar(
+        style: TabStyle.reactCircle,
+        items: const [
+          TabItem(
+            icon: Icons.home,
+            title: 'Dashboard',
+          ),
+          TabItem(icon: Icons.menu_book, title: 'Recipes'),
+          TabItem(icon: Icons.people, title: 'Community'),
+        ],
+        initialActiveIndex: currentIndex,
+        color: AppColors.textColor,
+        backgroundColor: AppColors.primaryAccent,
+        activeColor: AppColors.secondaryColor,
+        curveSize: 100,
+        top: -30,
+        onTap: (int i) => setState(() => currentIndex = i),
+        curve: Curves.easeInOutQuad,
+      ),
+      extendBody: true,
     );
   }
 

@@ -18,6 +18,38 @@ class StyledText extends StatelessWidget {
   }
 }
 
+class StyledTextSmall extends StatelessWidget {
+  const StyledTextSmall(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: GoogleFonts.kanit(
+        textStyle: Theme.of(context).textTheme.bodySmall,
+      ),
+    );
+  }
+}
+
+class StyledTextLarge extends StatelessWidget {
+  const StyledTextLarge(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: GoogleFonts.kanit(
+        textStyle: Theme.of(context).textTheme.bodyLarge,
+      ),
+    );
+  }
+}
+
 class StyledHeading extends StatelessWidget {
   const StyledHeading(this.text, {super.key});
 
@@ -36,6 +68,34 @@ class StyledHeading extends StatelessWidget {
   }
 }
 
+class StyledHeadingSmall extends StatelessWidget {
+  const StyledHeadingSmall(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(text.toUpperCase(),
+        style: GoogleFonts.kanit(
+          textStyle: Theme.of(context).textTheme.headlineSmall,
+        ));
+  }
+}
+
+class StyledHeadingLarge extends StatelessWidget {
+  const StyledHeadingLarge(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(text.toUpperCase(),
+        style: GoogleFonts.kanit(
+          textStyle: Theme.of(context).textTheme.headlineLarge,
+        ));
+  }
+}
+
 class StyledTitle extends StatelessWidget {
   const StyledTitle(this.text, {super.key});
 
@@ -45,8 +105,24 @@ class StyledTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text.toUpperCase(),
-      style: GoogleFonts.eduNswActFoundation(
+      style: GoogleFonts.kanit(
         textStyle: Theme.of(context).textTheme.titleMedium,
+      ),
+    );
+  }
+}
+
+class StyledActionText extends StatelessWidget {
+  const StyledActionText(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: GoogleFonts.eduNswActFoundation(
+        textStyle: Theme.of(context).textTheme.titleSmall,
       ),
     );
   }
