@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_forager_app/screens/forage/search_field.dart';
+import 'package:flutter_forager_app/screens/forage/components/search_field.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_forager_app/theme.dart';
 
