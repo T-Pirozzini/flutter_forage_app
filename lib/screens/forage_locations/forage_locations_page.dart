@@ -112,6 +112,7 @@ class _ForageLocationsState extends State<ForageLocations> {
         timestamp: dateFormat.format(marker.timestamp),
         imageUrls: marker.imageUrls,
         markerOwner: marker.markerOwner,
+        markerId: marker.id,
       ),
     );
   }
@@ -206,6 +207,16 @@ class _ForageLocationsState extends State<ForageLocations> {
                     : DateTime.now(),
                 latitude: (location['latitude'] as num).toDouble(),
                 longitude: (location['longitude'] as num).toDouble(),
+                status: data['status'] ?? 'active',
+                comments: (data['comments'] as List<dynamic>?)
+                        ?.map((comment) => MarkerComment.fromMap(comment))
+                        .toList() ??
+                    [],
+                currentStatus: data['currentStatus'] ?? 'active',
+                statusHistory: (data['statusHistory'] as List<dynamic>?)
+                        ?.map((item) => MarkerStatusUpdate.fromMap(item))
+                        .toList() ??
+                    [],
               );
             }).toList();
 

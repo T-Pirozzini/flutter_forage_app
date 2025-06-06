@@ -111,6 +111,16 @@ class _MapPageState extends ConsumerState<MapPage> {
                         timestamp: (data['timestamp'] as Timestamp).toDate(),
                         latitude: (location['latitude'] as num).toDouble(),
                         longitude: (location['longitude'] as num).toDouble(),
+                        status: data['status'] ?? 'active',
+                        comments: (data['comments'] as List<dynamic>?)
+                                ?.map((c) => MarkerComment.fromMap(c))
+                                .toList() ??
+                            [],
+                        currentStatus: data['currentStatus'] ?? 'active',
+                        statusHistory: (data['statusHistory'] as List<dynamic>?)
+                                ?.map((s) => MarkerStatusUpdate.fromMap(s))
+                                .toList() ??
+                            [],
                       );
                     }).toList() ??
                     [];

@@ -1,11 +1,13 @@
 import 'dart:ui' as ui;
+import 'dart:typed_data';
+import 'dart:io';
+
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:io';
 
 class MapMarkerService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -23,7 +25,9 @@ class MapMarkerService {
   }) async {
     try {
       final imageUrls = await _uploadImages(images);
-      
+      final userDoc = await _firestore.collection('Users').doc(currentUser.email).get();
+      final username = userDoc.data()?['username'] ?? 'Anonymous';
+
       await _firestore
           .collection('Users')
           .doc(currentUser.email)
@@ -32,13 +36,24 @@ class MapMarkerService {
         'name': name,
         'description': description,
         'type': type,
-        'image': imageUrls.isNotEmpty ? imageUrls.first : null,
+        'images': imageUrls, // Store all images instead of just first
         'location': {
           'latitude': position.latitude,
           'longitude': position.longitude,
         },
         'timestamp': FieldValue.serverTimestamp(),
         'markerOwner': currentUser.email,
+        'currentStatus': 'active', // New field
+        'statusHistory': [ // New field
+          {
+            'status': 'active',
+            'userId': currentUser.uid,
+            'userEmail': currentUser.email,
+            'username': username,
+            'timestamp': FieldValue.serverTimestamp(),
+            'notes': 'Marker created',
+          }
+        ],
       });
     } catch (e) {
       throw Exception('Failed to save marker: $e');
@@ -49,14 +64,48 @@ class MapMarkerService {
     final List<String> imageUrls = [];
     
     await Future.wait(images.map((image) async {
-      final fileName = '${DateTime.now().millisecondsSinceEpoch}_${images.indexOf(image)}.jpg';
-      final storageRef = _storage.ref().child('images/$fileName');
-      await storageRef.putFile(image);
-      final downloadUrl = await storageRef.getDownloadURL();
-      imageUrls.add(downloadUrl);
+      try {
+        final fileName = '${DateTime.now().millisecondsSinceEpoch}_${images.indexOf(image)}.jpg';
+        final storageRef = _storage.ref().child('marker_images/$fileName');
+        await storageRef.putFile(image);
+        final downloadUrl = await storageRef.getDownloadURL();
+        imageUrls.add(downloadUrl);
+      } catch (e) {
+        throw Exception('Failed to upload image: $e');
+      }
     }));
     
     return imageUrls;
+  }
+
+  Future<void> updateMarkerStatus({
+    required String markerId,
+    required String newStatus,
+    String? notes,
+    required String markerOwnerEmail,
+  }) async {
+    final userDoc = await _firestore.collection('Users').doc(currentUser.email).get();
+    final username = userDoc.data()?['username'] ?? 'Anonymous';
+
+    final update = {
+      'status': newStatus,
+      'userId': currentUser.uid,
+      'userEmail': currentUser.email,
+      'username': username,
+      'timestamp': FieldValue.serverTimestamp(),
+      if (notes != null) 'notes': notes,
+    };
+
+    await _firestore
+        .collection('Users')
+        .doc(markerOwnerEmail)
+        .collection('Markers')
+        .doc(markerId)
+        .update({
+      'currentStatus': newStatus,
+      'statusHistory': FieldValue.arrayUnion([update]),
+      'lastUpdated': FieldValue.serverTimestamp(),
+    });
   }
 
   Future<BitmapDescriptor> getMarkerIcon(String type) async {
