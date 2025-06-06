@@ -5,8 +5,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_forager_app/screens/forage/map_page.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_forager_app/theme.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ForageLocationInfo extends StatefulWidget {
@@ -43,6 +45,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
   bool _isEditing = false;
   bool _isOwner = false;
   int _currentImageIndex = 0;
+  String _ownerUsername = '';
 
   @override
   void initState() {
@@ -50,12 +53,34 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
     imageUrls = List.from(widget.imageUrls);
     _descriptionController = TextEditingController(text: widget.description);
     _isOwner = currentUser.email == widget.markerOwner;
+    _fetchOwnerUsername();
   }
 
   @override
   void dispose() {
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  // Add this new method
+  Future<void> _fetchOwnerUsername() async {
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(widget.markerOwner)
+          .get();
+
+      if (userDoc.exists) {
+        setState(() {
+          _ownerUsername = userDoc['username'] ?? widget.markerOwner;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching username: $e');
+      setState(() {
+        _ownerUsername = widget.markerOwner;
+      });
+    }
   }
 
   Future<void> _pickAndUploadImage() async {
@@ -354,9 +379,13 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                     width: 36,
                   ),
                   const SizedBox(width: 24),
-                  Expanded(
-                    child: StyledHeading(
-                      widget.name,
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: StyledHeading(
+                        widget.name,
+                      ),
                     ),
                   ),
                   if (_isOwner)
@@ -386,7 +415,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
 
               // Action Buttons
               _buildActionButtons(),
-              
+
               const SizedBox(height: 16),
 
               // close button
@@ -583,7 +612,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
             icon: Icons.location_on,
             label: 'Coordinates',
             value:
-                '${widget.lat.toStringAsFixed(4)}, ${widget.lng.toStringAsFixed(4)}',
+                '${widget.lat.toStringAsFixed(0)}, ${widget.lng.toStringAsFixed(0)}',
           ),
           const Divider(height: 16),
 
@@ -599,7 +628,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
           _buildDetailRow(
             icon: Icons.person,
             label: 'Owner',
-            value: widget.markerOwner,
+            value: _ownerUsername.isNotEmpty ? _ownerUsername : 'Loading...',
           ),
         ],
       ),
@@ -650,7 +679,13 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
             ),
             onPressed: () {
               Navigator.of(context).pop();
-              // Navigate to map with these coordinates
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => MapPage(
+                    initialLocation: LatLng(widget.lat, widget.lng),
+                  ),
+                ),
+              );
             },
           ),
         ),

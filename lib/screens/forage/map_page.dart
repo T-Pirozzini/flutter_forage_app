@@ -4,7 +4,6 @@ import 'package:flutter_forager_app/models/marker.dart';
 import 'package:flutter_forager_app/screens/forage/components/map_markers.dart';
 import 'package:flutter_forager_app/screens/forage/components/map_style.dart';
 import 'package:flutter_forager_app/screens/forage/services/map_permissions.dart';
-import 'package:flutter_forager_app/screens/forage/services/marker_service.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -19,7 +18,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 class MapPage extends ConsumerStatefulWidget {
-  const MapPage({super.key});
+  final LatLng? initialLocation;
+  const MapPage({this.initialLocation, super.key});
 
   @override
   ConsumerState<MapPage> createState() => _MapPageState();
@@ -42,7 +42,16 @@ class _MapPageState extends ConsumerState<MapPage> {
   Future<void> _initializeMap() async {
     try {
       await _mapController.initialize();
-      ref.read(followUserProvider.notifier).state = true;
+      if (widget.initialLocation != null) {
+        await _mapController.moveToLocation(
+          widget.initialLocation!,
+          zoom: 16,
+        );
+        ref.read(followUserProvider.notifier).state = false;
+      } else {
+        ref.read(followUserProvider.notifier).state = true;
+      }
+
       setState(() => _isLoading = false);
     } catch (e) {
       if (mounted) {
@@ -400,12 +409,11 @@ class _MapPageState extends ConsumerState<MapPage> {
               markers: markers,
               circles: circles,
               initialCameraPosition: CameraPosition(
-                target: LatLng(
-                  currentPosition.latitude,
-                  currentPosition.longitude,
-                ),
+                target: widget.initialLocation ??
+                    LatLng(currentPosition.latitude, currentPosition.longitude),
                 zoom: 16,
               ),
+              focusLocation: widget.initialLocation,
               onMapCreated: (controller) {
                 _mapController.completeController(controller);
                 controller.setMapStyle(mapstyle);
