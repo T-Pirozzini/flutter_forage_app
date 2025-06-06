@@ -7,11 +7,11 @@ import 'package:flutter_forager_app/screens/forage/services/marker_service.dart'
 import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:flutter_forager_app/screens/forage/components/map_ui.dart';
 import 'package:flutter_forager_app/screens/forage/components/map_view.dart';
-import 'package:flutter_forager_app/screens/forage/services/map_controller.dart';
-import 'package:flutter_forager_app/providers/map_state_provider.dart';
+import 'package:flutter_forager_app/providers/map/map_controller_provider.dart';
+import 'package:flutter_forager_app/providers/map/map_state_provider.dart'
+    hide mapControllerProvider;
 
 class MapPage extends ConsumerStatefulWidget {
   const MapPage({super.key});
@@ -29,36 +29,25 @@ class _MapPageState extends ConsumerState<MapPage> {
   void initState() {
     super.initState();
     _user = FirebaseAuth.instance.currentUser!;
-    _mapController = MapController(FirebaseAuth.instance.currentUser!);
+    _mapController = ref.read(mapControllerProvider);
     _initializeMap();
   }
 
   Future<void> _initializeMap() async {
     try {
       await _mapController.initialize();
-      final position = await _mapController.getCurrentPosition();
-      _mapController.initialPosition = position;
-
       ref.read(followUserProvider.notifier).state = true;
-      _setupPositionListener();
       _setupMarkerListeners();
-
       setState(() => _isLoading = false);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error initializing map: $e')),
+          SnackBar(content: Text('Error initializing map: ${e.toString()}')),
         );
+        // Set loading to false even on error to show the map
+        setState(() => _isLoading = false);
       }
     }
-  }
-
-  void _setupPositionListener() {
-    _mapController.positionStream.listen((position) {
-      if (ref.read(followUserProvider)) {
-        _moveCameraToPosition(position);
-      }
-    });
   }
 
   void _setupMarkerListeners() {
@@ -75,56 +64,14 @@ class _MapPageState extends ConsumerState<MapPage> {
     });
   }
 
-  Future<void> _moveCameraToPosition(Position position) async {
-    final controller = await ref.read(mapControllerProvider).future;
-    await controller.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(
-          target: LatLng(position.latitude, position.longitude),
-          zoom: 16,
-        ),
-      ),
-    );
-  }
-
-  Future<void> _saveMarker({
-    required String name,
-    required String description,
-    required String type,
-    required Position position,
-  }) async {
-    try {
-      final markerService = ref.read(markerServiceProvider);
-      await markerService.saveMarker(
-        name: name,
-        description: description,
-        type: type,
-        position: position,
-      );
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Location saved successfully!')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error saving location: $e')),
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    _mapController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final markers = ref.watch(markersProvider);
     final circles = ref.watch(circlesProvider);
     final followUser = ref.watch(followUserProvider);
+    final currentPosition = ref.watch(currentPositionProvider);
 
-    if (_isLoading) {
+    if (_isLoading || currentPosition == null) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
@@ -143,13 +90,13 @@ class _MapPageState extends ConsumerState<MapPage> {
               circles: circles,
               initialCameraPosition: CameraPosition(
                 target: LatLng(
-                  _mapController.initialPosition.latitude,
-                  _mapController.initialPosition.longitude,
+                  currentPosition.latitude,
+                  currentPosition.longitude,
                 ),
                 zoom: 16,
               ),
               onMapCreated: (controller) {
-                ref.read(mapControllerProvider).complete(controller);
+                _mapController.completeController(controller);
                 controller.setMapStyle(mapstyle);
               },
             ),

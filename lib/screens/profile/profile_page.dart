@@ -1,23 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_forager_app/components/ad_mob_service.dart';
 import 'package:flutter_forager_app/components/screen_heading.dart';
 import 'package:flutter_forager_app/models/user.dart';
-import 'package:flutter_forager_app/providers/marker_count_provider.dart';
-import 'package:flutter_forager_app/providers/marker_providers.dart';
+import 'package:flutter_forager_app/providers/markers/marker_data.dart';
 import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
 import 'package:flutter_forager_app/screens/friends/friends_controller.dart';
 import 'package:flutter_forager_app/screens/profile/components/about_me.dart';
 import 'package:flutter_forager_app/screens/profile/components/edit_profile_dialog.dart';
-import 'package:flutter_forager_app/screens/profile/components/info_card.dart';
 import 'package:flutter_forager_app/screens/profile/components/user_heading.dart';
 import 'package:flutter_forager_app/screens/recipes/recipes_page.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
-
 import 'package:flutter_forager_app/theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   final UserModel user;
@@ -75,13 +70,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
   @override
   void initState() {
-    super.initState();
-    final markerCountNotifier = ref.read(markerCountProvider.notifier);
-    final nonOwnerMarkerCountNotifier =
-        ref.read(nonOwnerMarkerCountProvider.notifier);
-
-    markerCountNotifier.updateMarkerCount(currentUser.email!, true);
-    nonOwnerMarkerCountNotifier.updateNonOwnerMarkerCount(currentUser.email!);
+    super.initState();    
     loadUserProfileImages();
   }
 

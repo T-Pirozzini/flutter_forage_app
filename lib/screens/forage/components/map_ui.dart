@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_forager_app/providers/map/map_state_provider.dart';
 import 'package:flutter_forager_app/screens/forage/components/search_field.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_forager_app/theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class MapFloatingControls extends StatelessWidget {
+class MapFloatingControls extends ConsumerWidget {
   final bool followUser;
   final VoidCallback onFollowPressed;
   final VoidCallback onAddMarkerPressed;
@@ -18,7 +20,7 @@ class MapFloatingControls extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Stack(
       children: [
         Positioned(
@@ -58,6 +60,32 @@ class MapFloatingControls extends StatelessWidget {
                 label: const Text('Add Marker',
                     style: TextStyle(color: Colors.white)),
                 icon: const Icon(Icons.add, color: Colors.white),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 145.0,
+          right: 18.0,
+          child: Tooltip(
+            message: followUser 
+                ? 'Following your location (2s delay after manual move)'
+                : 'Tap to follow your location',
+            child: FloatingActionButton(
+              heroTag: 'locationButton',
+              onPressed: () {
+                onFollowPressed();
+                // Reset manual move time when toggling follow mode
+                if (followUser) {
+                  ref.read(lastManualMoveProvider.notifier).state = null;
+                }
+              },
+              shape: const RoundedRectangleBorder(),
+              mini: true,
+              backgroundColor: Colors.grey.shade800,
+              child: Icon(
+                Icons.my_location,
+                color: followUser ? Colors.deepOrange.shade300 : Colors.white,
               ),
             ),
           ),
