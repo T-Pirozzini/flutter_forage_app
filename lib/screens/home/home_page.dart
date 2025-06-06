@@ -15,16 +15,16 @@ import '../forage/map_page.dart';
 import 'package:convex_bottom_bar/convex_bottom_bar.dart';
 
 class HomePage extends StatefulWidget {
-  final double lat;
-  final double lng;
+  // final double lat;
+  // final double lng;
   final int currentIndex;
-  final bool followUser;
+  // final bool followUser;
 
   const HomePage({
     super.key,
-    required this.lat,
-    required this.lng,
-    required this.followUser,
+    // required this.lat,
+    // required this.lng,
+    // required this.followUser,
     required this.currentIndex,
   });
 
@@ -35,10 +35,10 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage>
     with SingleTickerProviderStateMixin {
   final currentUser = FirebaseAuth.instance.currentUser!;
-  late bool followUser;
+  // late bool followUser;
   int currentIndex = 0;
-  double lat = 0;
-  double lng = 0;
+  // double lat = 0;
+  // double lng = 0;
   BannerAd? _banner;
   bool _isBannerAdLoaded = false;
 
@@ -48,9 +48,9 @@ class _HomePageState extends State<HomePage>
   @override
   void initState() {
     super.initState();
-    followUser = widget.followUser;
-    lat = widget.lat;
-    lng = widget.lng;
+    // followUser = widget.followUser;
+    // lat = widget.lat;
+    // lng = widget.lng;
     currentIndex = widget.currentIndex;
     _createBannerAd();
     AdMobService.loadInterstitialAd();
@@ -132,9 +132,9 @@ class _HomePageState extends State<HomePage>
                     context,
                     MaterialPageRoute(
                       builder: (context) => MapPage(
-                        lat: lat,
-                        lng: lng,
-                        followUser: followUser,
+                        // lat: lat,
+                        // lng: lng,
+                        // followUser: followUser,
                       ),
                     ),
                   ),

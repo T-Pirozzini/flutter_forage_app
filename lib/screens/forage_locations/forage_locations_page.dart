@@ -201,7 +201,9 @@ class _ForageLocationsState extends State<ForageLocations> {
                 type: data['type'] ?? '',
                 imageUrls: images,
                 markerOwner: data['markerOwner'] ?? '',
-                timestamp: (data['timestamp'] as Timestamp).toDate(),
+                timestamp: data['timestamp'] != null
+                    ? (data['timestamp'] as Timestamp).toDate()
+                    : DateTime.now(),
                 latitude: (location['latitude'] as num).toDouble(),
                 longitude: (location['longitude'] as num).toDouble(),
               );
