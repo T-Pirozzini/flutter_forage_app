@@ -49,7 +49,15 @@ class MapFloatingControls extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final markerTypes = ['plant', 'tree', 'mushroom', 'berry', 'other'];
+    final markerTypes = [
+      'plant',
+      'tree',
+      'mushroom',
+      'berries',
+      'fish',
+      'nuts',
+      'shellfish'
+    ];
 
     return Stack(
       children: [
@@ -103,32 +111,57 @@ class MapFloatingControls extends ConsumerWidget {
               ),
             ),
           ),
-        ),        
+        ),
         Positioned(
-          bottom: 16.0,
-          right: 16.0,
-          child: SpeedDial(
-            icon: Icons.add,
-            activeIcon: Icons.close,
-            backgroundColor: Colors.deepOrange.shade300,
-            foregroundColor: Colors.white,
-            shape: const RoundedRectangleBorder(),
-            children: markerTypes.map((type) {
-              return SpeedDialChild(
-                child: ImageIcon(
-                  AssetImage('lib/assets/images/${type.toLowerCase()}_marker.png'),
-                  color: _getTypeColor(type),
-                  size: 24,
+          bottom: 50.0,
+          left: 25.0, // Aligned with other FABs
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4),
+            color: Colors.black87,
+            child: Column(
+              children: [
+                SpeedDial(
+                  icon: Icons.add,
+                  activeIcon: Icons.close,
+                  activeLabel: const Text(
+                    'Close',
+                    style: TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.w500),
+                  ),
+                  backgroundColor: Colors.deepOrange.shade300,
+                  foregroundColor: Colors.white,
+                  shape: const RoundedRectangleBorder(),
+                  tooltip: 'Add a new marker',
+                  children: markerTypes.map((type) {
+                    return SpeedDialChild(
+                      child: ImageIcon(
+                        AssetImage(
+                            'lib/assets/images/${type.toLowerCase()}_marker.png'),
+                        color: _getTypeColor(type),
+                        size: 24,
+                      ),
+                      // label: type[0].toUpperCase() + type.substring(1),
+                      // labelStyle:
+                      // const TextStyle(color: Colors.black87, fontSize: 12),
+                      backgroundColor: Colors.white,
+                      onTap: () => onAddMarkerPressed(context, type),
+                    );
+                  }).toList(),
+                  animationDuration: const Duration(milliseconds: 200),
+                  overlayColor: Colors.black,
+                  overlayOpacity: 0.2,
                 ),
-                label: type[0].toUpperCase() + type.substring(1),
-                labelStyle: const TextStyle(color: Colors.black87),
-                backgroundColor: Colors.white,
-                onTap: () => onAddMarkerPressed(context, type),
-              );
-            }).toList(),
-            animationDuration: const Duration(milliseconds: 200),
-            overlayColor: Colors.black,
-            overlayOpacity: 0.2,
+                const SizedBox(height: 10), // Spacing between buttons
+                Text(
+                  'Add a Marker',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],

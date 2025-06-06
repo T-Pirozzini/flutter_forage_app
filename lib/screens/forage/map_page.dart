@@ -211,7 +211,8 @@ class _MapPageState extends ConsumerState<MapPage> {
     }
   }
 
-  void _showMarkerDetailsDialog(BuildContext context, String type) {
+  void _showMarkerDetailsDialog(
+      BuildContext parentContext, BuildContext context, String type) {
     final nameController = TextEditingController();
     final descriptionController = TextEditingController();
     final formKey = GlobalKey<FormState>();
@@ -236,49 +237,76 @@ class _MapPageState extends ConsumerState<MapPage> {
           ),
           content: Form(
             key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: nameController,
-                  decoration: InputDecoration(
-                    labelText: 'Name',
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                    filled: true,
-                    fillColor: Colors.grey[100],
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter a name';
-                    }
-                    return null;
-                  },
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              TextFormField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: 'Name',
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                  filled: true,
+                  fillColor: Colors.grey[100],
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: descriptionController,
-                  decoration: InputDecoration(
-                    labelText: 'Description',
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                    filled: true,
-                    fillColor: Colors.grey[100],
-                  ),
-                  maxLines: 3,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter a description';
-                    }
-                    return null;
-                  },
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter a name';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: descriptionController,
+                decoration: InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                  filled: true,
+                  fillColor: Colors.grey[100],
                 ),
-              ],
-            ),
+                maxLines: 3,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter a description';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Icon(Icons.camera_alt_outlined,
+                      color: Colors.deepOrangeAccent),
+                  SizedBox(width: 8),
+                  Flexible(
+                    child: StyledTextSmall(
+                        'Take photos of your find! Add them to your marker later.'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Icon(Icons.person, color: Colors.deepOrangeAccent),
+                  StyledTitle(
+                    'Profile',
+                  ),
+                  Spacer(),
+                  Icon(Icons.arrow_circle_right_outlined, color: Colors.white),
+                  Spacer(),
+                  Icon(Icons.location_on, color: Colors.deepOrangeAccent),
+                  StyledTitle('Locations')
+                ],
+              ),
+            ]),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () {
+                Navigator.of(context).pop();
+                nameController.dispose();
+                descriptionController.dispose();
+              },
               child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
             ),
             ElevatedButton(
@@ -290,26 +318,31 @@ class _MapPageState extends ConsumerState<MapPage> {
               ),
               onPressed: () async {
                 if (formKey.currentState!.validate()) {
+                  final name = nameController.text.trim();
+                  final description = descriptionController.text.trim();
                   Navigator.of(context).pop();
                   try {
                     final position = await MapPermissions.getCurrentPosition();
                     final markerService =
                         MapMarkerService(FirebaseAuth.instance.currentUser!);
                     await markerService.saveMarker(
-                      name: nameController.text.trim(),
-                      description: descriptionController.text.trim(),
+                      name: name,
+                      description: description,
                       type: type,
                       images: [],
                       position: position,
                     );
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    ScaffoldMessenger.of(parentContext).showSnackBar(
                       const SnackBar(
                           content: Text('Marker saved successfully')),
                     );
                   } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    ScaffoldMessenger.of(parentContext).showSnackBar(
                       SnackBar(content: Text('Error saving marker: $e')),
                     );
+                  } finally {
+                    nameController.dispose();
+                    descriptionController.dispose();
                   }
                 }
               },
@@ -318,10 +351,7 @@ class _MapPageState extends ConsumerState<MapPage> {
           ],
         );
       },
-    ).whenComplete(() {
-      nameController.dispose();
-      descriptionController.dispose();
-    });
+    );
   }
 
   Future<void> _goToPlace(Map<String, dynamic> place) async {
@@ -389,7 +419,8 @@ class _MapPageState extends ConsumerState<MapPage> {
         onFollowPressed: () {
           ref.read(followUserProvider.notifier).state = !followUser;
         },
-        onAddMarkerPressed: _showMarkerDetailsDialog,
+        onAddMarkerPressed: (dialogContext, type) =>
+            _showMarkerDetailsDialog(context, dialogContext, type),
         onPlaceSelected: _goToPlace,
         onShowLocationsPressed: _showLocationsBottomSheet,
       ),
