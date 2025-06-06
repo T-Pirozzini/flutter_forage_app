@@ -4,12 +4,14 @@ import 'package:flutter_forager_app/screens/forage/components/search_field.dart'
 import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_forager_app/theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
 class MapFloatingControls extends ConsumerWidget {
   final bool followUser;
   final VoidCallback onFollowPressed;
-  final VoidCallback onAddMarkerPressed;
+  final void Function(BuildContext, String) onAddMarkerPressed;
   final Function(Map<String, dynamic>) onPlaceSelected;
+  final VoidCallback onShowLocationsPressed;
 
   const MapFloatingControls({
     super.key,
@@ -17,10 +19,38 @@ class MapFloatingControls extends ConsumerWidget {
     required this.onFollowPressed,
     required this.onAddMarkerPressed,
     required this.onPlaceSelected,
+    required this.onShowLocationsPressed,
   });
+
+  Color _getTypeColor(String type) {
+    switch (type.toLowerCase()) {
+      case 'berries':
+      case 'berry':
+        return Colors.purpleAccent;
+      case 'mushrooms':
+      case 'mushroom':
+        return Colors.orangeAccent;
+      case 'nuts':
+        return Colors.brown;
+      case 'herbs':
+        return Colors.lightGreen;
+      case 'tree':
+        return Colors.green;
+      case 'fish':
+        return Colors.blue;
+      case 'plant':
+        return Colors.greenAccent;
+      case 'other':
+        return Colors.grey;
+      default:
+        return Colors.deepOrangeAccent;
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final markerTypes = ['plant', 'tree', 'mushroom', 'berry', 'other'];
+
     return Stack(
       children: [
         Positioned(
@@ -32,50 +62,16 @@ class MapFloatingControls extends ConsumerWidget {
           ),
         ),
         Positioned(
-          bottom: 145.0,
-          right: 18.0,
-          child: FloatingActionButton(
-            heroTag: 'locationButton',
-            onPressed: onFollowPressed,
-            shape: const RoundedRectangleBorder(),
-            mini: true,
-            backgroundColor: Colors.grey.shade800,
-            child: Icon(
-              Icons.my_location,
-              color: followUser ? Colors.deepOrange.shade300 : Colors.white,
-            ),
-          ),
-        ),
-        Positioned(
-          bottom: 16.0,
-          left: 0,
-          right: 0,
-          child: Center(
-            child: Tooltip(
-              message: 'Add a marker to save a location',
-              child: FloatingActionButton.extended(
-                heroTag: 'add_marker_fab',
-                onPressed: onAddMarkerPressed,
-                backgroundColor: Colors.deepOrange.shade300,
-                label: const Text('Add Marker',
-                    style: TextStyle(color: Colors.white)),
-                icon: const Icon(Icons.add, color: Colors.white),
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          bottom: 145.0,
-          right: 18.0,
+          bottom: 150.0,
+          right: 0.0,
           child: Tooltip(
-            message: followUser 
+            message: followUser
                 ? 'Following your location (2s delay after manual move)'
                 : 'Tap to follow your location',
             child: FloatingActionButton(
               heroTag: 'locationButton',
               onPressed: () {
                 onFollowPressed();
-                // Reset manual move time when toggling follow mode
                 if (followUser) {
                   ref.read(lastManualMoveProvider.notifier).state = null;
                 }
@@ -88,6 +84,51 @@ class MapFloatingControls extends ConsumerWidget {
                 color: followUser ? Colors.deepOrange.shade300 : Colors.white,
               ),
             ),
+          ),
+        ),
+        Positioned(
+          top: 350.0,
+          right: 0.0,
+          child: Tooltip(
+            message: 'View your locations',
+            child: FloatingActionButton(
+              heroTag: 'locationsButton',
+              onPressed: onShowLocationsPressed,
+              shape: const RoundedRectangleBorder(),
+              mini: true,
+              backgroundColor: Colors.grey.shade800,
+              child: const Icon(
+                Icons.list,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),        
+        Positioned(
+          bottom: 16.0,
+          right: 16.0,
+          child: SpeedDial(
+            icon: Icons.add,
+            activeIcon: Icons.close,
+            backgroundColor: Colors.deepOrange.shade300,
+            foregroundColor: Colors.white,
+            shape: const RoundedRectangleBorder(),
+            children: markerTypes.map((type) {
+              return SpeedDialChild(
+                child: ImageIcon(
+                  AssetImage('lib/assets/images/${type.toLowerCase()}_marker.png'),
+                  color: _getTypeColor(type),
+                  size: 24,
+                ),
+                label: type[0].toUpperCase() + type.substring(1),
+                labelStyle: const TextStyle(color: Colors.black87),
+                backgroundColor: Colors.white,
+                onTap: () => onAddMarkerPressed(context, type),
+              );
+            }).toList(),
+            animationDuration: const Duration(milliseconds: 200),
+            overlayColor: Colors.black,
+            overlayOpacity: 0.2,
           ),
         ),
       ],

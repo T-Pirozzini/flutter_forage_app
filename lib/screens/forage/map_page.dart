@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_forager_app/models/marker.dart';
 import 'package:flutter_forager_app/screens/forage/components/map_markers.dart';
 import 'package:flutter_forager_app/screens/forage/components/map_style.dart';
 import 'package:flutter_forager_app/screens/forage/services/map_permissions.dart';
@@ -12,6 +13,10 @@ import 'package:flutter_forager_app/screens/forage/components/map_view.dart';
 import 'package:flutter_forager_app/providers/map/map_controller_provider.dart';
 import 'package:flutter_forager_app/providers/map/map_state_provider.dart'
     hide mapControllerProvider;
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
 class MapPage extends ConsumerStatefulWidget {
   const MapPage({super.key});
@@ -24,6 +29,7 @@ class _MapPageState extends ConsumerState<MapPage> {
   late final MapController _mapController;
   late final User _user;
   bool _isLoading = true;
+  final dateFormat = DateFormat('MMM dd, yyyy HH:mm');
 
   @override
   void initState() {
@@ -37,31 +43,306 @@ class _MapPageState extends ConsumerState<MapPage> {
     try {
       await _mapController.initialize();
       ref.read(followUserProvider.notifier).state = true;
-      _setupMarkerListeners();
       setState(() => _isLoading = false);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error initializing map: ${e.toString()}')),
         );
-        // Set loading to false even on error to show the map
         setState(() => _isLoading = false);
       }
     }
   }
 
-  void _setupMarkerListeners() {
-    final markerService = ref.read(markerServiceProvider);
-    final markersNotifier = ref.read(markersProvider.notifier);
-
-    markerService.getMarkersStream().listen((snapshot) async {
-      final newMarkers = <Marker>{};
-      for (final doc in snapshot.docs) {
-        newMarkers
-            .add(await markerService.createMarkerFromDoc(doc, _user.email!));
+  Future<String> _getLocationAddress(double lat, double lng) async {
+    try {
+      final placemarks = await placemarkFromCoordinates(lat, lng);
+      if (placemarks.isNotEmpty) {
+        final place = placemarks.first;
+        return '${place.locality ?? ''}${place.locality != null && place.country != null ? ', ' : ''}${place.country ?? ''}'
+            .trim();
       }
-      markersNotifier.addMarkers(newMarkers);
+      return '${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}';
+    } catch (e) {
+      return '${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}';
+    }
+  }
+
+  void _showLocationsBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return Consumer(
+          builder: (context, ref, _) {
+            final currentPosition = ref.watch(currentPositionProvider);
+            return StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('Users')
+                  .doc(_user.email)
+                  .collection('Markers')
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final markers = snapshot.data?.docs.map((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      final location = data['location'] as Map<String, dynamic>;
+                      return MarkerModel(
+                        id: doc.id,
+                        name: data['name'] ?? '',
+                        description: data['description'] ?? '',
+                        type: data['type'] ?? '',
+                        imageUrls: List<String>.from(data['images'] ?? []),
+                        markerOwner: data['markerOwner'] ?? '',
+                        timestamp: (data['timestamp'] as Timestamp).toDate(),
+                        latitude: (location['latitude'] as num).toDouble(),
+                        longitude: (location['longitude'] as num).toDouble(),
+                      );
+                    }).toList() ??
+                    [];
+
+                return Column(
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Text('Locations',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold)),
+                    ),
+                    Expanded(
+                      child: ListView(
+                        children: [
+                          if (currentPosition != null)
+                            ListTile(
+                              leading: const Icon(Icons.my_location,
+                                  color: Colors.blue),
+                              title: const Text('Current Location'),
+                              subtitle: FutureBuilder<String>(
+                                future: _getLocationAddress(
+                                    currentPosition.latitude,
+                                    currentPosition.longitude),
+                                builder: (context, snapshot) => Text(
+                                  snapshot.data ?? 'Loading...',
+                                  style: GoogleFonts.poppins(
+                                      fontSize: 12, color: Colors.grey[600]),
+                                ),
+                              ),
+                              onTap: () {
+                                _mapController.moveToLocation(
+                                  LatLng(currentPosition.latitude,
+                                      currentPosition.longitude),
+                                  zoom: 16,
+                                );
+                                ref.read(followUserProvider.notifier).state =
+                                    true;
+                                Navigator.pop(context);
+                              },
+                            ),
+                          ...markers.map((marker) {
+                            return ListTile(
+                              leading: ImageIcon(
+                                AssetImage(
+                                    'lib/assets/images/${marker.type.toLowerCase()}_marker.png'),
+                                color: _getTypeColor(marker.type),
+                              ),
+                              title: Text(marker.name.isEmpty
+                                  ? 'Unnamed'
+                                  : marker.name),
+                              subtitle: FutureBuilder<String>(
+                                future: _getLocationAddress(
+                                    marker.latitude, marker.longitude),
+                                builder: (context, snapshot) => Text(
+                                  snapshot.data ?? 'Loading...',
+                                  style: GoogleFonts.poppins(
+                                      fontSize: 12, color: Colors.grey[600]),
+                                ),
+                              ),
+                              onTap: () {
+                                _mapController.moveToLocation(
+                                  LatLng(marker.latitude, marker.longitude),
+                                  zoom: 16,
+                                );
+                                ref.read(followUserProvider.notifier).state =
+                                    false;
+                                Navigator.pop(context);
+                              },
+                            );
+                          }),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Color _getTypeColor(String type) {
+    switch (type.toLowerCase()) {
+      case 'berries':
+      case 'berry':
+        return Colors.purpleAccent;
+      case 'mushrooms':
+      case 'mushroom':
+        return Colors.orangeAccent;
+      case 'nuts':
+        return Colors.brown;
+      case 'herbs':
+        return Colors.lightGreen;
+      case 'tree':
+        return Colors.green;
+      case 'fish':
+        return Colors.blue;
+      case 'plant':
+        return Colors.greenAccent;
+      case 'other':
+        return Colors.grey;
+      default:
+        return Colors.deepOrangeAccent;
+    }
+  }
+
+  void _showMarkerDetailsDialog(BuildContext context, String type) {
+    final nameController = TextEditingController();
+    final descriptionController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              ImageIcon(
+                AssetImage(
+                    'lib/assets/images/${type.toLowerCase()}_marker.png'),
+                color: _getTypeColor(type),
+                size: 32,
+              ),
+              const SizedBox(width: 8),
+              Text('Add ${type[0].toUpperCase() + type.substring(1)} Marker'),
+            ],
+          ),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Name',
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                    filled: true,
+                    fillColor: Colors.grey[100],
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter a name';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: descriptionController,
+                  decoration: InputDecoration(
+                    labelText: 'Description',
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                    filled: true,
+                    fillColor: Colors.grey[100],
+                  ),
+                  maxLines: 3,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter a description';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepOrangeAccent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () async {
+                if (formKey.currentState!.validate()) {
+                  Navigator.of(context).pop();
+                  try {
+                    final position = await MapPermissions.getCurrentPosition();
+                    final markerService =
+                        MapMarkerService(FirebaseAuth.instance.currentUser!);
+                    await markerService.saveMarker(
+                      name: nameController.text.trim(),
+                      description: descriptionController.text.trim(),
+                      type: type,
+                      images: [],
+                      position: position,
+                    );
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Marker saved successfully')),
+                    );
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error saving marker: $e')),
+                    );
+                  }
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    ).whenComplete(() {
+      nameController.dispose();
+      descriptionController.dispose();
     });
+  }
+
+  Future<void> _goToPlace(Map<String, dynamic> place) async {
+    try {
+      ref.read(followUserProvider.notifier).state = false;
+      final geometry = place['geometry'] as Map<String, dynamic>?;
+      final location = geometry?['location'] as Map<String, dynamic>?;
+      final double? lat = location?['lat'] as double?;
+      final double? lng = location?['lng'] as double?;
+
+      if (lat == null || lng == null) {
+        throw Exception('Invalid place data: Missing latitude or longitude');
+      }
+
+      final latLng = LatLng(lat, lng);
+      await _mapController.moveToLocation(latLng, zoom: 14);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error navigating to place: $e')),
+      );
+    }
   }
 
   @override
@@ -108,123 +389,10 @@ class _MapPageState extends ConsumerState<MapPage> {
         onFollowPressed: () {
           ref.read(followUserProvider.notifier).state = !followUser;
         },
-        onAddMarkerPressed: () => _showMarkerTypeSelection(context),
+        onAddMarkerPressed: _showMarkerDetailsDialog,
         onPlaceSelected: _goToPlace,
+        onShowLocationsPressed: _showLocationsBottomSheet,
       ),
     );
-  }
-
-  // We'll implement these methods in subsequent steps
-  void _showMarkerTypeSelection(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) {
-        final types = ['plant', 'tree', 'mushroom', 'berry', 'other'];
-
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child:
-                  Text('Select a marker type', style: TextStyle(fontSize: 18)),
-            ),
-            Wrap(
-              spacing: 10,
-              children: types.map((type) {
-                return ChoiceChip(
-                  label: Text(type),
-                  selected: false,
-                  onSelected: (_) {
-                    Navigator.of(context).pop();
-                    _showMarkerDetailsDialog(context, type);
-                  },
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 20),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showMarkerDetailsDialog(BuildContext context, String type) {
-    final nameController = TextEditingController();
-    final descriptionController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Add $type marker'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: 'Name'),
-              ),
-              TextField(
-                controller: descriptionController,
-                decoration: const InputDecoration(labelText: 'Description'),
-                maxLines: 2,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-
-                // Fetch current position
-                final position = await MapPermissions.getCurrentPosition();
-
-                // Save to Firestore
-                final markerService =
-                    MapMarkerService(FirebaseAuth.instance.currentUser!);
-                await markerService.saveMarker(
-                  name: nameController.text,
-                  description: descriptionController.text,
-                  type: type,
-                  images: [], // Add image picker later if needed
-                  position: position,
-                );
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  // In map_page.dart
-  Future<void> _goToPlace(Map<String, dynamic> place) async {
-    try {
-      ref.read(followUserProvider.notifier).state = false;
-      final geometry = place['geometry'] as Map<String, dynamic>?;
-      final location = geometry?['location'] as Map<String, dynamic>?;
-      final double? lat = location?['lat'] as double?;
-      final double? lng = location?['lng'] as double?;
-
-      if (lat == null || lng == null) {
-        throw Exception('Invalid place data: Missing latitude or longitude');
-      }
-
-      final latLng = LatLng(lat, lng);
-      await _mapController.moveToLocation(latLng, zoom: 14);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error navigating to place: $e')),
-      );
-    }
   }
 }
