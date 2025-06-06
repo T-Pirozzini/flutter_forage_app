@@ -65,6 +65,20 @@ class MapController {
     }
   }
 
+  Future<void> moveToLocation(LatLng target, {double zoom = 14}) async {
+    if (_mapCompleter.isCompleted) {
+      final controller = await _mapCompleter.future;
+      await controller.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: target,
+            zoom: zoom,
+          ),
+        ),
+      );
+    }
+  }
+
   Future<Position> getCurrentPosition() async {
     return await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high,

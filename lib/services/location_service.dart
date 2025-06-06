@@ -34,4 +34,26 @@ class LocationService {
 
     return results;
   }
+
+  Future<List<Map<String, dynamic>>> getPlaceSuggestions(String input) async {
+    if (key == null) {
+      throw Exception('Google Places API key is missing');
+    }
+    if (input.isEmpty) {
+      return [];
+    }
+    final String url =
+        "https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$input&key=$key";
+
+    try {
+      final response = await http.get(Uri.parse(url));
+      final json = convert.jsonDecode(response.body);
+      if (json['predictions'] != null) {
+        return (json['predictions'] as List).cast<Map<String, dynamic>>();
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
 }

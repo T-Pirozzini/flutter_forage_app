@@ -206,5 +206,25 @@ class _MapPageState extends ConsumerState<MapPage> {
     );
   }
 
-  Future<void> _goToPlace(Map<String, dynamic> place) async {}
+  // In map_page.dart
+  Future<void> _goToPlace(Map<String, dynamic> place) async {
+    try {
+      ref.read(followUserProvider.notifier).state = false;
+      final geometry = place['geometry'] as Map<String, dynamic>?;
+      final location = geometry?['location'] as Map<String, dynamic>?;
+      final double? lat = location?['lat'] as double?;
+      final double? lng = location?['lng'] as double?;
+
+      if (lat == null || lng == null) {
+        throw Exception('Invalid place data: Missing latitude or longitude');
+      }
+
+      final latLng = LatLng(lat, lng);
+      await _mapController.moveToLocation(latLng, zoom: 14);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error navigating to place: $e')),
+      );
+    }
+  }
 }
