@@ -5,9 +5,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_forager_app/models/marker.dart';
+import 'package:flutter_forager_app/screens/forage/map_page.dart';
+import 'package:flutter_forager_app/screens/forage/services/marker_service.dart';
+import 'package:flutter_forager_app/screens/forage_locations/components/status_history_dialog.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_forager_app/theme.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 
 class ForageLocationInfo extends StatefulWidget {
   final String name;
@@ -18,6 +25,10 @@ class ForageLocationInfo extends StatefulWidget {
   final String timestamp;
   final String type;
   final String markerOwner;
+  final String markerId;
+  final String status;
+  final List<Map<String, dynamic>> comments;
+  final List<Map<String, dynamic>> statusHistory;
 
   const ForageLocationInfo({
     super.key,
@@ -29,6 +40,10 @@ class ForageLocationInfo extends StatefulWidget {
     required this.timestamp,
     required this.type,
     required this.markerOwner,
+    required this.markerId,
+    this.status = 'active',
+    this.comments = const [],
+    this.statusHistory = const [],
   });
 
   @override
@@ -43,6 +58,11 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
   bool _isEditing = false;
   bool _isOwner = false;
   int _currentImageIndex = 0;
+  String _ownerUsername = '';
+  final _commentController = TextEditingController();
+  String _selectedStatus = 'active';
+  List<Map<String, dynamic>> _statusHistory = [];
+  List<Map<String, dynamic>> _comments = [];
 
   @override
   void initState() {
@@ -50,12 +70,38 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
     imageUrls = List.from(widget.imageUrls);
     _descriptionController = TextEditingController(text: widget.description);
     _isOwner = currentUser.email == widget.markerOwner;
+    _fetchOwnerUsername();
+    _selectedStatus = widget.status;
+    _statusHistory = List.from(widget.statusHistory);
+    _comments = List.from(widget.comments);
+    _refreshData();
   }
 
   @override
   void dispose() {
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  // Add this new method
+  Future<void> _fetchOwnerUsername() async {
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(widget.markerOwner)
+          .get();
+
+      if (userDoc.exists) {
+        setState(() {
+          _ownerUsername = userDoc['username'] ?? widget.markerOwner;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching username: $e');
+      setState(() {
+        _ownerUsername = widget.markerOwner;
+      });
+    }
   }
 
   Future<void> _pickAndUploadImage() async {
@@ -331,6 +377,151 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
     }
   }
 
+  void _showStatusUpdateDialog(String newStatus) {
+    final notesController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Update Status to ${newStatus.toUpperCase()}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Current status: ${_selectedStatus.toUpperCase()}'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: notesController,
+              decoration: const InputDecoration(
+                labelText: 'Add notes (optional)',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+              style:
+                  GoogleFonts.poppins(fontSize: 14, color: AppColors.textColor),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await _updateStatus(newStatus, notesController.text);
+              Navigator.pop(context);
+            },
+            child: const Text('Submit Update'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showStatusHistory() {
+    final history = _statusHistory.map((map) {
+      return MarkerStatusUpdate.fromMap(map);
+    }).toList();
+
+    showDialog(
+      context: context,
+      builder: (context) => StatusHistoryDialog(history: history),
+    );
+  }
+
+  Future<void> _refreshData() async {
+    await _refreshStatusHistory();
+    await _refreshComments();
+  }
+
+  Future<void> _refreshStatusHistory() async {
+    final doc = await FirebaseFirestore.instance
+        .collection('Users')
+        .doc(widget.markerOwner)
+        .collection('Markers')
+        .doc(widget.markerId)
+        .get();
+
+    if (doc.exists) {
+      final data = doc.data() as Map<String, dynamic>;
+      setState(() {
+        _statusHistory =
+            List<Map<String, dynamic>>.from(data['statusHistory'] ?? []);
+        _selectedStatus = data['currentStatus'] ?? 'active';
+      });
+    }
+  }
+
+  Future<void> _refreshComments() async {
+    final doc = await FirebaseFirestore.instance
+        .collection('Users')
+        .doc(widget.markerOwner)
+        .collection('Markers')
+        .doc(widget.markerId)
+        .get();
+
+    if (doc.exists) {
+      final data = doc.data() as Map<String, dynamic>;
+      setState(() {
+        _comments = List<Map<String, dynamic>>.from(data['comments'] ?? []);
+      });
+    }
+  }
+
+  void _addComment() async {
+    if (_commentController.text.trim().isEmpty) return;
+
+    try {
+      final markerService = MarkerService(FirebaseAuth.instance.currentUser!);
+      await markerService.addComment(
+        markerId: widget.markerId,
+        text: _commentController.text.trim(),
+        markerOwnerEmail: widget.markerOwner,
+      );
+
+      await _refreshComments();
+      _commentController.clear();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Comment added successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error adding comment: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _updateStatus(String newStatus, String notes) async {
+    try {
+      final markerService = MarkerService(FirebaseAuth.instance.currentUser!);
+      await markerService.updateMarkerStatus(
+        markerId: widget.markerId,
+        newStatus: newStatus,
+        notes: notes,
+        markerOwnerEmail: widget.markerOwner,
+      );
+
+      await _refreshStatusHistory();
+
+      if (mounted) {
+        setState(() => _selectedStatus = newStatus);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Status updated successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error updating status: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -353,12 +544,37 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                     'lib/assets/images/${widget.type.toLowerCase()}_marker.png',
                     width: 36,
                   ),
-                  const SizedBox(width: 24),
-                  Expanded(
-                    child: StyledHeading(
-                      widget.name,
-                    ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: StyledHeading(
+                          widget.name,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Icon(
+                            _getStatusIcon(_selectedStatus),
+                            size: 20,
+                            color: _getStatusColor(_selectedStatus),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            _selectedStatus.replaceAll('_', ' ').toUpperCase(),
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: _getStatusColor(_selectedStatus),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
+                  const Spacer(),
                   if (_isOwner)
                     IconButton(
                       icon: const Icon(Icons.delete),
@@ -373,6 +589,150 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
               _buildImageCarousel(),
 
               const SizedBox(height: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const StyledTitle('Current Status'),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: _selectedStatus,
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            contentPadding:
+                                const EdgeInsets.symmetric(horizontal: 16),
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                                value: 'active',
+                                child: StyledTextLarge('Active')),
+                            DropdownMenuItem(
+                                value: 'ripe', child: StyledTextLarge('Ripe')),
+                            DropdownMenuItem(
+                                value: 'stale',
+                                child: StyledTextLarge('Stale')),
+                            DropdownMenuItem(
+                                value: 'not_found',
+                                child: StyledTextLarge('Not Found')),
+                          ],
+                          onChanged: (value) {
+                            if (value != null) {
+                              _showStatusUpdateDialog(value);
+                            }
+                          },
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.history),
+                        onPressed: _showStatusHistory,
+                        tooltip: 'View status history',
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+
+              // Comments section
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
+                  const StyledTitle('Comments'),
+                  const SizedBox(height: 8),
+                  if (_comments.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Text(
+                        'No comments yet',
+                        style: GoogleFonts.poppins(
+                          color: Colors.grey,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    )
+                  else
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _comments.length,
+                      itemBuilder: (context, index) {
+                        final comment = _comments[index];
+                        final timestamp = comment['timestamp'];
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.grey[100],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.all(8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    StyledTextLarge(
+                                      comment['username'] ??
+                                          comment['userEmail'] ??
+                                          'Anonymous',
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      timestamp is Timestamp
+                                          ? DateFormat('MMM d, h:mm a')
+                                              .format(timestamp.toDate())
+                                          : 'Just now',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                StyledTextLarge(
+                                    comment['text']?.toString() ?? ''),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _commentController,
+                          style: GoogleFonts.kanit(
+                            fontSize: 14,
+                            color: AppColors.textColor,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Add a comment...',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.send),
+                        color: Colors.deepOrange,
+                        onPressed: _addComment,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
 
               // Description Section
               _buildDescriptionSection(),
@@ -386,7 +746,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
 
               // Action Buttons
               _buildActionButtons(),
-              
+
               const SizedBox(height: 16),
 
               // close button
@@ -555,15 +915,8 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
             ],
           )
         else
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: StyledHeadingSmall(
-              _descriptionController.text,
-            ),
+          StyledText(
+            _descriptionController.text,
           ),
       ],
     );
@@ -571,7 +924,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
 
   Widget _buildDetailsSection(bool isDarkMode) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: isDarkMode ? Colors.grey[800] : Colors.grey[100],
         borderRadius: BorderRadius.circular(12),
@@ -583,7 +936,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
             icon: Icons.location_on,
             label: 'Coordinates',
             value:
-                '${widget.lat.toStringAsFixed(4)}, ${widget.lng.toStringAsFixed(4)}',
+                '${widget.lat.toStringAsFixed(0)}, ${widget.lng.toStringAsFixed(0)}',
           ),
           const Divider(height: 16),
 
@@ -599,7 +952,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
           _buildDetailRow(
             icon: Icons.person,
             label: 'Owner',
-            value: widget.markerOwner,
+            value: _ownerUsername.isNotEmpty ? _ownerUsername : 'Loading...',
           ),
         ],
       ),
@@ -650,7 +1003,13 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
             ),
             onPressed: () {
               Navigator.of(context).pop();
-              // Navigate to map with these coordinates
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => MapPage(
+                    initialLocation: LatLng(widget.lat, widget.lng),
+                  ),
+                ),
+              );
             },
           ),
         ),
@@ -674,5 +1033,33 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
           ),
       ],
     );
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status.toLowerCase()) {
+      case 'ripe':
+        return Icons.check_circle;
+      case 'stale':
+        return Icons.warning;
+      case 'not_found':
+        return Icons.error_outline;
+      case 'active':
+      default:
+        return Icons.location_on;
+    }
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'ripe':
+        return Colors.green;
+      case 'stale':
+        return Colors.orange;
+      case 'not_found':
+        return Colors.red;
+      case 'active':
+      default:
+        return Colors.blue;
+    }
   }
 }

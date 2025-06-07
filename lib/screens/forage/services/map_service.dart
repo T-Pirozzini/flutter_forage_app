@@ -11,6 +11,7 @@ final mapServiceProvider = Provider<MapService>((ref) {
 
 class MapService {
   final User _user;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   MapService(this._user);
 
@@ -36,7 +37,37 @@ class MapService {
     required List<File> images,
     required Position position,
   }) async {
-    // Implement your marker saving logic
-    // This should include image upload if needed
+    final userDoc = await _firestore.collection('Users').doc(_user.email).get();
+    final username = userDoc.data()?['username'] ?? 'Anonymous';
+
+    final markerData = {
+      'name': name,
+      'description': description,
+      'type': type,
+      'location': {
+        'latitude': position.latitude,
+        'longitude': position.longitude,
+      },
+      'timestamp': FieldValue.serverTimestamp(),
+      'markerOwner': _user.email,
+      'currentStatus': 'active',
+      'statusHistory': [
+        {
+          'status': 'active',
+          'userId': _user.uid,
+          'userEmail': _user.email,
+          'username': username,
+          'timestamp': FieldValue.serverTimestamp(),
+          'notes': 'Marker created',
+        }
+      ],
+    };
+
+    await _firestore
+        .collection('Users')
+        .doc(_user.email)
+        .collection('Markers')
+        .add(markerData);
   }
+
 }
