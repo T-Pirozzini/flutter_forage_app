@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/models/marker.dart';
+import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:intl/intl.dart';
 
 class StatusHistoryDialog extends StatelessWidget {
@@ -27,13 +28,10 @@ class StatusHistoryDialog extends StatelessWidget {
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Changed to ${update.status.toUpperCase()}'),
-                  if (update.notes != null) Text(update.notes!),
-                  Text(
+                  StyledText('Changed to ${update.status.toUpperCase()}'),
+                  if (update.notes != null) StyledText(update.notes!),
+                  StyledText(
                     DateFormat.yMMMd().add_jm().format(update.timestamp),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
-                        ),
                   ),
                 ],
               ),

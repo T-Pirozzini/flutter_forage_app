@@ -395,6 +395,8 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                 border: OutlineInputBorder(),
               ),
               maxLines: 3,
+              style:
+                  GoogleFonts.poppins(fontSize: 14, color: AppColors.textColor),
             ),
           ],
         ),
@@ -605,13 +607,16 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                           ),
                           items: const [
                             DropdownMenuItem(
-                                value: 'active', child: Text('Active')),
+                                value: 'active',
+                                child: StyledTextLarge('Active')),
                             DropdownMenuItem(
-                                value: 'ripe', child: Text('Ripe')),
+                                value: 'ripe', child: StyledTextLarge('Ripe')),
                             DropdownMenuItem(
-                                value: 'stale', child: Text('Stale')),
+                                value: 'stale',
+                                child: StyledTextLarge('Stale')),
                             DropdownMenuItem(
-                                value: 'not_found', child: Text('Not Found')),
+                                value: 'not_found',
+                                child: StyledTextLarge('Not Found')),
                           ],
                           onChanged: (value) {
                             if (value != null) {
@@ -670,14 +675,10 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                               children: [
                                 Row(
                                   children: [
-                                    Text(
+                                    StyledTextLarge(
                                       comment['username'] ??
                                           comment['userEmail'] ??
                                           'Anonymous',
-                                      style: GoogleFonts.poppins(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
                                     ),
                                     const Spacer(),
                                     Text(
@@ -693,7 +694,8 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                                   ],
                                 ),
                                 const SizedBox(height: 4),
-                                Text(comment['text']?.toString() ?? ''),
+                                StyledTextLarge(
+                                    comment['text']?.toString() ?? ''),
                               ],
                             ),
                           ),
@@ -706,6 +708,10 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                       Expanded(
                         child: TextField(
                           controller: _commentController,
+                          style: GoogleFonts.kanit(
+                            fontSize: 14,
+                            color: AppColors.textColor,
+                          ),
                           decoration: InputDecoration(
                             hintText: 'Add a comment...',
                             border: OutlineInputBorder(
@@ -909,15 +915,8 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
             ],
           )
         else
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: StyledHeadingSmall(
-              _descriptionController.text,
-            ),
+          StyledText(
+            _descriptionController.text,
           ),
       ],
     );
@@ -925,7 +924,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
 
   Widget _buildDetailsSection(bool isDarkMode) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: isDarkMode ? Colors.grey[800] : Colors.grey[100],
         borderRadius: BorderRadius.circular(12),
