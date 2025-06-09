@@ -59,6 +59,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
   bool _isOwner = false;
   int _currentImageIndex = 0;
   String _ownerUsername = '';
+  String _ownerProfilePic = '';
   final _commentController = TextEditingController();
   String _selectedStatus = 'active';
   List<Map<String, dynamic>> _statusHistory = [];
@@ -94,12 +95,14 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
       if (userDoc.exists) {
         setState(() {
           _ownerUsername = userDoc['username'] ?? widget.markerOwner;
+          _ownerProfilePic = userDoc['profilePic'] ?? '';
         });
       }
     } catch (e) {
       debugPrint('Error fetching username: $e');
       setState(() {
         _ownerUsername = widget.markerOwner;
+        _ownerProfilePic = '';
       });
     }
   }
@@ -574,13 +577,6 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                       ),
                     ],
                   ),
-                  const Spacer(),
-                  if (_isOwner)
-                    IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: _deleteLocation,
-                      color: Colors.red,
-                    ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -596,33 +592,43 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                   Row(
                     children: [
                       Expanded(
-                        child: DropdownButtonFormField<String>(
-                          value: _selectedStatus,
+                        child: InputDecorator(
                           decoration: InputDecoration(
+                            labelText: 'Current Status',
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
                             contentPadding:
                                 const EdgeInsets.symmetric(horizontal: 16),
                           ),
-                          items: const [
-                            DropdownMenuItem(
-                                value: 'active',
-                                child: StyledTextLarge('Active')),
-                            DropdownMenuItem(
-                                value: 'ripe', child: StyledTextLarge('Ripe')),
-                            DropdownMenuItem(
-                                value: 'stale',
-                                child: StyledTextLarge('Stale')),
-                            DropdownMenuItem(
-                                value: 'not_found',
-                                child: StyledTextLarge('Not Found')),
-                          ],
-                          onChanged: (value) {
-                            if (value != null) {
-                              _showStatusUpdateDialog(value);
-                            }
-                          },
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: _selectedStatus,
+                              isExpanded: true,
+                              items: const [
+                                DropdownMenuItem(
+                                    value: 'active',
+                                    child: StyledTextLarge('Active Location')),
+                                DropdownMenuItem(
+                                    value: 'abundant',
+                                    child: StyledTextLarge('Abundant')),
+                                DropdownMenuItem(
+                                    value: 'sparse',
+                                    child: StyledTextLarge('Sparse')),
+                                DropdownMenuItem(
+                                    value: 'out_of_season',
+                                    child: StyledTextLarge('Out of Season')),
+                                DropdownMenuItem(
+                                    value: 'no_longer_available',
+                                    child: StyledTextLarge('Not Available')),
+                              ],
+                              onChanged: (value) {
+                                if (value != null) {
+                                  _showStatusUpdateDialog(value);
+                                }
+                              },
+                            ),
+                          ),
                         ),
                       ),
                       IconButton(
@@ -654,53 +660,87 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                       ),
                     )
                   else
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _comments.length,
-                      itemBuilder: (context, index) {
-                        final comment = _comments[index];
-                        final timestamp = comment['timestamp'];
+                    Container(
+                      constraints: const BoxConstraints(
+                        maxHeight: 200, // Shows about 3 comments
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Scrollbar(
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: _comments.length,
+                          itemBuilder: (context, index) {
+                            final comment = _comments[index];
+                            final timestamp = comment['timestamp'];
 
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8.0),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.grey[100],
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            padding: const EdgeInsets.all(8),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
+                            return Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).hoverColor,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    StyledTextLarge(
-                                      comment['username'] ??
-                                          comment['userEmail'] ??
-                                          'Anonymous',
+                                    Row(
+                                      children: [
+                                        CircleAvatar(
+                                          radius: 20, // Adjust size as needed
+                                          backgroundColor: Colors.deepOrange
+                                              .withOpacity(0.2),
+                                          foregroundImage: _ownerProfilePic !=
+                                                  ""
+                                              ? AssetImage(
+                                                  'lib/assets/images/${_ownerProfilePic}')
+                                              : null,
+                                          child: _ownerProfilePic == ""
+                                              ? const Icon(Icons.person,
+                                                  size: 20,
+                                                  color: Colors.deepOrange)
+                                              : null,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            comment['username'] ?? 'Anonymous',
+                                            style: GoogleFonts.kanit(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.primaryAccent,
+                                            ),
+                                          ),
+                                        ),
+                                        Text(
+                                          timestamp is Timestamp
+                                              ? DateFormat('MMM d')
+                                                  .format(timestamp.toDate())
+                                              : '',
+                                          style: GoogleFonts.kanit(
+                                            fontSize: 12,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    const Spacer(),
+                                    const SizedBox(height: 8),
                                     Text(
-                                      timestamp is Timestamp
-                                          ? DateFormat('MMM d, h:mm a')
-                                              .format(timestamp.toDate())
-                                          : 'Just now',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 12,
-                                        color: Colors.grey,
-                                      ),
+                                      comment['text']?.toString() ?? '',
+                                      style: GoogleFonts.kanit(
+                                          fontSize: 12,
+                                          color: AppColors.primaryAccent),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 4),
-                                StyledTextLarge(
-                                    comment['text']?.toString() ?? ''),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                     ),
                   const SizedBox(height: 8),
                   Row(
@@ -751,8 +791,14 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
 
               // close button
               Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  if (_isOwner)
+                    IconButton(
+                      icon: const Icon(Icons.delete),
+                      onPressed: _deleteLocation,
+                      color: Colors.red,
+                    ),
                   ElevatedButton(
                     child: const Icon(Icons.close),
                     onPressed: () => Navigator.of(context).pop(),
@@ -1037,12 +1083,14 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
 
   IconData _getStatusIcon(String status) {
     switch (status.toLowerCase()) {
-      case 'ripe':
-        return Icons.check_circle;
-      case 'stale':
-        return Icons.warning;
-      case 'not_found':
-        return Icons.error_outline;
+      case 'abundant':
+        return Icons.eco; // or Icons.local_florist
+      case 'sparse':
+        return Icons.water_drop; // represents limited availability
+      case 'out_of_season':
+        return Icons.hourglass_empty;
+      case 'no_longer_available':
+        return Icons.not_interested;
       case 'active':
       default:
         return Icons.location_on;
@@ -1051,11 +1099,13 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
-      case 'ripe':
+      case 'abundant':
         return Colors.green;
-      case 'stale':
+      case 'sparse':
         return Colors.orange;
-      case 'not_found':
+      case 'out_of_season':
+        return Colors.blueGrey;
+      case 'no_longer_available':
         return Colors.red;
       case 'active':
       default:

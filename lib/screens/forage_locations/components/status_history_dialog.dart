@@ -24,7 +24,7 @@ class StatusHistoryDialog extends StatelessWidget {
                 _getStatusIcon(update.status),
                 color: _getStatusColor(update.status),
               ),
-              title: Text('${update.username ?? update.userEmail}'),
+              title: StyledText('${update.username ?? update.userEmail}'),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -49,30 +49,34 @@ class StatusHistoryDialog extends StatelessWidget {
   }
 
   IconData _getStatusIcon(String status) {
-    switch (status.toLowerCase()) {
-      case 'ripe':
-        return Icons.check_circle;
-      case 'stale':
-        return Icons.warning;
-      case 'not_found':
-        return Icons.error_outline;
-      case 'active':
-      default:
-        return Icons.location_on;
-    }
+  switch (status.toLowerCase()) {
+    case 'abundant':
+      return Icons.eco; // or Icons.local_florist
+    case 'sparse':
+      return Icons.water_drop; // represents limited availability
+    case 'out_of_season':
+      return Icons.hourglass_empty;
+    case 'no_longer_available':
+      return Icons.not_interested;
+    case 'active':
+    default:
+      return Icons.location_on;
   }
+}
 
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'ripe':
-        return Colors.green;
-      case 'stale':
-        return Colors.orange;
-      case 'not_found':
-        return Colors.red;
-      case 'active':
-      default:
-        return Colors.blue;
-    }
+Color _getStatusColor(String status) {
+  switch (status.toLowerCase()) {
+    case 'abundant':
+      return Colors.green;
+    case 'sparse':
+      return Colors.orange;
+    case 'out_of_season':
+      return Colors.blueGrey;
+    case 'no_longer_available':
+      return Colors.red;
+    case 'active':
+    default:
+      return Colors.blue;
   }
+}
 }

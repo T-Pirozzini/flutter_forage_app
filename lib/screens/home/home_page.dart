@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/components/ad_mob_service.dart';
 import 'package:flutter_forager_app/models/user.dart';
+import 'package:flutter_forager_app/screens/feedback/feedback.dart';
 import 'package:flutter_forager_app/screens/profile/profile_page.dart';
 import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
 import 'package:flutter_forager_app/screens/recipes/recipes_page.dart';
@@ -15,16 +16,10 @@ import '../forage/map_page.dart';
 import 'package:convex_bottom_bar/convex_bottom_bar.dart';
 
 class HomePage extends StatefulWidget {
-  // final double lat;
-  // final double lng;
   final int currentIndex;
-  // final bool followUser;
 
   const HomePage({
     super.key,
-    // required this.lat,
-    // required this.lng,
-    // required this.followUser,
     required this.currentIndex,
   });
 
@@ -35,10 +30,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage>
     with SingleTickerProviderStateMixin {
   final currentUser = FirebaseAuth.instance.currentUser!;
-  // late bool followUser;
   int currentIndex = 0;
-  // double lat = 0;
-  // double lng = 0;
   BannerAd? _banner;
   bool _isBannerAdLoaded = false;
 
@@ -48,9 +40,6 @@ class _HomePageState extends State<HomePage>
   @override
   void initState() {
     super.initState();
-    // followUser = widget.followUser;
-    // lat = widget.lat;
-    // lng = widget.lng;
     currentIndex = widget.currentIndex;
     _createBannerAd();
     AdMobService.loadInterstitialAd();
@@ -90,6 +79,7 @@ class _HomePageState extends State<HomePage>
       _buildProfileStream(),
       RecipesPage(),
       const CommunityPage(),
+      const FeedbackPage(),
     ];
 
     return Scaffold(
@@ -131,11 +121,7 @@ class _HomePageState extends State<HomePage>
                   onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => MapPage(
-                        // lat: lat,
-                        // lng: lng,
-                        // followUser: followUser,
-                      ),
+                      builder: (context) => MapPage(),
                     ),
                   ),
                 );
@@ -172,6 +158,7 @@ class _HomePageState extends State<HomePage>
           ),
           TabItem(icon: Icons.menu_book, title: 'Recipes'),
           TabItem(icon: Icons.people, title: 'Community'),
+          TabItem(icon: Icons.support, title: 'Feedback'),
         ],
         initialActiveIndex: currentIndex,
         color: AppColors.textColor,
