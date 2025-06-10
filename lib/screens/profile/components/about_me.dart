@@ -61,7 +61,7 @@ class AboutMe extends StatelessWidget {
                     context: context,
                     builder: (context) => AlertDialog(
                       title: Center(
-                        child: const StyledTitle('More About Me'),
+                        child: const StyledTitleMedium('More About Me'),
                       ),
                       content: SingleChildScrollView(
                         child: Text(bio),
