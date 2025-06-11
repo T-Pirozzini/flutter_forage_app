@@ -591,7 +591,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const StyledTitleMedium('Update Status'),
+                  StyledTitleSmall('Update Status', color: AppColors.textColor),
                   Row(
                     children: [
                       Expanded(
@@ -607,6 +607,10 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
                               value: _selectedStatus,
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                color: AppColors.textColor,
+                              ),
                               isExpanded: true,
                               items: const [
                                 DropdownMenuItem(
@@ -635,7 +639,10 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.history),
+                        icon: const Icon(
+                          Icons.history,
+                          color: Colors.deepOrange,
+                        ),
                         onPressed: _showStatusHistory,
                         tooltip: 'View status history',
                       ),
@@ -649,7 +656,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 16),
-                  const StyledTitleMedium('Comments'),
+                  StyledTitleMedium('Comments', color: AppColors.textColor),
                   const SizedBox(height: 8),
                   if (_comments.isEmpty)
                     Padding(
@@ -915,12 +922,11 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            StyledTitleMedium(
-              'Description',
-            ),
+            StyledTitleMedium('Description', color: AppColors.textColor),
             if (_isOwner && !_isEditing)
               IconButton(
-                icon: const Icon(Icons.edit, size: 20),
+                icon:
+                    const Icon(Icons.edit, size: 20, color: Colors.deepOrange),
                 onPressed: () => setState(() => _isEditing = true),
               ),
           ],
@@ -964,9 +970,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
             ],
           )
         else
-          StyledText(
-            _descriptionController.text,
-          ),
+          StyledText(_descriptionController.text, color: AppColors.textColor),
       ],
     );
   }

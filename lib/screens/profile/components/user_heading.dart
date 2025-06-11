@@ -47,9 +47,10 @@ class UserHeading extends StatelessWidget {
               color: AppColors.primaryAccent.withValues(alpha: .8),
               child: Column(
                 children: [
-                  StyledTextSmall("Member Since"),
+                  StyledTextSmall("Member Since", color: AppColors.textColor),
                   StyledTextSmall(
-                      DateFormat('MMM yyyy').format(createdAt.toDate())),
+                      DateFormat('MMM yyyy').format(createdAt.toDate()),
+                      color: AppColors.textColor),
                 ],
               )),
         ),
@@ -60,9 +61,10 @@ class UserHeading extends StatelessWidget {
               color: AppColors.primaryAccent.withValues(alpha: .8),
               child: Column(
                 children: [
-                  StyledTextSmall("Last Active"),
+                  StyledTextSmall("Last Active", color: AppColors.textColor),
                   StyledTextSmall(
-                      DateFormat('MMM yyyy').format(lastActive.toDate())),
+                      DateFormat('MMM yyyy').format(lastActive.toDate()),
+                      color: AppColors.textColor),
                 ],
               )),
         ),
