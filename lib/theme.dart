@@ -41,47 +41,44 @@ ThemeData primaryTheme = ThemeData(
     // text theme
     textTheme: TextTheme().copyWith(
       bodySmall: TextStyle(
-        color: AppColors.titleColor,
-        fontSize: 12,
+        fontSize: 10,
         letterSpacing: 1,
       ),
       bodyMedium: TextStyle(
-        color: AppColors.textColor,
-        fontSize: 16,
+        fontSize: 12,
         letterSpacing: 1,
       ),
       bodyLarge: TextStyle(
-        color: AppColors.primaryAccent,
-        fontSize: 18,
-        letterSpacing: 1,
-      ),
-      headlineMedium: TextStyle(
-        color: AppColors.titleColor,
-        fontSize: 16,
-        fontWeight: FontWeight.bold,
+        fontSize: 14,
         letterSpacing: 1,
       ),
       headlineSmall: TextStyle(
-        color: AppColors.primaryAccent,
         fontSize: 14,
         fontWeight: FontWeight.w400,
-        letterSpacing: 1,
+        letterSpacing: 1.2,
+      ),
+      headlineMedium: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w400,
+        letterSpacing: 1.2,
       ),
       headlineLarge: TextStyle(
-        color: AppColors.primaryAccent,
-        fontSize: 32,
-        fontWeight: FontWeight.w400,
-        letterSpacing: 1,
-      ),
-      titleMedium: TextStyle(
-        color: AppColors.titleColor,
         fontSize: 18,
-        fontWeight: FontWeight.normal,
-        letterSpacing: 2,
+        fontWeight: FontWeight.w400,
+        letterSpacing: 1.2,
       ),
       titleSmall: TextStyle(
-        color: AppColors.textColor,
         fontSize: 16,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 2,
+      ),
+      titleMedium: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 2,
+      ),
+      titleLarge: TextStyle(
+        fontSize: 20,
         fontWeight: FontWeight.bold,
         letterSpacing: 2,
       ),

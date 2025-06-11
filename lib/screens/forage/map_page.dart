@@ -307,14 +307,14 @@ class _MapPageState extends ConsumerState<MapPage> {
               Row(
                 children: [
                   Icon(Icons.person, color: Colors.deepOrangeAccent),
-                  StyledTitle(
+                  StyledTitleMedium(
                     'Profile',
                   ),
                   Spacer(),
                   Icon(Icons.arrow_circle_right_outlined, color: Colors.white),
                   Spacer(),
                   Icon(Icons.location_on, color: Colors.deepOrangeAccent),
-                  StyledTitle('Locations')
+                  StyledTitleMedium('Locations')
                 ],
               ),
             ]),

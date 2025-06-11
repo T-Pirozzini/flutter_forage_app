@@ -13,7 +13,7 @@ class ScreenHeading extends StatelessWidget {
       height: 50,
       color: AppColors.primaryAccent,
       alignment: Alignment.center,
-      child: StyledHeading(title),
+      child: StyledHeading(title.toUpperCase()),
     );
   }
 }

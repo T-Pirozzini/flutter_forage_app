@@ -61,10 +61,11 @@ class AboutMe extends StatelessWidget {
                     context: context,
                     builder: (context) => AlertDialog(
                       title: Center(
-                        child: const StyledTitle('More About Me'),
+                        child: StyledTitleMedium('More About Me',
+                            color: AppColors.textColor),
                       ),
                       content: SingleChildScrollView(
-                        child: Text(bio),
+                        child: StyledTextLarge(bio, color: AppColors.textColor),
                       ),
                       actions: [
                         TextButton(

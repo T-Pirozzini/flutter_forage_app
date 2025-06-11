@@ -64,7 +64,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const StyledTitle(
+              const StyledTitleMedium(
                 "Edit Profile",
               ),
               const SizedBox(height: 20),

@@ -84,7 +84,6 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
     super.dispose();
   }
 
-  // Add this new method
   Future<void> _fetchOwnerUsername() async {
     try {
       final userDoc = await FirebaseFirestore.instance
@@ -542,40 +541,44 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
             children: [
               // Header with title and type
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Image.asset(
                     'lib/assets/images/${widget.type.toLowerCase()}_marker.png',
                     width: 36,
                   ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  Row(
                     children: [
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: StyledHeading(
-                          widget.name,
+                      Icon(
+                        _getStatusIcon(_selectedStatus),
+                        size: 20,
+                        color: _getStatusColor(_selectedStatus),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _selectedStatus.replaceAll('_', ' ').toUpperCase(),
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: _getStatusColor(_selectedStatus),
                         ),
                       ),
-                      Row(
-                        children: [
-                          Icon(
-                            _getStatusIcon(_selectedStatus),
-                            size: 20,
-                            color: _getStatusColor(_selectedStatus),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            _selectedStatus.replaceAll('_', ' ').toUpperCase(),
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: _getStatusColor(_selectedStatus),
-                            ),
-                          ),
-                        ],
-                      ),
                     ],
+                  ),
+                  ElevatedButton(
+                    child: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: StyledHeading(
+                      widget.name,
+                    ),
                   ),
                 ],
               ),
@@ -588,7 +591,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const StyledTitle('Current Status'),
+                  StyledTitleSmall('Update Status', color: AppColors.textColor),
                   Row(
                     children: [
                       Expanded(
@@ -604,6 +607,10 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
                               value: _selectedStatus,
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                color: AppColors.textColor,
+                              ),
                               isExpanded: true,
                               items: const [
                                 DropdownMenuItem(
@@ -632,7 +639,10 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.history),
+                        icon: const Icon(
+                          Icons.history,
+                          color: Colors.deepOrange,
+                        ),
                         onPressed: _showStatusHistory,
                         tooltip: 'View status history',
                       ),
@@ -646,7 +656,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 16),
-                  const StyledTitle('Comments'),
+                  StyledTitleMedium('Comments', color: AppColors.textColor),
                   const SizedBox(height: 8),
                   if (_comments.isEmpty)
                     Padding(
@@ -912,12 +922,11 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            StyledTitle(
-              'Description',
-            ),
+            StyledTitleMedium('Description', color: AppColors.textColor),
             if (_isOwner && !_isEditing)
               IconButton(
-                icon: const Icon(Icons.edit, size: 20),
+                icon:
+                    const Icon(Icons.edit, size: 20, color: Colors.deepOrange),
                 onPressed: () => setState(() => _isEditing = true),
               ),
           ],
@@ -961,9 +970,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
             ],
           )
         else
-          StyledText(
-            _descriptionController.text,
-          ),
+          StyledText(_descriptionController.text, color: AppColors.textColor),
       ],
     );
   }
