@@ -103,7 +103,7 @@ class _FeedbackPageState extends State<FeedbackPage>
       child: Scaffold(
         body: Column(
           children: [
-            const ScreenHeading(title: 'Feedback & Community'),
+            const ScreenHeading(title: 'Feedback'),
             _IntroSection(
                 onSupportPressed: () =>
                     _showSnackBar('Buy Me a Coffee link coming soon!')),
@@ -200,11 +200,11 @@ class _IntroSectionState extends State<_IntroSection> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Center(
-            child: StyledTextMedium('Welcome Back to Forager!',
+            child: StyledHeadingMedium('Welcome Back to Forager!',
                 color: AppColors.textColor),
           ),
           const SizedBox(height: 8),
-          StyledTextSmall(
+          StyledTextMedium(
               "I'm sorry! Our foraging community is growing rapidly, but we haven't pulled our weight.",
               color: AppColors.textColor),
           const SizedBox(height: 8),
