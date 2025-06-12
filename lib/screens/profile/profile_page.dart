@@ -70,7 +70,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
   @override
   void initState() {
-    super.initState();    
+    super.initState();
     loadUserProfileImages();
   }
 
@@ -192,98 +192,112 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                 ),
                               ),
                               // Stats Grid
-                              GridView.count(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                crossAxisCount: 4,
-                                childAspectRatio: 1,
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 4),
-                                mainAxisSpacing: 4,
-                                crossAxisSpacing: 4,
-                                children: [
-                                  _buildStatCard(
-                                    context,
-                                    icon: Icons.location_on,
-                                    title: 'Locations',
-                                    value:
-                                        userMarkers.value?.length.toString() ??
+                              FutureBuilder<QuerySnapshot>(
+                                future: FirebaseFirestore.instance
+                                    .collection('Recipes')
+                                    .where('userEmail',
+                                        isEqualTo: currentUser.email)
+                                    .get(),
+                                builder: (context, recipeSnapshot) {
+                                  String recipeCount = '0';
+                                  if (recipeSnapshot.connectionState ==
+                                      ConnectionState.done) {
+                                    if (recipeSnapshot.hasData) {
+                                      recipeCount = recipeSnapshot
+                                          .data!.docs.length
+                                          .toString();
+                                    } else if (recipeSnapshot.hasError) {
+                                      recipeCount = 'Err';
+                                    }
+                                  }
+                                  return GridView.count(
+                                    shrinkWrap: true,
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    crossAxisCount: 4,
+                                    childAspectRatio: 1,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 4),
+                                    mainAxisSpacing: 4,
+                                    crossAxisSpacing: 4,
+                                    children: [
+                                      _buildStatCard(
+                                        context,
+                                        icon: Icons.location_on,
+                                        title: 'Locations',
+                                        value: userMarkers.value?.length
+                                                .toString() ??
                                             '0',
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => ForageLocations(
-                                            userId: currentUser.email!,
-                                            userName: currentUser.email!
-                                                .split("@")[0],
-                                            userLocations: true,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    enabled: true,
-                                  ),
-
-                                  // Bookmarked Locations
-                                  _buildStatCard(
-                                    context,
-                                    icon: Icons.bookmark,
-                                    title: 'Bookmarked',
-                                    value: communityMarkers.value?.length
-                                            .toString() ??
-                                        '0',
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => ForageLocations(
-                                            userId: currentUser.email!,
-                                            userName: "Bookmarked Locations",
-                                            userLocations: false,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    enabled: true,
-                                  ),
-                                  _buildStatCard(
-                                    context,
-                                    icon: Icons.menu_book,
-                                    title: 'Recipes',
-                                    value: widget.user.savedRecipes.length
-                                        .toString(),
-                                    onTap: () {
-                                      if (_isCurrentUser || _isFriend) {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
                                               builder: (context) =>
-                                                  const RecipesPage()),
-                                        );
-                                      }
-                                    },
-                                    enabled: _isCurrentUser || _isFriend,
-                                  ),
-                                  _buildStatCard(
-                                    context,
-                                    icon: Icons.people,
-                                    title: 'Friends',
-                                    value:
-                                        widget.user.friends.length.toString(),
-                                    onTap: () {
-                                      Navigator.push(
+                                                  ForageLocations(
+                                                userId: currentUser.email!,
+                                                userName: currentUser.email!
+                                                    .split("@")[0],
+                                                userLocations: true,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        enabled: true,
+                                      ),
+                                      _buildStatCard(
                                         context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              const FriendsController(
-                                                  currentTab: 0),
-                                        ),
-                                      );
-                                    },
-                                    enabled: true,
-                                  ),
-                                ],
+                                        icon: Icons.bookmark,
+                                        title: 'Bookmarked',
+                                        value: communityMarkers.value?.length
+                                                .toString() ??
+                                            '0',
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  ForageLocations(
+                                                userId: currentUser.email!,
+                                                userName:
+                                                    "Bookmarked Locations",
+                                                userLocations: false,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        enabled: true,
+                                      ),
+                                      _buildStatCard(
+                                        context,
+                                        icon: Icons.menu_book,
+                                        title: 'Recipes',
+                                        value: recipeCount,
+                                        onTap: () {},
+                                        enabled: _isCurrentUser ||
+                                            _isFriend ||
+                                            recipeCount != '0',
+                                      ),
+                                      _buildStatCard(
+                                        context,
+                                        icon: Icons.people,
+                                        title: 'Friends',
+                                        value: widget.user.friends.length
+                                            .toString(),
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  const FriendsController(
+                                                      currentTab: 0),
+                                            ),
+                                          );
+                                        },
+                                        enabled: true,
+                                      ),
+                                    ],
+                                  );
+                                },
                               ),
                               const SizedBox(height: 16),
 

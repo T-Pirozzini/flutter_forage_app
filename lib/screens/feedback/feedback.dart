@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/components/screen_heading.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_forager_app/theme.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -20,16 +19,19 @@ class _FeedbackPageState extends State<FeedbackPage>
   final _currentUser = FirebaseAuth.instance.currentUser!;
   final _feedbackController = TextEditingController();
   final _messageController = TextEditingController();
+  final _progressController = TextEditingController();
   final _timeFormat = DateFormat('MMM d, yyyy h:mm a');
 
   String? _username;
   String? _userProfilePic;
   late TabController _tabController;
 
+  static const String _ownerEmail = 'travis@forager.com';
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _fetchUserData();
   }
 
@@ -38,6 +40,7 @@ class _FeedbackPageState extends State<FeedbackPage>
     _tabController.dispose();
     _feedbackController.dispose();
     _messageController.dispose();
+    _progressController.dispose();
     super.dispose();
   }
 
@@ -73,9 +76,11 @@ class _FeedbackPageState extends State<FeedbackPage>
         'profilePic': _userProfilePic ?? '',
         config.field: text,
         'timestamp': FieldValue.serverTimestamp(),
-        'likes': 0,
-        'likedBy': <String>[],
-        'comments': <Map<String, dynamic>>[],
+        if (config.collection == 'Feedback') ...{
+          'likes': 0,
+          'likedBy': <String>[],
+          'comments': <Map<String, dynamic>>[],
+        },
       });
 
       config.controller.clear();
@@ -113,12 +118,16 @@ class _FeedbackPageState extends State<FeedbackPage>
               tabController: _tabController,
               feedbackController: _feedbackController,
               messageController: _messageController,
+              progressController: _progressController,
               userProfilePic: _userProfilePic,
               timeFormat: _timeFormat,
               onFeedbackSubmit: () =>
                   _submitData(SubmissionConfig.feedback(_feedbackController)),
               onMessageSubmit: () =>
                   _submitData(SubmissionConfig.message(_messageController)),
+              onProgressSubmit: () =>
+                  _submitData(SubmissionConfig.progress(_progressController)),
+              isOwner: _currentUser.email == _ownerEmail,
             )),
           ],
         ),
@@ -159,6 +168,16 @@ class SubmissionConfig {
       controller: controller,
       successMessage: 'Message posted successfully!',
       errorMessage: 'Failed to post message',
+    );
+  }
+
+  factory SubmissionConfig.progress(TextEditingController controller) {
+    return SubmissionConfig(
+      collection: 'Progress',
+      field: 'item',
+      controller: controller,
+      successMessage: 'Progress item added successfully!',
+      errorMessage: 'Failed to add progress item',
     );
   }
 }
@@ -373,6 +392,7 @@ class _CustomTabBar extends StatelessWidget {
         tabs: const [
           Tab(text: 'Feedback'),
           Tab(text: 'Community'),
+          Tab(text: 'In Progress')
         ],
       ),
     );
@@ -383,19 +403,25 @@ class _TabContent extends StatelessWidget {
   final TabController tabController;
   final TextEditingController feedbackController;
   final TextEditingController messageController;
+  final TextEditingController progressController;
   final String? userProfilePic;
   final DateFormat timeFormat;
   final VoidCallback onFeedbackSubmit;
   final VoidCallback onMessageSubmit;
+  final VoidCallback onProgressSubmit;
+  final bool isOwner;
 
   const _TabContent({
     required this.tabController,
     required this.feedbackController,
     required this.messageController,
+    required this.progressController,
     required this.userProfilePic,
     required this.timeFormat,
     required this.onFeedbackSubmit,
     required this.onMessageSubmit,
+    required this.onProgressSubmit,
+    required this.isOwner,
   });
 
   @override
@@ -414,6 +440,13 @@ class _TabContent extends StatelessWidget {
           userProfilePic: userProfilePic,
           timeFormat: timeFormat,
           onSubmit: onMessageSubmit,
+        ),
+        _ProgressTab(
+          controller: progressController,
+          userProfilePic: userProfilePic,
+          timeFormat: timeFormat,
+          onSubmit: onProgressSubmit,
+          isOwner: isOwner,
         ),
       ],
     );
@@ -495,6 +528,50 @@ class _MessagesTab extends StatelessWidget {
             itemBuilder: (data) =>
                 MessageItem(data: data, timeFormat: timeFormat),
             emptyMessage: 'No messages yet. Start the conversation!',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProgressTab extends StatelessWidget {
+  final TextEditingController controller;
+  final String? userProfilePic;
+  final DateFormat timeFormat;
+  final VoidCallback onSubmit;
+  final bool isOwner;
+
+  const _ProgressTab({
+    required this.controller,
+    required this.userProfilePic,
+    required this.timeFormat,
+    required this.onSubmit,
+    required this.isOwner,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          if (isOwner)
+            _InputSection(
+              title: 'Add In Progress Item',
+              hint: 'What are you working on for the next update?',
+              controller: controller,
+              userProfilePic: userProfilePic,
+              onSubmit: onSubmit,
+              buttonText: 'Add Item',
+              maxLines: 2,
+            ),
+          const SizedBox(height: 16),
+          _StreamContent<ProgressItem>(
+            collection: 'Progress',
+            itemBuilder: (data) =>
+                ProgressItem(data: data, timeFormat: timeFormat),
+            emptyMessage: 'No items in progress yet.',
           ),
         ],
       ),
@@ -709,6 +786,26 @@ class MessageItem extends _BaseItem {
   @override
   Widget buildContent() {
     return StyledText(data['message'] ?? '', color: AppColors.textColor);
+  }
+}
+
+class ProgressItem extends _BaseItem {
+  const ProgressItem({required super.data, required super.timeFormat});
+
+  @override
+  Widget buildContent() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('• ', style: TextStyle(fontSize: 16, color: AppColors.textColor)),
+        Expanded(
+          child: StyledTextSmall(
+            data['item'] ?? '',
+            color: AppColors.textColor,
+          ),
+        ),
+      ],
+    );
   }
 }
 

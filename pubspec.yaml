@@ -72,6 +72,7 @@ dependencies:
   convex_bottom_bar: ^3.2.0
   carousel_slider: ^5.0.0
   auto_size_text_field: ^2.2.4
+  auto_size_text: ^3.0.0
 
 dev_dependencies:
   flutter_test:

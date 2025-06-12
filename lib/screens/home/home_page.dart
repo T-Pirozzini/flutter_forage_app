@@ -158,7 +158,7 @@ class _HomePageState extends State<HomePage>
           ),
           TabItem(icon: Icons.menu_book, title: 'Recipes'),
           TabItem(icon: Icons.people, title: 'Community'),
-          TabItem(icon: Icons.support, title: 'Feedback'),
+          TabItem(icon: Icons.thumbs_up_down, title: 'Feedback'),
         ],
         initialActiveIndex: currentIndex,
         color: AppColors.textColor,
