@@ -516,7 +516,7 @@ class _PostCardState extends State<PostCard> {
                   Text(
                     dateFormat.format(widget.post.postTimestamp),
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 10,
                       color: Colors.deepOrange.shade400,
                     ),
                   ),
