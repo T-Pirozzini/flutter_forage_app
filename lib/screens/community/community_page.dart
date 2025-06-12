@@ -277,7 +277,6 @@ class _CommunityPageState extends State<CommunityPage> {
                       isFavorite: post.likedBy.contains(currentUser.email),
                       isBookmarked:
                           post.bookmarkedBy.contains(currentUser.email),
-                      onToggleExpand: () => toggleExpand(post.id),
                       onToggleFavorite: () => toggleFavorite(
                           post.id, post.likedBy.contains(currentUser.email)),
                       onToggleBookmark: () => toggleBookmark(post.id,
@@ -302,20 +301,29 @@ class _CommunityPageState extends State<CommunityPage> {
   }
 }
 
-Future<String?> getAreaFromCoordinates(
-    double latitude, double longitude) async {
+Future<String?> getLocationWithFlag(double latitude, double longitude) async {
   try {
     List<Placemark> placemarks =
         await placemarkFromCoordinates(latitude, longitude);
 
     if (placemarks.isNotEmpty) {
       Placemark placemark = placemarks[0];
-      return placemark.locality ??
-          placemark.subLocality ??
-          placemark.administrativeArea;
+      String? countryCode = placemark.isoCountryCode;
+      String flagEmoji = countryCode != null
+          ? _countryCodeToFlagEmoji(countryCode)
+          : '🌐'; // Fallback to globe emoji
+
+      return '${placemark.locality ?? placemark.subLocality}, ${placemark.country} $flagEmoji';
     }
   } catch (e) {
     print('Error: $e');
   }
   return null;
+}
+
+// Helper: Convert ISO country code (e.g., "US") to flag emoji (🇺🇸)
+String _countryCodeToFlagEmoji(String countryCode) {
+  final int firstChar = countryCode.codeUnitAt(0) - 0x41 + 0x1F1E6;
+  final int secondChar = countryCode.codeUnitAt(1) - 0x41 + 0x1F1E6;
+  return String.fromCharCode(firstChar) + String.fromCharCode(secondChar);
 }
