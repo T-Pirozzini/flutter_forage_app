@@ -12,6 +12,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 
 class AddRecipePage extends StatefulWidget {
+  final Recipe? recipeToEdit;
+  const AddRecipePage({Key? key, this.recipeToEdit}) : super(key: key);
   @override
   _AddRecipePageState createState() => _AddRecipePageState();
 }
@@ -19,6 +21,7 @@ class AddRecipePage extends StatefulWidget {
 class _AddRecipePageState extends State<AddRecipePage> {
   final ImagePicker _picker = ImagePicker();
   final List<File> _images = [];
+  final List<String> _existingImageUrls = [];
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _ingredientController = TextEditingController();
@@ -30,10 +33,22 @@ class _AddRecipePageState extends State<AddRecipePage> {
   String? _username;
   bool _isForaged = false;
   bool _isSubmitting = false;
+  bool _isEditing = false;
 
   @override
   void initState() {
     super.initState();
+    _isEditing = widget.recipeToEdit != null;
+
+    if (_isEditing) {
+      // Populate form with existing recipe data
+      _nameController.text = widget.recipeToEdit!.name;
+      _descriptionController.text = widget.recipeToEdit!.description ?? '';
+      _ingredients.addAll(widget.recipeToEdit!.ingredients);
+      _steps.addAll(widget.recipeToEdit!.steps);
+      _existingImageUrls.addAll(widget.recipeToEdit!.imageUrls);
+    }
+
     _fetchUsername();
   }
 
@@ -132,50 +147,47 @@ class _AddRecipePageState extends State<AddRecipePage> {
       return;
     }
 
-    if (_ingredients.isEmpty) {
-      _showError('Please add at least one ingredient');
-      return;
-    }
-
-    if (_steps.isEmpty) {
-      _showError('Please add at least one step');
-      return;
-    }
-
     setState(() => _isSubmitting = true);
 
     try {
-      // Explicitly declare imageUrls as List<String>
-      final List<String> imageUrls = _images.isNotEmpty
+      // Upload new images (if any)
+      final List<String> newImageUrls = _images.isNotEmpty
           ? (await Future.wait(
                   _images.map((image) => _uploadImageToFirebaseStorage(image))))
-              .cast<String>() // Ensure List<String> type
+              .cast<String>()
           : <String>[];
 
-      final recipesCollection =
-          FirebaseFirestore.instance.collection('Recipes');
-      final docRef = recipesCollection.doc();
+      // Combine new and existing images
+      final List<String> allImageUrls = [
+        ..._existingImageUrls,
+        ...newImageUrls
+      ];
 
       final recipe = Recipe(
-        id: docRef.id,
+        id: _isEditing
+            ? widget.recipeToEdit!.id
+            : FirebaseFirestore.instance.collection('Recipes').doc().id,
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
         ingredients: _ingredients,
         steps: _steps,
-        imageUrls: imageUrls,
-        timestamp: DateTime.now(),
+        imageUrls: allImageUrls,
+        timestamp: _isEditing ? widget.recipeToEdit!.timestamp : DateTime.now(),
         userEmail: _userEmail,
         userName: _username!,
-        likes: [],
+        likes: _isEditing ? widget.recipeToEdit!.likes : [],
       );
 
-      await docRef.set(recipe.toMap());
+      await FirebaseFirestore.instance
+          .collection('Recipes')
+          .doc(recipe.id)
+          .set(recipe.toMap());
 
       _clearForm();
       _showSuccess();
       Navigator.pop(context);
     } catch (e) {
-      _showError('Failed to submit recipe: $e');
+      _showError('Failed to ${_isEditing ? 'update' : 'submit'} recipe: $e');
     } finally {
       setState(() => _isSubmitting = false);
     }
@@ -224,10 +236,11 @@ class _AddRecipePageState extends State<AddRecipePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: StyledTitleLarge(
-        'Share A Recipe',
-        color: AppColors.textColor,
-      )),
+        title: StyledTitleLarge(
+          _isEditing ? 'Edit Recipe' : 'Share A Recipe',
+          color: AppColors.textColor,
+        ),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(

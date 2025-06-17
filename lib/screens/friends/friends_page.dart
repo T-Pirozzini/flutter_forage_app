@@ -1,6 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:flutter/material.dart';
+import 'package:flutter_forager_app/models/user.dart';
+import 'package:flutter_forager_app/screens/profile/profile_page.dart';
+import 'package:flutter_forager_app/services/friend_service.dart';
+import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../forage_locations/forage_locations_page.dart';
 
@@ -12,353 +17,335 @@ class FriendsPage extends StatefulWidget {
 }
 
 class _FriendsPageState extends State<FriendsPage> {
-  final currentUser = FirebaseAuth.instance.currentUser!;
+  final TextEditingController _searchController = TextEditingController();
+  List<UserModel> _searchResults = [];
+  bool _isSearching = false;
 
-  // navigate to forage locations page
-  void goToForageLocationsPage(
-      String friendId, String friendName, VoidCallback onPop) {
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<int> _getLocationCount(String userId) async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('Users')
+        .doc(userId)
+        .collection('Markers')
+        .where('markerOwner', isEqualTo: userId)
+        .get();
+    return snapshot.size;
+  }
+
+  Future<String> _getProfileImageUrl(String imageName) async {
+    try {
+      final ref = firebase_storage.FirebaseStorage.instance
+          .ref('profile_images/$imageName');
+      return await ref.getDownloadURL();
+    } catch (e) {
+      return ''; // Return empty string if image not found
+    }
+  }
+
+  Future<void> _searchUsers(String query) async {
+    if (query.isEmpty) {
+      setState(() {
+        _searchResults = [];
+        _isSearching = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+    });
+
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser!;
+      final snapshot = await FirebaseFirestore.instance
+          .collection('Users')
+          .where('username', isGreaterThanOrEqualTo: query)
+          .where('username', isLessThanOrEqualTo: '$query\uf8ff')
+          .get();
+
+      final currentUserDoc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(currentUser.email)
+          .get();
+      final currentUserData = UserModel.fromFirestore(currentUserDoc);
+
+      final results = await Future.wait(snapshot.docs.map((doc) async {
+        final user = UserModel.fromFirestore(doc);
+        final isFriend = currentUserData.friends.contains(user.email);
+        return user.copyWith(isFriend: isFriend);
+      }));
+
+      setState(() {
+        _searchResults =
+            results.where((user) => user.email != currentUser.email).toList();
+        _isSearching = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isSearching = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error searching users: $e')),
+      );
+    }
+  }
+
+  void _navigateToFriendLocations(BuildContext context, UserModel friend) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => ForageLocations(
-          userId: friendId,
-          userName: friendName,
+          userId: friend.email,
+          userName: friend.username,
           userLocations: true,
         ),
       ),
-    ).then((_) => onPop()); // Invoke the callback when page is popped
-  }
-
-  // Deleting Friends
-  bool _isDeleting = false;
-  Future<bool> _deleteFriendConfirmation() async {
-    if (_isDeleting) {
-      return false; // Prevent showing the dialog if it's already open
-    }
-    _isDeleting = true;
-    bool shouldDelete = await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Delete Friend'),
-          content: const Text('Are you sure you want to delete this friend?'),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(false); // No, don't delete
-                _isDeleting =
-                    false; // Reset the flag when the dialog is dismissed
-              },
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(true); // Yes, delete
-                _isDeleting =
-                    false; // Reset the flag when the dialog is dismissed
-              },
-              child: const Text('Delete'),
-            ),
-          ],
-        );
-      },
     );
-    return shouldDelete;
   }
 
-  Future<DocumentSnapshot> fetchFriendData(String friendId) async {
-    return await FirebaseFirestore.instance
-        .collection('Users')
-        .doc(friendId)
-        .get();
-  }
-
-  Future<int> fetchLocationCount(String userId) async {
-    QuerySnapshot snapshot = await FirebaseFirestore.instance
-        .collection('Users')
-        .doc(userId) 
-        .collection('Markers') 
-        .where('markerOwner', isEqualTo: userId) 
-        .get();
-    return snapshot.size; 
-  }
-
-  String formatTimeAgo(Timestamp timestamp) {
-    // Convert Firestore Timestamp to DateTime
-    final friendTimestamp = timestamp.toDate();
-    final currentDate = DateTime.now();
-
-    // Calculate the difference
-    final difference = currentDate.difference(friendTimestamp);
-
-    // Format the difference
-    if (difference.inDays >= 1) {
-      return '${difference.inDays} days';
-    } else if (difference.inHours >= 1) {
-      return '${difference.inHours} hours';
-    } else if (difference.inMinutes >= 1) {
-      return '${difference.inMinutes} minutes';
-    } else {
-      return 'Just now';
-    }
+  void _navigateToProfilePage(BuildContext context, UserModel user) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProfilePage(user: user, showBackButton: true),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final currentUsername = FirebaseAuth.instance.currentUser!.email!;
+    final currentUser = FirebaseAuth.instance.currentUser!;
 
     return Scaffold(
-      backgroundColor: Colors.blueGrey,
       appBar: AppBar(
-        title: const Text(
-          'FRIENDS',
-          style: TextStyle(letterSpacing: 2.5),
-        ),
-        titleTextStyle:
-            GoogleFonts.philosopher(fontSize: 24, fontWeight: FontWeight.bold),
-        centerTitle: true,
-        backgroundColor: Colors.deepOrange.shade400,
+        title: StyledTitleLarge('Friends', color: Colors.white),
+        backgroundColor: Colors.deepOrange.shade300,
       ),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(10.0, 10.0, 10.0, 60.0),
-        child: Column(
-          children: [
-            Expanded(
-              child: FutureBuilder<DocumentSnapshot>(
-                future: FirebaseFirestore.instance
-                    .collection('Users')
-                    .doc(currentUser.email)
-                    .get(),
-                builder: (context, snapshot) {
-                  if (snapshot.hasData) {
-                    final userData =
-                        snapshot.data!.data() as Map<String, dynamic>;
-                    return Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+      body: Column(
+        children: [
+          // Search bar
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search by username...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          _searchUsers('');
+                        },
+                      )
+                    : null,
+              ),
+              onChanged: _searchUsers,
+            ),
+          ),
+
+          // Show search results or friends list
+          Expanded(
+            child: _isSearching
+                ? const Center(child: CircularProgressIndicator())
+                : _searchResults.isNotEmpty
+                    ? _buildSearchResults()
+                    : _buildFriendsList(currentUser.email!),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchResults() {
+    return ListView.builder(
+      itemCount: _searchResults.length,
+      itemBuilder: (context, index) {
+        final user = _searchResults[index];
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+          child: ListTile(
+            leading: FutureBuilder<String>(
+              future: _getProfileImageUrl(user.profilePic),
+              builder: (context, snapshot) {
+                if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                  return CircleAvatar(
+                    backgroundImage: NetworkImage(snapshot.data!),
+                  );
+                }
+                return CircleAvatar(
+                  child: Text(user.username[0].toUpperCase()),
+                );
+              },
+            ),
+            title: Text(user.username),
+            subtitle: Text(user.email),
+            trailing: user.isFriend
+                ? const Icon(Icons.check, color: Colors.green)
+                : IconButton(
+                    icon: const Icon(Icons.person_add),
+                    onPressed: () => _sendFriendRequest(user.email),
+                  ),
+            onTap: () {
+              if (user.isFriend) {
+                _navigateToProfilePage(context, user);
+              }
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFriendsList(String userId) {
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('Users')
+          .doc(userId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final user = UserModel.fromFirestore(snapshot.data!);
+
+        if (user.friends.isEmpty) {
+          return const Center(
+            child: Text(
+              'No friends yet. Search for users to add friends!',
+              textAlign: TextAlign.center,
+            ),
+          );
+        }
+
+        return ListView.builder(
+          itemCount: user.friends.length,
+          itemBuilder: (context, index) {
+            final friendId = user.friends[index];
+            return FutureBuilder<DocumentSnapshot>(
+              future: FirebaseFirestore.instance
+                  .collection('Users')
+                  .doc(friendId)
+                  .get(),
+              builder: (context, friendSnapshot) {
+                if (!friendSnapshot.hasData) {
+                  return const ListTile(title: Text('Loading...'));
+                }
+
+                final friend = UserModel.fromFirestore(friendSnapshot.data!);
+                return FutureBuilder<int>(
+                  future: _getLocationCount(friendId),
+                  builder: (context, countSnapshot) {
+                    final locationCount = countSnapshot.data ?? 0;
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 8.0, vertical: 4.0),
+                      child: ListTile(
+                        leading: FutureBuilder<String>(
+                          future: _getProfileImageUrl(friend.profilePic),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                              return CircleAvatar(
+                                backgroundImage: NetworkImage(snapshot.data!),
+                              );
+                            }
+                            return CircleAvatar(
+                              child: Text(friend.username[0].toUpperCase()),
+                            );
+                          },
+                        ),
+                        title: Text(friend.username),
+                        subtitle: Text('$locationCount locations'),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Text(
-                              'Your Friends ',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
+                            IconButton(
+                              icon:
+                                  const Icon(Icons.person, color: Colors.blue),
+                              onPressed: () =>
+                                  _navigateToProfilePage(context, friend),
                             ),
-                            Text(
-                              '(${currentUsername.split('@')[0]})',
-                              style: const TextStyle(fontSize: 24),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => _showRemoveFriendDialog(
+                                  context, userId, friendId),
                             ),
                           ],
                         ),
-                        Text('Tap on Friend to view their Forage Locations.'),
-                        Text('Swipe left to remove Friend.'),
-                        Expanded(
-                          child: ListView.builder(
-                            itemCount: userData['friends'].length,
-                            itemBuilder: (context, index) {
-                              final friendObject = userData['friends'][index];
-                              if (friendObject != null &&
-                                  friendObject is Map<String, dynamic>) {
-                                final friendId = friendObject['email'];
-                                return FutureBuilder<DocumentSnapshot>(
-                                  future: fetchFriendData(friendId),
-                                  builder: (context, snapshot) {
-                                    if (snapshot.connectionState ==
-                                        ConnectionState.waiting) {
-                                      return const Center(
-                                          child: CircularProgressIndicator());
-                                    }
-                                    if (snapshot.hasError) {
-                                      // Handle error appropriately
-                                      return const Text("Error loading data");
-                                    }
-                                    if (!snapshot.hasData) {
-                                      return const Text("No data available");
-                                    }
-                                    final friendData = snapshot.data!.data()
-                                        as Map<String, dynamic>;
-                                    final friendUsername =
-                                        friendData['username'];
-                                    final friendEmail = friendData['email'];
-                                    final friendBio = friendData['bio'];
-                                    final friendTimestamp = userData['friends']
-                                        .firstWhere((element) {
-                                      return element['email'] == friendEmail;
-                                    },
-                                            orElse: () => {
-                                                  'timestamp': Timestamp.now()
-                                                })['timestamp'];
-
-                                    String friendSince;
-                                    if (friendTimestamp is Timestamp) {
-                                      friendSince =
-                                          formatTimeAgo(friendTimestamp);
-                                    } else {
-                                      friendSince = 'Unknown';
-                                    }
-
-                                    return FutureBuilder<int>(
-                                      future: fetchLocationCount(friendEmail),
-                                      builder: (context, locationSnapshot) {
-                                        if (locationSnapshot.connectionState ==
-                                            ConnectionState.waiting) {
-                                          return const Center(
-                                              child:
-                                                  CircularProgressIndicator());
-                                        }
-                                        final locationCount =
-                                            locationSnapshot.data ?? 0;
-
-                                        return GestureDetector(
-                                          onTap: () => goToForageLocationsPage(
-                                              friendId,
-                                              friendUsername,
-                                              () => setState(() {})),
-                                          child: Dismissible(
-                                            key: UniqueKey(),
-                                            direction:
-                                                DismissDirection.endToStart,
-                                            background: Container(
-                                              color: Colors.red.shade400,
-                                              alignment: Alignment.centerRight,
-                                              padding: const EdgeInsets.only(
-                                                  right: 16),
-                                              child: const Icon(Icons.delete,
-                                                  color: Colors.white),
-                                            ),
-                                            confirmDismiss: (direction) async {
-                                              bool shouldDelete =
-                                                  await _deleteFriendConfirmation();
-                                              if (shouldDelete) {
-                                                // Delete the friend from the user's data
-                                                FirebaseFirestore.instance
-                                                    .collection('Users')
-                                                    .doc(currentUser.email)
-                                                    .update({
-                                                  'friends':
-                                                      FieldValue.arrayRemove(
-                                                          [friendObject]),
-                                                });
-                                                // Delete the user from the friend's data
-                                                FirebaseFirestore.instance
-                                                    .collection('Users')
-                                                    .doc(friendId)
-                                                    .update({
-                                                  'friends':
-                                                      FieldValue.arrayRemove(
-                                                          [friendObject]),
-                                                });
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(
-                                                  const SnackBar(
-                                                    content:
-                                                        Text('Friend deleted'),
-                                                  ),
-                                                );
-                                              }
-                                              return null;
-                                            },
-                                            child: Card(
-                                              child: ListTile(
-                                                title: Row(
-                                                  children: [
-                                                    const Icon(Icons
-                                                        .account_circle_outlined),
-                                                    SizedBox(width: 5),
-                                                    Text(
-                                                        '$friendUsername ($friendSince)'),
-                                                  ],
-                                                ),
-                                                subtitle: Column(
-                                                  children: [
-                                                    Row(
-                                                      children: [
-                                                        const Icon(
-                                                          Icons.group_outlined,
-                                                          color:
-                                                              Colors.deepOrange,
-                                                        ),
-                                                        Text(
-                                                          "Friends: ${friendData['friends'].length}",
-                                                          style:
-                                                              const TextStyle(
-                                                                  fontSize: 12),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    Row(
-                                                      children: [
-                                                        const Icon(
-                                                          Icons
-                                                              .info_outline_rounded,
-                                                          color:
-                                                              Colors.deepOrange,
-                                                        ),
-                                                        Text('$friendBio'),
-                                                      ],
-                                                    ),
-                                                  ],
-                                                ),
-                                                trailing: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.end,
-                                                  children: [
-                                                    Row(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        const Icon(
-                                                          Icons
-                                                              .pin_drop_outlined,
-                                                          color:
-                                                              Colors.deepOrange,
-                                                        ),
-                                                        Text(
-                                                          '$locationCount Locations',
-                                                          style:
-                                                              const TextStyle(
-                                                                  fontSize: 12),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    SizedBox(height: 2),
-                                                    const Icon(
-                                                        Icons.double_arrow),
-                                                  ],
-                                                ),
-                                                iconColor:
-                                                    Colors.deepOrange.shade400,
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    );
-                                  },
-                                );
-                              }
-                              return const SizedBox.shrink();
-                            },
-                          ),
-                        ),
-                      ],
-                    );
-                  } else {
-                    return Center(
-                      child: SizedBox(
-                        width: 50,
-                        height: 50,
-                        child: CircularProgressIndicator(),
+                        onTap: () =>
+                            _navigateToFriendLocations(context, friend),
                       ),
                     );
-                  }
-                },
-              ),
-            ),
-          ],
-        ),
+                  },
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _sendFriendRequest(String recipientEmail) async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser!;
+      await FriendsService()
+          .sendFriendRequest(currentUser.email!, recipientEmail);
+
+      setState(() {
+        _searchResults = _searchResults.map((user) {
+          if (user.email == recipientEmail) {
+            return user.copyWith(isFriend: true);
+          }
+          return user;
+        }).toList();
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Friend request sent!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to send request: $e')),
+      );
+    }
+  }
+
+  Future<void> _showRemoveFriendDialog(
+      BuildContext context, String userId, String friendId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove Friend'),
+        content: const Text('Are you sure you want to remove this friend?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Remove', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
+
+    if (confirmed == true) {
+      await FriendsService().removeFriend(userId, friendId);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Friend removed successfully')),
+      );
+    }
   }
 }

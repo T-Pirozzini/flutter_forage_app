@@ -1,6 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:flutter/material.dart';
+import 'package:flutter_forager_app/models/user.dart';
+import 'package:flutter_forager_app/screens/profile/profile_page.dart';
+import 'package:flutter_forager_app/services/friend_service.dart';
+import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class FriendRequestPage extends StatefulWidget {
@@ -11,16 +16,9 @@ class FriendRequestPage extends StatefulWidget {
 }
 
 class _FriendRequestPageState extends State<FriendRequestPage> {
-  // current user
-  final currentUser = FirebaseAuth.instance.currentUser!;
-  List<Map<String, dynamic>> _searchResults = [];
-  late final TextEditingController _searchController;
-
-  @override
-  void initState() {
-    _searchController = TextEditingController();
-    super.initState();
-  }
+  final TextEditingController _searchController = TextEditingController();
+  List<UserModel> _searchResults = [];
+  bool _isSearching = false;
 
   @override
   void dispose() {
@@ -28,336 +26,433 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
     super.dispose();
   }
 
-  Future<List<Map<String, dynamic>>> fetchUsers() async {
-    final QuerySnapshot querySnapshot =
-        await FirebaseFirestore.instance.collection('Users').get();
-
-    return querySnapshot.docs
-        .map((doc) => doc.data() as Map<String, dynamic>)
-        .toList();
+  Future<String> _getProfileImageUrl(String imageName) async {
+    try {
+      // Use default profile image if imageName is empty
+      final imagePath = imageName.isEmpty ? 'profileImage1.jpg' : imageName;
+      final ref = firebase_storage.FirebaseStorage.instance
+          .ref('profile_images/$imagePath');
+      return await ref.getDownloadURL();
+    } catch (e) {
+      // Fallback to default profile image URL if there's an error
+      final ref = firebase_storage.FirebaseStorage.instance
+          .ref('profile_images/profileImage1.jpg');
+      try {
+        return await ref.getDownloadURL();
+      } catch (e) {
+        // If default image also fails, return empty string or handle differently
+        print('Error fetching default profile image: $e');
+        return '';
+      }
+    }
   }
 
-  // search for users
-  Future<void> _searchUsers(String searchTerm) async {
-    final currentUserEmail = FirebaseAuth.instance.currentUser!.email!;
-
-    if (searchTerm.isEmpty || searchTerm == currentUserEmail) {
-      // Clear results if the search term is empty or the same as the current user's email
+  Future<void> _searchUsers(String query) async {
+    if (query.isEmpty) {
       setState(() {
         _searchResults = [];
+        _isSearching = false;
       });
       return;
     }
-
-    final usersCollection = FirebaseFirestore.instance.collection('Users');
-    // Use a range query for a partial match
-    final querySnapshot = await usersCollection
-        .where('email', isNotEqualTo: currentUserEmail)
-        .where('email', isGreaterThanOrEqualTo: searchTerm)
-        .where('email', isLessThanOrEqualTo: searchTerm + '\uf8ff')
-        .get();
-
-    final currentUserData = await FirebaseFirestore.instance
-        .collection('Users')
-        .doc(currentUserEmail)
-        .get()
-        .then((snapshot) => snapshot.data());
-
-    final List<dynamic> currentUserFriends =
-        currentUserData?['friends'] ?? <dynamic>[];
-    final List<dynamic> currentUserSentFriendRequests =
-        currentUserData?['sentFriendRequests'] ?? <dynamic>[];
 
     setState(() {
-      _searchResults = querySnapshot.docs.map((doc) {
-        final userData = doc.data();
-        final userEmail = userData['email'] ?? '';
-
-        // Check if the searched user is already a friend
-        final isFriend = currentUserFriends.any((friend) =>
-            friend['email'] != null && friend['email'] == userEmail);
-
-        // Check if the friend request is already sent
-        final isFriendRequestSent = currentUserSentFriendRequests.any(
-            (request) =>
-                request['email'] != null && request['email'] == userEmail);
-
-        // Return modified user data with isFriend and isFriendRequestSent flags
-        return {
-          ...userData,
-          'isFriend': isFriend,
-          'isFriendRequestSent': isFriendRequestSent,
-        };
-      }).toList();
+      _isSearching = true;
     });
+
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser!;
+      final snapshot = await FirebaseFirestore.instance
+          .collection('Users')
+          .where('username', isGreaterThanOrEqualTo: query)
+          .where('username', isLessThanOrEqualTo: '$query\uf8ff')
+          .get();
+
+      final currentUserDoc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(currentUser.email)
+          .get();
+      final currentUserData = UserModel.fromFirestore(currentUserDoc);
+
+      final results = await Future.wait(snapshot.docs.map((doc) async {
+        final user = UserModel.fromFirestore(doc);
+        final isFriend = currentUserData.friends.contains(user.email);
+        final hasPendingRequest = currentUserData.friendRequests
+                .containsKey(user.email) ||
+            (currentUserData.sentFriendRequests != null &&
+                currentUserData.sentFriendRequests!.containsKey(user.email));
+        return user.copyWith(
+          isFriend: isFriend,
+          hasPendingRequest: hasPendingRequest,
+        );
+      }));
+
+      setState(() {
+        _searchResults =
+            results.where((user) => user.email != currentUser.email).toList();
+        _isSearching = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isSearching = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error searching users: $e')),
+      );
+    }
   }
 
-  Future<void> _sendFriendRequest(String userEmail) async {
-    final currentUserEmail = FirebaseAuth.instance.currentUser!.email!;
-    final usersCollection = FirebaseFirestore.instance.collection('Users');
-    final timeSent = Timestamp.now();
+  Future<void> _sendFriendRequest(String recipientEmail) async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser!;
+      await FriendsService()
+          .sendFriendRequest(currentUser.email!, recipientEmail);
 
-    // Check if the friend request is already sent or pending
-    final userDoc = await usersCollection.doc(userEmail).get();
-    final friendRequests = userDoc.data()?['friendRequests'] ?? <dynamic>[];
-    final isFriendRequestSent = friendRequests.any((request) =>
-        request['email'] != null && request['email'] == currentUserEmail);
-
-    if (isFriendRequestSent) {
-      // Show snackbar if the friend request is already pending
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('Waiting for $userEmail to accept your request')),
-      );
-      return;
-    }
-
-    // Add the friend request to the selected user's list
-    await usersCollection.doc(userEmail).update({
-      'friendRequests': FieldValue.arrayUnion([
-        {'email': currentUserEmail, 'timestamp': timeSent}
-      ]),
-    });
-
-    // Add the selected user to the current user's sent friend requests list
-    await usersCollection.doc(currentUserEmail).update({
-      'sentFriendRequests': FieldValue.arrayUnion([
-        {'email': userEmail, 'timestamp': timeSent},
-      ]),
-    });
-
-    // Update the search results to reflect the change
-    int userIndex =
-        _searchResults.indexWhere((user) => user['email'] == userEmail);
-    if (userIndex != -1) {
       setState(() {
-        _searchResults[userIndex]['isFriendRequestSent'] = true;
-        _searchController.clear();
+        _searchResults = _searchResults.map((user) {
+          if (user.email == recipientEmail) {
+            return user.copyWith(hasPendingRequest: true);
+          }
+          return user;
+        }).toList();
       });
-    }
 
-    // Show snackbar after friend request is sent
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Friend request sent to ${userEmail.split('@')[0]}'),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Friend request sent!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to send request: $e')),
+      );
+    }
+  }
+
+  void _navigateToProfilePage(BuildContext context, UserModel user) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProfilePage(user: user, showBackButton: true),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.blueGrey,
-      appBar: AppBar(
-        title: const Text('FRIEND REQUESTS'),
-        titleTextStyle:
-            GoogleFonts.philosopher(fontSize: 24, fontWeight: FontWeight.bold),
-        centerTitle: true,
-        backgroundColor: Colors.deepOrange.shade300,
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: SizedBox(
-              height: 50,
+    final currentUser = FirebaseAuth.instance.currentUser!;
+
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const StyledTitleLarge('Friend Requests', color: Colors.white),
+          backgroundColor: Colors.deepOrange.shade300,
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Received'),
+              Tab(text: 'Sent'),
+            ],
+          ),
+        ),
+        body: Column(
+          children: [
+            // Search bar
+            Padding(
+              padding: const EdgeInsets.all(8.0),
               child: TextField(
                 controller: _searchController,
-                onChanged: (value) => _searchUsers(value),
-                decoration: const InputDecoration(
-                  hintText: 'Search users...',
-                  contentPadding: EdgeInsets.all(8),
+                decoration: InputDecoration(
+                  hintText: 'Search by username...',
+                  prefixIcon: const Icon(Icons.search),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(8)),
+                    borderRadius: BorderRadius.circular(8.0),
                   ),
-                  filled: true, // Enable the fill color
-                  fillColor: Colors.white, // Set the fill color to white
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            _searchUsers('');
+                          },
+                        )
+                      : null,
                 ),
+                onChanged: _searchUsers,
               ),
             ),
-          ),
-          Visibility(
-            visible: _searchResults.isNotEmpty,
-            child: SizedBox(
-              height: 100,
-              child: ListView.builder(
-                itemCount: _searchResults.length,
-                itemBuilder: (context, index) {
-                  final user = _searchResults[index];
-                  final isFriend = user['isFriend'] ?? false;
-                  final isFriendRequestSent =
-                      user['isFriendRequestSent'] ?? false;
 
-                  return ListTile(
-                    title: Text(user['username'] ?? ''),
-                    trailing: isFriend
-                        ? const Icon(Icons.check,
-                            color: Colors
-                                .green) // Display green checkmark for friends
-                        : isFriendRequestSent
-                            ? const Icon(Icons.pending,
-                                color: Colors
-                                    .deepOrange) // Display pending-related icon for friend requests sent
-                            : const Icon(
-                                Icons.add), // Display plus sign for other users
-                    onTap: () {
-                      if (!isFriend && !isFriendRequestSent) {
-                        _sendFriendRequest(user['email']);
-                      }
-                    },
-                  );
-                },
-              ),
+            // Show search results or tabs
+            Expanded(
+              child: _isSearching
+                  ? const Center(child: CircularProgressIndicator())
+                  : _searchResults.isNotEmpty
+                      ? _buildSearchResults()
+                      : _buildRequestTabs(currentUser.email!),
             ),
-          ),
-          Expanded(
-            child: StreamBuilder<DocumentSnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('Users')
-                  .doc(currentUser.email)
-                  .snapshots(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchResults() {
+    return ListView.builder(
+      itemCount: _searchResults.length,
+      itemBuilder: (context, index) {
+        final user = _searchResults[index];
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+          child: ListTile(
+            leading: FutureBuilder<String>(
+              future: _getProfileImageUrl(user.profilePic),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
+                if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                  return CircleAvatar(
+                    backgroundImage: NetworkImage(snapshot.data!),
+                  );
                 }
-                final userData = snapshot.data!.data() as Map<String, dynamic>;
-
-                return Column(
-                  children: [
-                    // Pending Friend Requests Section
-                    if (userData['friendRequests'].isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text('Accept Friend Requests?',
-                            style:
-                                TextStyle(fontSize: 24, color: Colors.white)),
-                      ),
-                    _buildFriendRequestsSection(userData['friendRequests']),
-                    // Sent Friend Requests Section
-                    if (userData['sentFriendRequests'].isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text('Sent Friend Requests',
-                            style:
-                                TextStyle(fontSize: 24, color: Colors.white)),
-                      ),
-                    _buildSentFriendRequestsSection(
-                        userData['sentFriendRequests']),
-                  ],
+                return CircleAvatar(
+                  child: Text(user.username[0].toUpperCase()),
                 );
               },
             ),
+            title: Text(user.username),
+            trailing: user.isFriend
+                ? const Icon(Icons.check, color: Colors.green)
+                : user.hasPendingRequest
+                    ? const Icon(Icons.pending, color: Colors.orange)
+                    : IconButton(
+                        icon: const Icon(Icons.person_add),
+                        onPressed: () => _sendFriendRequest(user.email),
+                      ),
+            onTap: () {
+              _navigateToProfilePage(context, user);
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRequestTabs(String userId) {
+    return TabBarView(
+      children: [
+        // Received requests tab
+        _buildReceivedRequests(userId),
+        // Sent requests tab
+        _buildSentRequests(userId),
+      ],
+    );
+  }
+
+  Widget _buildReceivedRequests(String userId) {
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('Users')
+          .doc(userId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final user = UserModel.fromFirestore(snapshot.data!);
+        final pendingRequests = user.pendingIncomingRequests;
+
+        if (pendingRequests.isEmpty) {
+          return const Center(child: Text('No pending requests'));
+        }
+
+        return ListView.builder(
+          itemCount: pendingRequests.length,
+          itemBuilder: (context, index) {
+            final requesterId = pendingRequests[index];
+            return FutureBuilder<DocumentSnapshot>(
+              future: FirebaseFirestore.instance
+                  .collection('Users')
+                  .doc(requesterId)
+                  .get(),
+              builder: (context, requesterSnapshot) {
+                if (!requesterSnapshot.hasData) {
+                  return const ListTile(title: Text('Loading...'));
+                }
+
+                final requester =
+                    UserModel.fromFirestore(requesterSnapshot.data!);
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                      horizontal: 8.0, vertical: 4.0),
+                  child: ListTile(
+                    leading: FutureBuilder<String>(
+                      future: _getProfileImageUrl(requester.profilePic),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                          return CircleAvatar(
+                            backgroundImage: NetworkImage(snapshot.data!),
+                          );
+                        }
+                        return CircleAvatar(
+                          child: Text(requester.username[0].toUpperCase()),
+                        );
+                      },
+                    ),
+                    title: Text(requester.username),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.check, color: Colors.green),
+                          onPressed: () => _handleRequest(
+                              context, userId, requesterId, true),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.red),
+                          onPressed: () => _handleRequest(
+                              context, userId, requesterId, false),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSentRequests(String userId) {
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('Users')
+          .doc(userId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final userData = snapshot.data!.data() as Map<String, dynamic>;
+        final sentRequests = userData['sentFriendRequests'] is Map
+            ? (userData['sentFriendRequests'] as Map).keys.toList()
+            : <String>[];
+
+        if (sentRequests.isEmpty) {
+          return const Center(child: Text('No sent requests'));
+        }
+
+        return ListView.builder(
+          itemCount: sentRequests.length,
+          itemBuilder: (context, index) {
+            final recipientId = sentRequests[index];
+            return FutureBuilder<DocumentSnapshot>(
+              future: FirebaseFirestore.instance
+                  .collection('Users')
+                  .doc(recipientId)
+                  .get(),
+              builder: (context, recipientSnapshot) {
+                if (!recipientSnapshot.hasData) {
+                  return const ListTile(title: Text('Loading...'));
+                }
+
+                final recipient =
+                    UserModel.fromFirestore(recipientSnapshot.data!);
+                final status =
+                    userData['sentFriendRequests'][recipientId] ?? 'pending';
+
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                      horizontal: 8.0, vertical: 4.0),
+                  child: ListTile(
+                    leading: FutureBuilder<String>(
+                      future: _getProfileImageUrl(recipient.profilePic),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                          return CircleAvatar(
+                            backgroundImage: NetworkImage(snapshot.data!),
+                          );
+                        }
+                        return CircleAvatar(
+                          child: Text(recipient.username[0].toUpperCase()),
+                        );
+                      },
+                    ),
+                    title: Text(recipient.username),
+                    subtitle: Text('Status: ${status.capitalize()}'),
+                    trailing: status == 'pending'
+                        ? IconButton(
+                            icon: const Icon(Icons.close, color: Colors.red),
+                            onPressed: () =>
+                                _cancelRequest(context, userId, recipientId),
+                          )
+                        : null,
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _handleRequest(BuildContext context, String userId,
+      String requesterId, bool accept) async {
+    if (accept) {
+      await FriendsService().acceptFriendRequest(userId, requesterId);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Friend request accepted')),
+      );
+    } else {
+      await FriendsService().rejectFriendRequest(userId, requesterId);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Friend request rejected')),
+      );
+    }
+  }
+
+  Future<void> _cancelRequest(
+      BuildContext context, String userId, String recipientId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancel Request'),
+        content:
+            const Text('Are you sure you want to cancel this friend request?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Yes', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
+
+    if (confirmed == true) {
+      await FirebaseFirestore.instance.collection('Users').doc(userId).update({
+        'sentFriendRequests.$recipientId': FieldValue.delete(),
+      });
+
+      await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(recipientId)
+          .update({
+        'friendRequests.$userId': FieldValue.delete(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Request cancelled')),
+      );
+    }
   }
+}
 
-  String calculateDaysAgo(Timestamp timestamp) {
-    final now = Timestamp.now().toDate();
-    final sentDate = timestamp.toDate();
-    final difference = now.difference(sentDate).inDays;
-    return '$difference days ago';
-  }
-
-  Widget _buildFriendRequestsSection(List<dynamic> friendRequests) {
-    if (friendRequests.isEmpty) return SizedBox.shrink();
-    final currentUserEmail = FirebaseAuth.instance.currentUser!.email!;
-    final usersCollection = FirebaseFirestore.instance.collection('Users');
-
-    return Expanded(
-      child: ListView.builder(
-        itemCount: friendRequests.length,
-        itemBuilder: (context, index) {
-          final friendRequest = friendRequests[index];
-          final friendUserEmail = friendRequest['email'];
-          final friendUserTimestamp = friendRequest['timestamp'];
-          return ListTile(
-            title: Text(friendUserEmail),
-            leading: IconButton(
-              onPressed: () async {
-                try {
-                  // Generate the timestamp
-                  final timestamp = Timestamp.now();
-
-                  // Add friend to current user's friends list
-                  await usersCollection.doc(currentUserEmail).update({
-                    'friends': FieldValue.arrayUnion([
-                      {
-                        'email': friendUserEmail,
-                        'timestamp': timestamp,
-                      },
-                    ]),
-                  });
-
-                  // Add current user to friend requesters friends list
-                  await usersCollection.doc(friendUserEmail).update({
-                    'friends': FieldValue.arrayUnion([
-                      {
-                        'email': currentUserEmail,
-                        'timestamp': timestamp,
-                      },
-                    ]),
-                  });
-
-                  // Remove request from friend's sentFriendRequest list
-                  await usersCollection.doc(friendUserEmail).update({
-                    'sentFriendRequests': FieldValue.arrayRemove([
-                      {
-                        'email': currentUserEmail,
-                        'timestamp': friendUserTimestamp,
-                      }
-                    ])
-                  });
-
-                  // Remove friend from current user's pendingRequests list
-                  await usersCollection.doc(currentUserEmail).update({
-                    'friendRequests': FieldValue.arrayRemove([
-                      {
-                        'email': friendUserEmail,
-                        'timestamp': friendUserTimestamp,
-                      }
-                    ])
-                  });
-
-                  // Friend request removal completed successfully
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Friend request removed successfully.'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                } catch (error) {}
-              },
-              icon: const Icon(Icons.person_add),
-              color: Colors.deepOrange,
-            ),
-            // Add any additional widgets or functionality for pending friend requests
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildSentFriendRequestsSection(List<dynamic> sentFriendRequests) {
-    if (sentFriendRequests.isEmpty) return SizedBox.shrink();
-
-    return Expanded(
-      child: ListView.builder(
-        itemCount: sentFriendRequests.length,
-        itemBuilder: (context, index) {
-          final Map<String, dynamic> sentFriendRequest =
-              sentFriendRequests[index];
-          final Timestamp sentDate = sentFriendRequest['timestamp'];
-          final String daysAgo = calculateDaysAgo(sentDate);
-          return ListTile(
-            title: Text(sentFriendRequest['email']),
-            leading: const Icon(Icons.person),
-            trailing: Text(daysAgo),
-          );
-        },
-      ),
-    );
+extension StringExtension on String {
+  String capitalize() {
+    return "${this[0].toUpperCase()}${substring(1).toLowerCase()}";
   }
 }

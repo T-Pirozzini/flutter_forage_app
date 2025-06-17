@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/models/recipe.dart';
+import 'package:flutter_forager_app/screens/recipes/add_recipe_page.dart';
 import 'package:flutter_forager_app/screens/recipes/comments_page.dart';
 import 'package:flutter_forager_app/theme.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -111,6 +112,22 @@ class _RecipeCardState extends State<RecipeCard> {
     }
   }
 
+  void _navigateToEditPage() {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => AddRecipePage(
+        recipeToEdit: widget.recipe, // Pass the existing recipe
+      ),
+    ),
+  ).then((_) {
+    // Optional: Refresh the recipe if needed
+    if (widget.onRecipeDeleted != null) {
+      widget.onRecipeDeleted!();
+    }
+  });
+}
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -145,27 +162,36 @@ class _RecipeCardState extends State<RecipeCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        widget.recipe.name,
-                        style: GoogleFonts.josefinSans(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (_isOwner)
-                        IconButton(
-                          icon: Icon(Icons.delete, color: Colors.white),
-                          onPressed: _deleteRecipe,
-                          tooltip: 'Delete Recipe',
-                        ),
-                    ],
-                  ),
+                 Row(
+  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  children: [
+    Text(
+      widget.recipe.name,
+      style: GoogleFonts.josefinSans(
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        color: Colors.white,
+      ),
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+    ),
+    if (_isOwner)
+      Row(
+        children: [
+          IconButton(
+            icon: Icon(Icons.edit, color: Colors.white),
+            onPressed: _navigateToEditPage,
+            tooltip: 'Edit Recipe',
+          ),
+          IconButton(
+            icon: Icon(Icons.delete, color: Colors.white),
+            onPressed: _deleteRecipe,
+            tooltip: 'Delete Recipe',
+          ),
+        ],
+      ),
+  ],
+),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
