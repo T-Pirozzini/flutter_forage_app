@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_forager_app/components/ad_mob_service.dart';
 import 'package:flutter_forager_app/components/screen_heading.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_forager_app/theme.dart';
@@ -222,6 +223,13 @@ class _IntroSectionState extends State<_IntroSection> {
     }
   }
 
+  Future<void> _watchInterstitialAd() async {
+    if (mounted) {
+      await Future.delayed(const Duration(seconds: 1));
+      AdMobService.showInterstitialAd();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -357,21 +365,38 @@ class _IntroSectionState extends State<_IntroSection> {
                                 ),
                               ),
                               const SizedBox(height: 12),
-                              Center(
-                                child: ElevatedButton.icon(
-                                  onPressed: _launchURL,
-                                  label: StyledTextMedium(
-                                      'Treat us to a coffee ☕'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        AppColors.textColor.withOpacity(0.9),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                              Row(
+                                children: [
+                                  ElevatedButton.icon(
+                                    onPressed: _launchURL,
+                                    label: StyledTextMedium(
+                                        'Treat us to a coffee ☕'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor:
+                                          AppColors.textColor.withOpacity(0.9),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 10),
                                     ),
-                                    padding: EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 10),
                                   ),
-                                ),
+                                  const SizedBox(width: 8),
+                                  ElevatedButton.icon(
+                                    onPressed: _watchInterstitialAd,
+                                    label:
+                                        StyledTextMedium('Watch a short Ad 📺'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor:
+                                          AppColors.textColor.withOpacity(0.9),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 10),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
