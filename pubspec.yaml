@@ -43,7 +43,7 @@ dependencies:
   google_mobile_ads: ^6.0.0
 
   # google maps deps
-  google_maps_flutter: ^2.5.0
+  google_maps_flutter: ^2.12.3
   http: ^1.4.0
   xml: ^6.2.2
   flutter_dotenv: ^5.0.2
