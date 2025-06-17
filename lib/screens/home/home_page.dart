@@ -41,7 +41,6 @@ class _HomePageState extends State<HomePage>
   void initState() {
     super.initState();
     currentIndex = widget.currentIndex;
-    _createBannerAd();
     AdMobService.loadInterstitialAd();
 
     _animationController = AnimationController(
@@ -56,21 +55,32 @@ class _HomePageState extends State<HomePage>
   }
 
   @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _createBannerAd();
   }
 
-  void _createBannerAd() {
+  void _createBannerAd() async {
+    final adSize =
+        await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(
+      MediaQuery.of(context).size.width.truncate(),
+    );
+
     _banner = BannerAd(
       adUnitId: AdMobService.bannerAdUnitId!,
-      size: AdSize.fullBanner,
+      size: adSize ?? AdSize.mediumRectangle,
+      request: const AdRequest(),
       listener: BannerAdListener(
         onAdLoaded: (Ad ad) => setState(() => _isBannerAdLoaded = true),
         onAdFailedToLoad: (Ad ad, LoadAdError error) => ad.dispose(),
       ),
-      request: const AdRequest(),
     )..load();
+  }
+  
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   @override
@@ -144,8 +154,9 @@ class _HomePageState extends State<HomePage>
         children: [
           if (_isBannerAdLoaded && _banner != null)
             Container(
-              width: double.infinity,
-              height: 50,
+              width: _banner!.size.width.toDouble(),
+              height: _banner!.size.height.toDouble(),
+              alignment: Alignment.center,
               child: AdWidget(ad: _banner!),
             ),
           Expanded(child: pages[currentIndex]),

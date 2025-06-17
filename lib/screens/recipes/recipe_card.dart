@@ -113,20 +113,20 @@ class _RecipeCardState extends State<RecipeCard> {
   }
 
   void _navigateToEditPage() {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => AddRecipePage(
-        recipeToEdit: widget.recipe, // Pass the existing recipe
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddRecipePage(
+          recipeToEdit: widget.recipe, // Pass the existing recipe
+        ),
       ),
-    ),
-  ).then((_) {
-    // Optional: Refresh the recipe if needed
-    if (widget.onRecipeDeleted != null) {
-      widget.onRecipeDeleted!();
-    }
-  });
-}
+    ).then((_) {
+      // Optional: Refresh the recipe if needed
+      if (widget.onRecipeDeleted != null) {
+        widget.onRecipeDeleted!();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -162,36 +162,38 @@ class _RecipeCardState extends State<RecipeCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                 Row(
-  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  children: [
-    Text(
-      widget.recipe.name,
-      style: GoogleFonts.josefinSans(
-        fontSize: 24,
-        fontWeight: FontWeight.bold,
-        color: Colors.white,
-      ),
-      maxLines: 2,
-      overflow: TextOverflow.ellipsis,
-    ),
-    if (_isOwner)
-      Row(
-        children: [
-          IconButton(
-            icon: Icon(Icons.edit, color: Colors.white),
-            onPressed: _navigateToEditPage,
-            tooltip: 'Edit Recipe',
-          ),
-          IconButton(
-            icon: Icon(Icons.delete, color: Colors.white),
-            onPressed: _deleteRecipe,
-            tooltip: 'Delete Recipe',
-          ),
-        ],
-      ),
-  ],
-),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          widget.recipe.name,
+                          style: GoogleFonts.josefinSans(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (_isOwner)
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: Icon(Icons.edit, color: Colors.white),
+                              onPressed: _navigateToEditPage,
+                              tooltip: 'Edit Recipe',
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.delete, color: Colors.white),
+                              onPressed: _deleteRecipe,
+                              tooltip: 'Delete Recipe',
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,

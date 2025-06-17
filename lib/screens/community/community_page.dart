@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_forager_app/components/ad_mob_service.dart';
 import 'package:flutter_forager_app/components/screen_heading.dart';
 import 'package:flutter_forager_app/models/post.dart';
 import 'package:flutter_forager_app/screens/community/components/post_card.dart';
@@ -161,6 +162,10 @@ class _CommunityPageState extends State<CommunityPage> {
           'bookmarkedBy': FieldValue.arrayUnion([currentUser.email]),
           'bookmarkCount': FieldValue.increment(1),
         });
+        if (mounted) {
+        await Future.delayed(const Duration(seconds: 1)); 
+        AdMobService.showInterstitialAd();
+      }
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -238,6 +243,12 @@ class _CommunityPageState extends State<CommunityPage> {
                   fit: BoxFit.scaleDown,
                   child: StyledTextMedium(
                       'Like and/or bookmark forage locations and go explore!',
+                      color: AppColors.textColor),
+                ),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: StyledTextMedium(
+                      '* A short Ad will appear after bookmarking a location. Thank you for your support!',
                       color: AppColors.textColor),
                 ),
               ],
