@@ -178,10 +178,12 @@ class MapHeader extends StatelessWidget {
       height: 50,
       width: double.infinity,
       color: AppColors.primaryAccent,
-      child: const Column(
+      child: Column(
         children: [
-          StyledText("Explore your local area for forageable ingredients."),
-          StyledText('Mark the location so you can find it again!'),
+          StyledTextLarge("Explore your local area for forageable ingredients.",
+              color: AppColors.textColor),
+          StyledTextLarge('Mark the location so you can find it again!',
+              color: AppColors.textColor),
         ],
       ),
     );
