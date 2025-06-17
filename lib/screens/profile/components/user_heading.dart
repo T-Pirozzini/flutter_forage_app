@@ -54,20 +54,20 @@ class UserHeading extends StatelessWidget {
                 ],
               )),
         ),
-        Positioned(
-          top: 20,
-          right: 20,
-          child: Container(
-              color: AppColors.primaryAccent.withValues(alpha: .8),
-              child: Column(
-                children: [
-                  StyledTextSmall("Last Active", color: AppColors.textColor),
-                  StyledTextSmall(
-                      DateFormat('MMM yyyy').format(lastActive.toDate()),
-                      color: AppColors.textColor),
-                ],
-              )),
-        ),
+        // Positioned(
+        //   top: 20,
+        //   right: 20,
+        //   child: Container(
+        //       color: AppColors.primaryAccent.withValues(alpha: .8),
+        //       child: Column(
+        //         children: [
+        //           StyledTextSmall("Last Active", color: AppColors.textColor),
+        //           StyledTextSmall(
+        //               DateFormat('MMM yyyy').format(lastActive.toDate()),
+        //               color: AppColors.textColor),
+        //         ],
+        //       )),
+        // ),
       ],
     );
   }

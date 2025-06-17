@@ -22,6 +22,7 @@ class _FeedbackPageState extends State<FeedbackPage>
   final _progressController = TextEditingController();
   final _timeFormat = DateFormat('MMM d, yyyy h:mm a');
 
+  int currentUserCount = 0;
   String? _username;
   String? _userProfilePic;
   late TabController _tabController;
@@ -33,6 +34,7 @@ class _FeedbackPageState extends State<FeedbackPage>
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _fetchUserData();
+    _fetchCurrentUserCount();
   }
 
   @override
@@ -59,6 +61,20 @@ class _FeedbackPageState extends State<FeedbackPage>
       }
     } catch (e) {
       debugPrint('Error fetching user data: $e');
+    }
+  }
+
+  Future<void> _fetchCurrentUserCount() async {
+    try {
+      final usersSnapshot =
+          await FirebaseFirestore.instance.collection('Users').get();
+      if (mounted) {
+        setState(() {
+          currentUserCount = usersSnapshot.docs.length;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching user count: $e');
     }
   }
 
@@ -111,7 +127,8 @@ class _FeedbackPageState extends State<FeedbackPage>
             const ScreenHeading(title: 'Feedback'),
             _IntroSection(
                 onSupportPressed: () =>
-                    _showSnackBar('Buy Me a Coffee link coming soon!')),
+                    _showSnackBar('Buy Me a Coffee link coming soon!'),
+                currentUserCount: currentUserCount),
             _CustomTabBar(controller: _tabController),
             Expanded(
                 child: _TabContent(
@@ -184,8 +201,10 @@ class SubmissionConfig {
 
 class _IntroSection extends StatefulWidget {
   final VoidCallback onSupportPressed;
+  final int currentUserCount;
 
-  const _IntroSection({required this.onSupportPressed});
+  const _IntroSection(
+      {required this.onSupportPressed, required this.currentUserCount});
 
   @override
   State<_IntroSection> createState() => _IntroSectionState();
@@ -227,6 +246,8 @@ class _IntroSectionState extends State<_IntroSection> {
               "I'm sorry! Our foraging community is growing rapidly, but we haven't pulled our weight.",
               color: AppColors.textColor),
           const SizedBox(height: 8),
+          StyledTextSmall('Current User Count: ${widget.currentUserCount}',
+              color: AppColors.textColor.withOpacity(0.8)),
           Container(
             decoration: BoxDecoration(
               color: AppColors.primaryAccent.withOpacity(0.3),

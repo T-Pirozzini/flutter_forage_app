@@ -3,6 +3,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_forager_app/components/ad_mob_service.dart';
+import 'package:flutter_forager_app/screens/drawer/about_page.dart';
+import 'package:flutter_forager_app/screens/drawer/about_us_page.dart';
+import 'package:flutter_forager_app/screens/drawer/credits_page.dart';
+import 'package:flutter_forager_app/screens/home/home_page.dart';
 import 'package:flutter_forager_app/theme.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'auth/auth_page.dart';
@@ -44,8 +48,15 @@ class _MyAppState extends State<MyApp> {
         FocusScope.of(context).requestFocus(FocusNode());
       },
       child: MaterialApp(
-        theme: primaryTheme,        
-        home: const AuthPage(),
+        theme: primaryTheme,
+        initialRoute: '/auth',
+        routes: {
+          '/auth': (context) => const AuthPage(),
+          '/home': (context) => const HomePage(currentIndex: 0),
+          '/about': (context) => const AboutPage(),
+          '/about-us': (context) => const AboutUsPage(),
+          '/credits': (context) => const CreditsPage(),
+        },
         debugShowCheckedModeBanner: false,
       ),
     );

@@ -18,11 +18,15 @@ class _CommentsPageState extends State<CommentsPage> {
   final TextEditingController _commentController = TextEditingController();
   final String _userEmail = FirebaseAuth.instance.currentUser!.email!;
   String? _username;
+  bool _isLiked = false;
+  int _likeCount = 0;
 
   @override
   void initState() {
     super.initState();
     _fetchUsername();
+    _checkIfLiked();
+    _likeCount = widget.recipe.likes.length;
   }
 
   Future<void> _fetchUsername() async {
@@ -39,6 +43,83 @@ class _CommentsPageState extends State<CommentsPage> {
     } catch (e) {
       print('Error fetching username: $e');
     }
+  }
+
+  Future<void> _checkIfLiked() async {
+    setState(() {
+      _isLiked = widget.recipe.likes.contains(_userEmail);
+    });
+  }
+
+  Future<void> _toggleLike() async {
+    final recipeRef =
+        FirebaseFirestore.instance.collection('Recipes').doc(widget.recipe.id);
+
+    if (_isLiked) {
+      await recipeRef.update({
+        'likes': FieldValue.arrayRemove([_userEmail])
+      });
+      setState(() {
+        _isLiked = false;
+        _likeCount--;
+      });
+    } else {
+      await recipeRef.update({
+        'likes': FieldValue.arrayUnion([_userEmail])
+      });
+      setState(() {
+        _isLiked = true;
+        _likeCount++;
+      });
+    }
+  }
+
+  Future<void> _showLikesDialog() async {
+    if (_likeCount == 0) return;
+
+    // Fetch user details for each like
+    final users = await Future.wait(
+      widget.recipe.likes.map((email) async {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('Users')
+            .doc(email)
+            .get();
+        return userDoc.exists ? userDoc.get('username') : email;
+      }),
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Liked by',
+          style: GoogleFonts.josefinSans(fontWeight: FontWeight.bold),
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: users.length,
+            itemBuilder: (context, index) => ListTile(
+              leading: CircleAvatar(
+                child: Text(users[index][0].toUpperCase()),
+              ),
+              title: Text(users[index],
+                  style: GoogleFonts.josefinSans(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  )),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _addComment() async {
@@ -65,98 +146,111 @@ class _CommentsPageState extends State<CommentsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'COMMENTS',
-          style: TextStyle(letterSpacing: 2.5),
-        ),
-        titleTextStyle:
-            GoogleFonts.philosopher(fontSize: 24, fontWeight: FontWeight.bold),
+        title: Text('Comments',
+            style: GoogleFonts.josefinSans(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            )),
         centerTitle: true,
-        backgroundColor: Colors.deepOrange.shade300,
+        elevation: 0,
       ),
       body: Column(
         children: [
-          // Recipe information
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.recipe.name,
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Submitted by: ${widget.recipe.userName}',
-                      style: TextStyle(fontStyle: FontStyle.italic),
-                    ),
-                    Text(
-                      '${DateFormat.yMMMd().format(widget.recipe.timestamp)}',
-                      style: TextStyle(fontStyle: FontStyle.italic),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Ingredients:',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+          // Recipe header card
+          Card(
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Recipe name and like button
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          widget.recipe.name,
+                          style: GoogleFonts.josefinSans(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
                           ),
-                          for (var ingredient in widget.recipe.ingredients)
-                            Row(
-                              children: [
-                                Icon(
-                                  ingredient.isForaged
-                                      ? Icons.eco
-                                      : Icons.shopping_cart,
-                                  color: ingredient.isForaged
-                                      ? Colors.green
-                                      : Colors.grey,
-                                  size: 20,
-                                ),
-                                SizedBox(width: 5),
-                                Text(
-                                  '${ingredient.quantity} ${ingredient.name}',
-                                  style: TextStyle(fontSize: 12),
-                                ),
-                              ],
+                        ),
+                      ),
+                      Column(
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              _isLiked ? Icons.favorite : Icons.favorite_border,
+                              color: _isLiked ? Colors.red : Colors.grey,
                             ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Instructions:',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                            onPressed: _toggleLike,
                           ),
-                          for (var step in widget.recipe.steps.asMap().entries)
-                            Text('${step.key + 1}. ${step.value}',
-                                style: TextStyle(fontSize: 12)),
                         ],
                       ),
+                    ],
+                  ),
+                  _buildLikeCount(),
+                  const SizedBox(height: 8),
+
+                  // Description if exists
+                  if (widget.recipe.description != null &&
+                      widget.recipe.description!.isNotEmpty)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 8),
+                        Text(
+                          widget.recipe.description!,
+                          style: GoogleFonts.josefinSans(fontSize: 16),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
                     ),
-                  ],
-                ),
-                SizedBox(height: 10),
-              ],
+
+                  // Recipe metadata
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'By ${widget.recipe.userName}',
+                        style: GoogleFonts.josefinSans(
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                      Text(
+                        DateFormat.yMMMd().format(widget.recipe.timestamp),
+                        style: GoogleFonts.josefinSans(
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-          Divider(),
-          // Comments section
+
+          // Comments section title
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Comments',
+                style: GoogleFonts.josefinSans(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Comments list
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -172,48 +266,122 @@ class _CommentsPageState extends State<CommentsPage> {
                 final comments = snapshot.data!.docs;
 
                 if (comments.isEmpty) {
-                  return Center(child: Text('No comments yet.'));
+                  return Center(
+                    child: Text(
+                      'No comments yet. Be the first to comment!',
+                      style: GoogleFonts.josefinSans(),
+                    ),
+                  );
                 }
 
                 return ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: comments.length,
                   itemBuilder: (context, index) {
                     final comment = comments[index];
-                    return ListTile(
-                      title: Text(comment['userName']),
-                      subtitle: Text(comment['message']),
-                      trailing: comment['timestamp'] != null
-                          ? Text(
-                              '${DateFormat.yMMMd().format((comment['timestamp'] as Timestamp).toDate())}',
-                            )
-                          : Text('Just now'),
+                    final timestamp = comment['timestamp'] != null
+                        ? (comment['timestamp'] as Timestamp).toDate()
+                        : DateTime.now();
+
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  comment['userName'],
+                                  style: GoogleFonts.josefinSans(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  DateFormat('MMM d, h:mm a').format(timestamp),
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              comment['message'],
+                              style: GoogleFonts.josefinSans(),
+                            ),
+                          ],
+                        ),
+                      ),
                     );
                   },
                 );
               },
             ),
           ),
-          // Add a comment
-          Padding(
-            padding: const EdgeInsets.all(8.0),
+
+          // Add comment section
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.2),
+                  spreadRadius: 2,
+                  blurRadius: 5,
+                  offset: Offset(0, -2),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(16.0),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _commentController,
                     decoration: InputDecoration(
-                      labelText: 'Add a comment...',
+                      hintText: 'Add a comment...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 16,
+                      ),
                     ),
+                    maxLines: null,
                   ),
                 ),
-                IconButton(
-                  icon: Icon(Icons.send),
-                  onPressed: _addComment,
+                const SizedBox(width: 8),
+                CircleAvatar(
+                  backgroundColor: Colors.deepOrange,
+                  child: IconButton(
+                    icon: const Icon(Icons.send, color: Colors.white),
+                    onPressed: _addComment,
+                  ),
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLikeCount() {
+    return GestureDetector(
+      onTap: _showLikesDialog,
+      child: Text(
+        '$_likeCount ${_likeCount == 1 ? 'like' : 'likes'}',
+        style: TextStyle(
+          color: Colors.grey,
+        ),
       ),
     );
   }

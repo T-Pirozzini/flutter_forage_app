@@ -5,6 +5,7 @@ import 'package:flutter_forager_app/screens/forage/components/map_markers.dart';
 import 'package:flutter_forager_app/screens/forage/components/map_style.dart';
 import 'package:flutter_forager_app/screens/forage/services/map_permissions.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
+import 'package:flutter_forager_app/theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter_forager_app/screens/forage/components/map_ui.dart';
@@ -299,7 +300,8 @@ class _MapPageState extends ConsumerState<MapPage> {
                   SizedBox(width: 8),
                   Flexible(
                     child: StyledTextSmall(
-                        'Take photos of your find! Add them to your marker later.'),
+                        'Take photos of your find! Add them to your marker later.',
+                        color: AppColors.textColor),
                   ),
                 ],
               ),
@@ -307,14 +309,12 @@ class _MapPageState extends ConsumerState<MapPage> {
               Row(
                 children: [
                   Icon(Icons.person, color: Colors.deepOrangeAccent),
-                  StyledTitleMedium(
-                    'Profile',
-                  ),
+                  StyledTitleMedium('Profile', color: AppColors.textColor),
                   Spacer(),
                   Icon(Icons.arrow_circle_right_outlined, color: Colors.white),
                   Spacer(),
                   Icon(Icons.location_on, color: Colors.deepOrangeAccent),
-                  StyledTitleMedium('Locations')
+                  StyledTitleMedium('Locations', color: AppColors.textColor)
                 ],
               ),
             ]),

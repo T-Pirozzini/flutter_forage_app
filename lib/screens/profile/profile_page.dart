@@ -16,8 +16,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   final UserModel user;
+  final bool showBackButton;
 
-  const ProfilePage({required this.user, Key? key}) : super(key: key);
+  const ProfilePage({required this.user, this.showBackButton = false, Key? key})
+      : super(key: key);
 
   @override
   _ProfilePageState createState() => _ProfilePageState();
@@ -65,8 +67,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   String bio = '';
   Timestamp createdAt = Timestamp.now();
   Timestamp lastActive = Timestamp.now();
-  bool get _isCurrentUser => widget.user.uid == currentUser.uid;
-  bool get _isFriend => widget.user.friends.contains(currentUser.uid);
+  bool get _isCurrentUser => widget.user.email == currentUser.email;
+  bool get _isFriend => widget.user.friends.contains(currentUser.email);
+
+  // Get the user whose profile we're viewing
+  String get _profileUserId =>
+      _isCurrentUser ? currentUser.email! : widget.user.email;
 
   @override
   void initState() {
@@ -75,15 +81,24 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 
   void loadUserProfileImages() async {
-    final docSnapshot = await usersCollection.doc(currentUser.email).get();
+    final docSnapshot = await usersCollection.doc(_profileUserId).get();
     if (docSnapshot.exists) {
       final userData = docSnapshot.data() as Map<String, dynamic>;
       setState(() {
+        // Handle null, empty strings, and missing fields
+        String? bgImage = userData['profileBackground']?.toString();
+        String? profImage = userData['profilePic']?.toString();
+
         selectedBackgroundOption =
-            userData['profileBackground'] ?? selectedBackgroundOption;
-        selectedProfileOption = userData['profilePic'] ?? selectedProfileOption;
-        username = userData['username'] ?? '';
-        bio = userData['bio'] ?? '';
+            (bgImage != null && bgImage.trim().isNotEmpty)
+                ? bgImage
+                : 'backgroundProfileImage1.jpg';
+        selectedProfileOption =
+            (profImage != null && profImage.trim().isNotEmpty)
+                ? profImage
+                : 'profileImage1.jpg';
+        username = userData['username']?.toString() ?? '';
+        bio = userData['bio']?.toString() ?? '';
         createdAt = userData['createdAt'] ?? Timestamp.now();
         lastActive = userData['lastActive'] ?? Timestamp.now();
       });
@@ -127,9 +142,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final userMarkers = ref.watch(userMarkersProvider(currentUser.email!));
+    final userMarkers = ref.watch(userMarkersProvider(_profileUserId));
     final communityMarkers =
-        ref.watch(communityMarkersProvider(currentUser.email!));
+        ref.watch(communityMarkersProvider(_profileUserId));
 
     return Container(
       decoration: BoxDecoration(
@@ -137,16 +152,48 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        floatingActionButton: FloatingActionButton(
-          backgroundColor: AppColors.secondaryColor,
-          onPressed: showProfileEditDialog,
-          child: Icon(Icons.edit, color: AppColors.textColor),
-          mini: true,
-        ),
+        appBar: widget.showBackButton
+            ? AppBar(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                leading: IconButton(
+                  icon: Icon(Icons.arrow_back, color: AppColors.textColor),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                title: Text(
+                  _isCurrentUser
+                      ? 'My Profile'
+                      : '${widget.user.username}\'s Profile',
+                  style: TextStyle(color: AppColors.textColor),
+                ),
+                centerTitle: true,
+                // Only show edit button for current user
+                actions: _isCurrentUser
+                    ? [
+                        IconButton(
+                          icon: Icon(Icons.edit, color: AppColors.textColor),
+                          onPressed: showProfileEditDialog,
+                        ),
+                      ]
+                    : null,
+              )
+            : null,
+        // Show floating action button only when there's no AppBar
+        floatingActionButton: !widget.showBackButton && _isCurrentUser
+            ? FloatingActionButton(
+                backgroundColor: AppColors.secondaryColor,
+                onPressed: showProfileEditDialog,
+                child: Icon(Icons.edit, color: AppColors.textColor),
+                mini: true,
+              )
+            : null,
         floatingActionButtonLocation: FloatingActionButtonLocation.miniEndTop,
         body: Column(
           children: [
-            ScreenHeading(title: 'Profile'),
+            ScreenHeading(
+                title: _isCurrentUser
+                    ? 'Profile'
+                    : '${widget.user.username}\'s Profile'),
             UserHeading(
               selectedBackgroundOption: selectedBackgroundOption,
               selectedProfileOption: selectedProfileOption,
@@ -159,7 +206,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               child: StreamBuilder<DocumentSnapshot>(
                 stream: FirebaseFirestore.instance
                     .collection('Users')
-                    .doc(currentUser.email)
+                    .doc(_profileUserId)
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.hasData) {
@@ -186,7 +233,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                   child: FittedBox(
                                     fit: BoxFit.scaleDown,
                                     child: StyledText(
-                                      'View saved locations, bookmarks, recipes or friends.',
+                                      _isCurrentUser
+                                          ? 'View saved locations, bookmarks, recipes or friends.'
+                                          : 'View ${widget.user.username}\'s locations, recipes and friends.',
                                     ),
                                   ),
                                 ),
@@ -196,7 +245,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                 future: FirebaseFirestore.instance
                                     .collection('Recipes')
                                     .where('userEmail',
-                                        isEqualTo: currentUser.email)
+                                        isEqualTo: _profileUserId)
                                     .get(),
                                 builder: (context, recipeSnapshot) {
                                   String recipeCount = '0';
@@ -234,9 +283,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                             MaterialPageRoute(
                                               builder: (context) =>
                                                   ForageLocations(
-                                                userId: currentUser.email!,
-                                                userName: currentUser.email!
-                                                    .split("@")[0],
+                                                userId: _profileUserId,
+                                                userName: username,
                                                 userLocations: true,
                                               ),
                                             ),
@@ -257,7 +305,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                             MaterialPageRoute(
                                               builder: (context) =>
                                                   ForageLocations(
-                                                userId: currentUser.email!,
+                                                userId: _profileUserId,
                                                 userName:
                                                     "Bookmarked Locations",
                                                 userLocations: false,
@@ -265,14 +313,18 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                             ),
                                           );
                                         },
-                                        enabled: true,
+                                        enabled:
+                                            _isCurrentUser, // Only allow current user to view bookmarks
                                       ),
                                       _buildStatCard(
                                         context,
                                         icon: Icons.menu_book,
                                         title: 'Recipes',
                                         value: recipeCount,
-                                        onTap: () {},
+                                        onTap: () {
+                                          // Navigate to recipes page for this user
+                                          // You'll need to implement this navigation
+                                        },
                                         enabled: _isCurrentUser ||
                                             _isFriend ||
                                             recipeCount != '0',
@@ -284,16 +336,20 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                         value: widget.user.friends.length
                                             .toString(),
                                         onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  const FriendsController(
-                                                      currentTab: 0),
-                                            ),
-                                          );
+                                          if (_isCurrentUser) {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    const FriendsController(
+                                                        currentTab: 0),
+                                              ),
+                                            );
+                                          }
+                                          // For friends, you might want to show a limited friends list
                                         },
-                                        enabled: true,
+                                        enabled:
+                                            _isCurrentUser, // Only allow current user to navigate to friends
                                       ),
                                     ],
                                   );
@@ -301,16 +357,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               ),
                               const SizedBox(height: 16),
 
-                              // Friend Action Button
-                              if (!_isCurrentUser)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16),
-                                  child: Center(
-                                      child: _buildFriendActionButton(context)),
-                                ),
-
-                              // Friend Requests Button (for current user)
+                              // Friend Requests Button (only for current user)
                               if (_isCurrentUser &&
                                   widget.user.friendRequests.isNotEmpty)
                                 Padding(
@@ -418,109 +465,5 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         ),
       ),
     );
-  }
-
-  Widget _buildFriendActionButton(BuildContext context) {
-    // final isFriend = widget.user.friends.contains(currentUser.uid);
-    // final hasSentRequest =
-    //     widget.user.friendRequests.containsKey(currentUser.uid);
-    // final hasReceivedRequest =
-    //     widget.user.friendRequests.containsValue(currentUser.uid);
-
-    final isFriend = false;
-    final hasSentRequest = false;
-    final hasReceivedRequest = true;
-
-    if (isFriend) {
-      return ElevatedButton.icon(
-        icon: const Icon(Icons.check, size: 20),
-        label: const Text('Friends'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.green[50],
-          foregroundColor: Colors.green,
-          padding: const EdgeInsets.all(12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        onPressed: null,
-      );
-    } else if (hasSentRequest) {
-      return OutlinedButton.icon(
-        icon: const Icon(Icons.person_add_disabled, size: 20),
-        label: const Text('Request Sent'),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.orange,
-          side: const BorderSide(color: Colors.orange),
-          padding: const EdgeInsets.all(12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        onPressed: () {
-          // Cancel friend request logic
-        },
-      );
-    } else if (hasReceivedRequest) {
-      return Row(
-        children: [
-          Expanded(
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.check, size: 20),
-              label: const Text('Accept'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.secondaryColor,
-                foregroundColor: AppColors.textColor,
-                padding: const EdgeInsets.all(12),
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.horizontal(
-                    left: Radius.circular(12),
-                  ),
-                ),
-              ),
-              onPressed: () {
-                // Accept friend request logic
-              },
-            ),
-          ),
-          const SizedBox(width: 1),
-          Expanded(
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.close, size: 20),
-              label: const Text('Decline'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.secondaryAccent,
-                foregroundColor: AppColors.primaryColor,
-                padding: const EdgeInsets.all(12),
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.horizontal(
-                    right: Radius.circular(12),
-                  ),
-                ),
-              ),
-              onPressed: () {
-                // Decline friend request logic
-              },
-            ),
-          ),
-        ],
-      );
-    } else {
-      return ElevatedButton.icon(
-        icon: const Icon(Icons.person_add, size: 20),
-        label: const Text('Add Friend'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.deepOrange[50],
-          foregroundColor: Colors.deepOrange,
-          padding: const EdgeInsets.all(12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        onPressed: () {
-          // Send friend request logic
-        },
-      );
-    }
   }
 }

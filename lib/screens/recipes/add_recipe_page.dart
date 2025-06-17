@@ -4,12 +4,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/models/ingredient.dart';
 import 'package:flutter_forager_app/models/recipe.dart';
+import 'package:flutter_forager_app/shared/styled_text.dart';
+import 'package:flutter_forager_app/theme.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 
 class AddRecipePage extends StatefulWidget {
+  final Recipe? recipeToEdit;
+  const AddRecipePage({Key? key, this.recipeToEdit}) : super(key: key);
   @override
   _AddRecipePageState createState() => _AddRecipePageState();
 }
@@ -17,7 +21,9 @@ class AddRecipePage extends StatefulWidget {
 class _AddRecipePageState extends State<AddRecipePage> {
   final ImagePicker _picker = ImagePicker();
   final List<File> _images = [];
+  final List<String> _existingImageUrls = [];
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _ingredientController = TextEditingController();
   final TextEditingController _quantityController = TextEditingController();
   final TextEditingController _stepController = TextEditingController();
@@ -26,10 +32,23 @@ class _AddRecipePageState extends State<AddRecipePage> {
   final String _userEmail = FirebaseAuth.instance.currentUser!.email!;
   String? _username;
   bool _isForaged = false;
+  bool _isSubmitting = false;
+  bool _isEditing = false;
 
   @override
   void initState() {
     super.initState();
+    _isEditing = widget.recipeToEdit != null;
+
+    if (_isEditing) {
+      // Populate form with existing recipe data
+      _nameController.text = widget.recipeToEdit!.name;
+      _descriptionController.text = widget.recipeToEdit!.description ?? '';
+      _ingredients.addAll(widget.recipeToEdit!.ingredients);
+      _steps.addAll(widget.recipeToEdit!.steps);
+      _existingImageUrls.addAll(widget.recipeToEdit!.imageUrls);
+    }
+
     _fetchUsername();
   }
 
@@ -45,7 +64,6 @@ class _AddRecipePageState extends State<AddRecipePage> {
         });
       }
     } catch (e) {
-      // Handle errors if needed
       print('Error fetching username: $e');
     }
   }
@@ -53,82 +71,132 @@ class _AddRecipePageState extends State<AddRecipePage> {
   Future<void> _pickImage(ImageSource source) async {
     if (_images.length >= 3) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('You can only add up to 3 photos.')),
+        SnackBar(
+          content: Text('Maximum 3 photos allowed'),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
       );
       return;
     }
 
-    final pickedFile = await _picker.pickImage(source: source);
-    if (pickedFile != null) {
-      setState(() {
-        _images.add(File(pickedFile.path));
-      });
+    try {
+      final pickedFile = await _picker.pickImage(source: source);
+      if (pickedFile != null) {
+        setState(() {
+          _images.add(File(pickedFile.path));
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to pick image: $e'),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
     }
   }
 
   Future<String> _uploadImageToFirebaseStorage(File image) async {
-    final compressedImage = await FlutterImageCompress.compressWithFile(
-      image.path,
-      quality: 70,
-    );
+    try {
+      final compressedImage = await FlutterImageCompress.compressWithFile(
+        image.path,
+        quality: 70,
+      );
 
-    final fileName = '${DateTime.now().microsecondsSinceEpoch}.png';
-    final destination = 'recipes/$fileName';
+      final fileName = '${DateTime.now().microsecondsSinceEpoch}.png';
+      final destination = 'recipes/$fileName';
 
-    final ref = firebase_storage.FirebaseStorage.instance.ref(destination);
-    final metadata = firebase_storage.SettableMetadata(
-      contentType: 'image/png',
-    );
+      final ref = firebase_storage.FirebaseStorage.instance.ref(destination);
+      final metadata = firebase_storage.SettableMetadata(
+        contentType: 'image/png',
+      );
 
-    await ref.putData(compressedImage!, metadata);
-    final imageUrl = await ref.getDownloadURL();
-    return imageUrl;
+      await ref.putData(compressedImage!, metadata);
+      return await ref.getDownloadURL();
+    } catch (e) {
+      throw Exception('Failed to upload image: $e');
+    }
   }
 
   void _addIngredient() {
     final ingredientName = _ingredientController.text.trim();
     final quantity = _quantityController.text.trim();
     if (ingredientName.isNotEmpty && quantity.isNotEmpty) {
-      final ingredient = Ingredient(
-        name: ingredientName,
-        quantity: quantity,
-        isForaged: _isForaged,
-      );
       setState(() {
-        _ingredients.add(ingredient);
+        _ingredients.add(Ingredient(
+          name: ingredientName,
+          quantity: quantity,
+          isForaged: _isForaged,
+        ));
         _ingredientController.clear();
         _quantityController.clear();
-        _isForaged = false; // Reset for next input
+        _isForaged = false;
       });
     }
   }
 
   Future<void> _submitRecipe(WidgetRef ref) async {
-    final imageUrls = await Future.wait(
-      _images.map((image) => _uploadImageToFirebaseStorage(image)),
-    );
+    if (_nameController.text.trim().isEmpty) {
+      _showError('Please enter a recipe name');
+      return;
+    }
 
-    final recipesCollection = FirebaseFirestore.instance.collection('Recipes');
-    final docRef =
-        recipesCollection.doc(); // Generate a document reference with a new ID
+    setState(() => _isSubmitting = true);
 
-    final recipe = Recipe(
-      id: docRef.id, // Use the generated ID
-      name: _nameController.text.trim(),
-      ingredients: _ingredients, // This is already a list of Ingredient objects
-      steps: _steps,
-      imageUrls: imageUrls,
-      timestamp: DateTime.now(),
-      userEmail: _userEmail,
-      userName: _username!,
-    );
+    try {
+      // Upload new images (if any)
+      final List<String> newImageUrls = _images.isNotEmpty
+          ? (await Future.wait(
+                  _images.map((image) => _uploadImageToFirebaseStorage(image))))
+              .cast<String>()
+          : <String>[];
 
-    // Save the recipe to Firestore using the generated document reference
-    await docRef.set(recipe.toMap());
+      // Combine new and existing images
+      final List<String> allImageUrls = [
+        ..._existingImageUrls,
+        ...newImageUrls
+      ];
 
-    // Clear fields after submission
+      final recipe = Recipe(
+        id: _isEditing
+            ? widget.recipeToEdit!.id
+            : FirebaseFirestore.instance.collection('Recipes').doc().id,
+        name: _nameController.text.trim(),
+        description: _descriptionController.text.trim(),
+        ingredients: _ingredients,
+        steps: _steps,
+        imageUrls: allImageUrls,
+        timestamp: _isEditing ? widget.recipeToEdit!.timestamp : DateTime.now(),
+        userEmail: _userEmail,
+        userName: _username!,
+        likes: _isEditing ? widget.recipeToEdit!.likes : [],
+      );
+
+      await FirebaseFirestore.instance
+          .collection('Recipes')
+          .doc(recipe.id)
+          .set(recipe.toMap());
+
+      _clearForm();
+      _showSuccess();
+      Navigator.pop(context);
+    } catch (e) {
+      _showError('Failed to ${_isEditing ? 'update' : 'submit'} recipe: $e');
+    } finally {
+      setState(() => _isSubmitting = false);
+    }
+  }
+
+  void _clearForm() {
     setState(() {
       _nameController.clear();
+      _descriptionController.clear();
       _ingredientController.clear();
       _quantityController.clear();
       _stepController.clear();
@@ -136,160 +204,319 @@ class _AddRecipePageState extends State<AddRecipePage> {
       _ingredients.clear();
       _steps.clear();
     });
+  }
 
+  void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Recipe submitted successfully!')),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red[400],
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
     );
-    Navigator.pop(context);
+  }
+
+  void _showSuccess() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Recipe submitted successfully!'),
+        backgroundColor: Colors.green[400],
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Add Recipe'),
+        title: StyledTitleLarge(
+          _isEditing ? 'Edit Recipe' : 'Share A Recipe',
+          color: AppColors.textColor,
+        ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                controller: _nameController,
-                decoration: InputDecoration(labelText: 'Recipe Name'),
-              ),
-              SizedBox(height: 10),
-              Text('Photos:',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              SizedBox(height: 10),
-              Row(
-                children: [
-                  for (var image in _images)
-                    Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: Image.file(image,
-                          width: 80, height: 80, fit: BoxFit.cover),
-                    ),
-                  if (_images.length < 3)
-                    IconButton(
-                      icon: Icon(Icons.add_a_photo),
-                      onPressed: () => _pickImage(ImageSource.gallery),
-                    ),
-                ],
-              ),
-              SizedBox(height: 20),
-              Text('Ingredients:',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              Row(
-                children: [
-                  Expanded(
-                    flex: 1,
-                    child: TextField(
-                      controller: _quantityController,
-                      decoration: InputDecoration(labelText: 'Quantity'),
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  Expanded(
-                    flex: 3,
-                    child: TextField(
-                      controller: _ingredientController,
-                      decoration: InputDecoration(labelText: 'Ingredient'),
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  Column(
-                    children: [
-                      Text('Foraged?'),
-                      Checkbox(
-                        value: _isForaged,
-                        onChanged: (bool? value) {
-                          setState(() {
-                            _isForaged = value ?? false;
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.add),
-                    onPressed: _addIngredient,
-                  ),
-                ],
-              ),
-              Wrap(
-                children: _ingredients.map((ingredient) {
-                  final source = ingredient.isForaged ? 'Foraged' : 'Bought';
-                  return Chip(
-                    label: Text(
-                        '${ingredient.quantity} ${ingredient.name} ($source)'),
-                    onDeleted: () {
-                      setState(() {
-                        _ingredients.remove(ingredient);
-                      });
-                    },
-                  );
-                }).toList(),
-              ),
-              SizedBox(height: 20),
-              Text('Instructions:',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _stepController,
-                      decoration: InputDecoration(labelText: 'Enter step'),
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.add),
-                    onPressed: () {
-                      final step = _stepController.text.trim();
-                      if (step.isNotEmpty) {
-                        setState(() {
-                          _steps.add(step);
-                          _stepController.clear();
-                        });
-                      }
-                    },
-                  ),
-                ],
-              ),
-              SizedBox(height: 20),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: _steps.asMap().entries.map((entry) {
-                  final index = entry.key + 1;
-                  final step = entry.value;
-                  return Row(
-                    children: [
-                      Text('Step $index: $step'),
-                      IconButton(
-                        icon: Icon(Icons.delete),
-                        onPressed: () {
-                          setState(() {
-                            _steps.remove(step);
-                          });
-                        },
-                      ),
-                    ],
-                  );
-                }).toList(),
-              ),
-              Center(
-                child: Consumer(
-                  builder: (context, ref, _) {
-                    return ElevatedButton(
-                      onPressed: () => _submitRecipe(ref),
-                      child: Text('Submit Recipe'),
-                    );
-                  },
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Recipe Name
+            StyledHeadingLarge(
+              'Recipe Name*',
+              color: AppColors.textColor,
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _nameController,
+              decoration: InputDecoration(
+                hintText: 'e.g. Wild Mushroom Risotto',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 20),
+
+            // Description
+            StyledHeadingLarge(
+              'Description (Optional)',
+              color: AppColors.textColor,
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _descriptionController,
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText:
+                    'Tell us about this recipe or your foraging experience...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Photos
+            StyledHeadingLarge(
+              'Photos (Max 3)',
+              color: AppColors.textColor,
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 100,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  ..._images.map((image) => Padding(
+                        padding: const EdgeInsets.only(right: 10),
+                        child: Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.file(
+                                image,
+                                width: 100,
+                                height: 100,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            Positioned(
+                              top: 5,
+                              right: 5,
+                              child: GestureDetector(
+                                onTap: () =>
+                                    setState(() => _images.remove(image)),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.black54,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(Icons.close,
+                                      size: 20, color: Colors.white),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )),
+                  if (_images.length < 3)
+                    GestureDetector(
+                      onTap: () => _pickImage(ImageSource.gallery),
+                      child: Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add_a_photo,
+                                size: 30, color: Colors.grey),
+                            Text('Add Photo',
+                                style: TextStyle(color: Colors.grey)),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Ingredients
+            StyledHeadingLarge(
+              'Ingredients*',
+              color: AppColors.textColor,
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: TextField(
+                    controller: _quantityController,
+                    decoration: InputDecoration(
+                      hintText: 'Quantity',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  flex: 4,
+                  child: TextField(
+                    controller: _ingredientController,
+                    decoration: InputDecoration(
+                      hintText: 'Ingredient',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Column(
+                  children: [
+                    Text('Foraged?', style: TextStyle(fontSize: 12)),
+                    Switch(
+                      value: _isForaged,
+                      onChanged: (value) => setState(() => _isForaged = value),
+                      activeColor: Colors.green,
+                    ),
+                  ],
+                ),
+                IconButton(
+                  icon: Icon(Icons.add_circle, color: Colors.green),
+                  onPressed: _addIngredient,
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _ingredients
+                  .map((ingredient) => Chip(
+                        label:
+                            Text('${ingredient.quantity} ${ingredient.name}'),
+                        deleteIcon: Icon(Icons.close, size: 18),
+                        onDeleted: () =>
+                            setState(() => _ingredients.remove(ingredient)),
+                        backgroundColor: ingredient.isForaged
+                            ? Colors.green[50]
+                            : Colors.grey[100],
+                        labelStyle: TextStyle(
+                          color: ingredient.isForaged
+                              ? Colors.green[800]
+                              : Colors.grey[800],
+                        ),
+                      ))
+                  .toList(),
+            ),
+            const SizedBox(height: 20),
+
+            // Instructions
+            StyledHeadingLarge(
+              'Instructions*',
+              color: AppColors.textColor,
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _stepController,
+                    decoration: InputDecoration(
+                      hintText: 'Add step by step instructions',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                IconButton(
+                  icon: Icon(Icons.add_circle, color: Colors.blue),
+                  onPressed: () {
+                    final step = _stepController.text.trim();
+                    if (step.isNotEmpty) {
+                      setState(() {
+                        _steps.add(step);
+                        _stepController.clear();
+                      });
+                    }
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ..._steps.asMap().entries.map((entry) => Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 12,
+                          backgroundColor: Colors.blue,
+                          child: Text(
+                            '${entry.key + 1}',
+                            style: TextStyle(color: Colors.white, fontSize: 12),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(child: Text(entry.value)),
+                        IconButton(
+                          icon: Icon(Icons.delete,
+                              color: Colors.red[300], size: 20),
+                          onPressed: () =>
+                              setState(() => _steps.removeAt(entry.key)),
+                        ),
+                      ],
+                    ),
+                  ),
+                )),
+            const SizedBox(height: 30),
+
+            // Submit Button
+            Consumer(
+              builder: (context, ref, _) => SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isSubmitting ? null : () => _submitRecipe(ref),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    backgroundColor: Colors.deepOrange,
+                  ),
+                  child: _isSubmitting
+                      ? CircularProgressIndicator(color: Colors.white)
+                      : Text(
+                          'Submit Recipe',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -63,6 +63,7 @@ class _RegisterPageState extends State<RegisterPage> {
           'privateProfile': false,
         },
         'createdAt': FieldValue.serverTimestamp(), 
+        'lastActive': FieldValue.serverTimestamp(),
       });
 
       // pop loading circle
