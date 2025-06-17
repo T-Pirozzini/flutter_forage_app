@@ -38,8 +38,9 @@ class CustomDrawer extends StatelessWidget {
                 children: [
                   DrawerHeader(
                     child: ClipOval(
-                      child: Image.asset('lib/assets/images/forager_logo.png',
-                          width: 138),
+                      child: Image.asset(
+                        'assets/images/forager_logo_2.png',
+                      ),
                     ),
                   ),
                   // profile tile

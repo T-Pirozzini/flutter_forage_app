@@ -37,8 +37,33 @@ class RecipesPage extends ConsumerWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      StyledText("Cook a meal with your foraged ingredients"),
-                      StyledText('and share with the community!'),
+                      StyledTextMedium(
+                        "Cook a meal with your foraged ingredients",
+                        color: AppColors.textColor,
+                      ),
+                      StyledTextMedium('and share with the community!',
+                          color: AppColors.textColor),
+                      Row(
+                        children: [
+                          StyledTextMedium('Foraged:',
+                              color: AppColors.textColor),
+                          SizedBox(width: 4),
+                          Icon(
+                            Icons.eco,
+                            color: Colors.green,
+                            size: 18,
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          StyledTextMedium('Purchased:',
+                              color: AppColors.textColor),
+                          SizedBox(width: 4),
+                          Icon(Icons.shopping_basket,
+                              color: Colors.orangeAccent, size: 18),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -47,7 +72,11 @@ class RecipesPage extends ConsumerWidget {
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
                     final recipe = recipes[index];
-                    return RecipeCard(recipe: recipe);
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 8.0, horizontal: 16.0),
+                      child: RecipeCard(recipe: recipe),
+                    );
                   },
                   childCount: recipes.length,
                 ),

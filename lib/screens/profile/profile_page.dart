@@ -301,15 +301,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               ),
                               const SizedBox(height: 16),
 
-                              // Friend Action Button
-                              if (!_isCurrentUser)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16),
-                                  child: Center(
-                                      child: _buildFriendActionButton(context)),
-                                ),
-
+                              
                               // Friend Requests Button (for current user)
                               if (_isCurrentUser &&
                                   widget.user.friendRequests.isNotEmpty)
@@ -418,109 +410,5 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         ),
       ),
     );
-  }
-
-  Widget _buildFriendActionButton(BuildContext context) {
-    // final isFriend = widget.user.friends.contains(currentUser.uid);
-    // final hasSentRequest =
-    //     widget.user.friendRequests.containsKey(currentUser.uid);
-    // final hasReceivedRequest =
-    //     widget.user.friendRequests.containsValue(currentUser.uid);
-
-    final isFriend = false;
-    final hasSentRequest = false;
-    final hasReceivedRequest = true;
-
-    if (isFriend) {
-      return ElevatedButton.icon(
-        icon: const Icon(Icons.check, size: 20),
-        label: const Text('Friends'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.green[50],
-          foregroundColor: Colors.green,
-          padding: const EdgeInsets.all(12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        onPressed: null,
-      );
-    } else if (hasSentRequest) {
-      return OutlinedButton.icon(
-        icon: const Icon(Icons.person_add_disabled, size: 20),
-        label: const Text('Request Sent'),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.orange,
-          side: const BorderSide(color: Colors.orange),
-          padding: const EdgeInsets.all(12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        onPressed: () {
-          // Cancel friend request logic
-        },
-      );
-    } else if (hasReceivedRequest) {
-      return Row(
-        children: [
-          Expanded(
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.check, size: 20),
-              label: const Text('Accept'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.secondaryColor,
-                foregroundColor: AppColors.textColor,
-                padding: const EdgeInsets.all(12),
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.horizontal(
-                    left: Radius.circular(12),
-                  ),
-                ),
-              ),
-              onPressed: () {
-                // Accept friend request logic
-              },
-            ),
-          ),
-          const SizedBox(width: 1),
-          Expanded(
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.close, size: 20),
-              label: const Text('Decline'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.secondaryAccent,
-                foregroundColor: AppColors.primaryColor,
-                padding: const EdgeInsets.all(12),
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.horizontal(
-                    right: Radius.circular(12),
-                  ),
-                ),
-              ),
-              onPressed: () {
-                // Decline friend request logic
-              },
-            ),
-          ),
-        ],
-      );
-    } else {
-      return ElevatedButton.icon(
-        icon: const Icon(Icons.person_add, size: 20),
-        label: const Text('Add Friend'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.deepOrange[50],
-          foregroundColor: Colors.deepOrange,
-          padding: const EdgeInsets.all(12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        onPressed: () {
-          // Send friend request logic
-        },
-      );
-    }
-  }
+  }  
 }

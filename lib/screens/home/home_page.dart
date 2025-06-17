@@ -84,9 +84,11 @@ class _HomePageState extends State<HomePage>
 
     return Scaffold(
       appBar: AppBar(
-        title: Image.asset(
-          'assets/images/forager_appbar_logo.png',
-          height: kToolbarHeight,
+        title: Padding(
+          padding: const EdgeInsets.all(18.0),
+          child: Image.asset(
+            'assets/images/forager_logo_2.png',
+          ),
         ),
         actions: [
           Padding(
