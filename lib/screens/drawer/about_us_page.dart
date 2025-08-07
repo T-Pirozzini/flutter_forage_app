@@ -98,7 +98,7 @@ class _AboutUsPageState extends State<AboutUsPage> {
                         Text(
                           'Travis Pirozzini',
                           style: GoogleFonts.philosopher(
-                              fontSize: 24,
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: Colors.white),
                         ),
@@ -112,7 +112,7 @@ class _AboutUsPageState extends State<AboutUsPage> {
                         const Text('Mobile(Flutter) & Web(React) Developer',
                             style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 16,
+                                fontSize: 14,
                                 fontWeight: FontWeight.bold)),
                         const Text('UI/UX Certified',
                             style: TextStyle(color: Colors.white)),
@@ -120,7 +120,7 @@ class _AboutUsPageState extends State<AboutUsPage> {
                           padding: EdgeInsets.all(12.0),
                           child: Text(
                             'Whether I\'m in the mountains, slaying an Ancient Blue Dragon with friends, or learning to code - I seek the challenge. Software Development is a continuous journey that allows me to bring my dreams to life through dedication and creative solutions... and I\'m just getting started.',
-                            style: TextStyle(color: Colors.white, fontSize: 14),
+                            style: TextStyle(color: Colors.white, fontSize: 10),
                             textAlign: TextAlign.justify,
                           ),
                         ),
@@ -129,12 +129,12 @@ class _AboutUsPageState extends State<AboutUsPage> {
                           padding: EdgeInsets.all(8.0),
                           child: Text(
                             'I\'m currently open to employment (contract/full & part-time). Please contact me if you\'re interested in working together!',
-                            style: TextStyle(color: Colors.white, fontSize: 14),
+                            style: TextStyle(color: Colors.white, fontSize: 10),
                             textAlign: TextAlign.center,
                           ),
                         ),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             ElevatedButton.icon(
                               onPressed: _launchWebsiteTravis,
@@ -142,14 +142,12 @@ class _AboutUsPageState extends State<AboutUsPage> {
                                   .person), // Icon for Personal Website
                               label: const Text('Portfolio'),
                             ),
-                            const SizedBox(width: 16),
                             ElevatedButton.icon(
                               onPressed: _launchLinkedInTravis,
                               icon: const FaIcon(FontAwesomeIcons
                                   .linkedin), // Icon for LinkedIn
                               label: const Text('LinkedIn'),
                             ),
-                            const SizedBox(width: 16),
                             ElevatedButton.icon(
                               onPressed: _launchGitHubTravis,
                               icon: const FaIcon(
@@ -182,25 +180,29 @@ class _AboutUsPageState extends State<AboutUsPage> {
                         Text(
                           'Richard Au',
                           style: GoogleFonts.philosopher(
-                              fontSize: 24,
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: Colors.white),
                         ),
                         const Padding(
-                          padding: EdgeInsets.only(top: 8.0),
-                          child: Text(
-                            'Mobile Developer, Full-Stack Software Developer',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 8.0, vertical: 0.0),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'Mobile Developer, Full-Stack Software Developer',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold),
+                            ),
                           ),
                         ),
                         const Padding(
                           padding: EdgeInsets.all(12.0),
                           child: Text(
                             '\n Whether I\'m on the basketball court, coding at my desk, or cooking in the kitchen, I\'m always looking to experiment with new ideas.I love blending two entirely different industries together and testing what the outcome would be for an idea. \n\nBy learning software development and combining my  previous knowledge in social sciences and psychology, I aim to bridge the gap between individuals and mental health clinics to be more easily accessible and more well-known publicly.',
-                            style: TextStyle(color: Colors.white, fontSize: 14),
+                            style: TextStyle(color: Colors.white, fontSize: 10),
                             textAlign: TextAlign.center,
                           ),
                         ),
@@ -210,7 +212,7 @@ class _AboutUsPageState extends State<AboutUsPage> {
                           padding: EdgeInsets.all(8.0),
                           child: Text(
                             'I\'m currently open to employment (contract/full & part-time). Please contact me if you\'re interested in working together!',
-                            style: TextStyle(color: Colors.white, fontSize: 14),
+                            style: TextStyle(color: Colors.white, fontSize: 10),
                             textAlign: TextAlign.center,
                           ),
                         ),

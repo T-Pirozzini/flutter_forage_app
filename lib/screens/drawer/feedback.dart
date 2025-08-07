@@ -35,11 +35,7 @@ class UserFeedback extends StatelessWidget {
             ),
           ),
           SizedBox(height: 10.0),
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.grey[400]!),
-            ),
+          Container(            
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10),
               child: TextField(

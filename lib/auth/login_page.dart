@@ -1,3 +1,4 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/components/button.dart';
@@ -97,8 +98,10 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   const SizedBox(height: 25),
-                  const Text(
+                  AutoSizeText(
                     'Welcome back, you\'ve been missed!',
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
                     style: TextStyle(fontSize: 18),
                   ),
                   const SizedBox(height: 25),

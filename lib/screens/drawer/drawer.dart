@@ -89,10 +89,11 @@ class CustomDrawer extends StatelessWidget {
                     title: Row(
                       children: [
                         Icon(Icons.delete_forever,
-                            color: Colors.white, size: 30),
+                            color: Colors.white, size: 18),
+                        const SizedBox(width: 30),
                         Text('Delete Account?',
                             style:
-                                TextStyle(color: Colors.white, fontSize: 18)),
+                                TextStyle(color: Colors.white, fontSize: 14)),
                       ],
                     ),
                     onTap: showDeleteConfirmationDialog),
