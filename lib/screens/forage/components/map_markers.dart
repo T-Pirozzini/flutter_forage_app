@@ -25,7 +25,8 @@ class MapMarkerService {
   }) async {
     try {
       final imageUrls = await _uploadImages(images);
-      final userDoc = await _firestore.collection('Users').doc(currentUser.email).get();
+      final userDoc =
+          await _firestore.collection('Users').doc(currentUser.email).get();
       final username = userDoc.data()?['username'] ?? 'Anonymous';
 
       await _firestore
@@ -41,16 +42,17 @@ class MapMarkerService {
           'latitude': position.latitude,
           'longitude': position.longitude,
         },
-        'timestamp': FieldValue.serverTimestamp(),
+        'timestamp': Timestamp.now(),
         'markerOwner': currentUser.email,
         'currentStatus': 'active', // New field
-        'statusHistory': [ // New field
+        'statusHistory': [
+          // New field
           {
             'status': 'active',
             'userId': currentUser.uid,
             'userEmail': currentUser.email,
             'username': username,
-            'timestamp': FieldValue.serverTimestamp(),
+            'timestamp': Timestamp.now(),
             'notes': 'Marker created',
           }
         ],
@@ -62,10 +64,11 @@ class MapMarkerService {
 
   Future<List<String>> _uploadImages(List<File> images) async {
     final List<String> imageUrls = [];
-    
+
     await Future.wait(images.map((image) async {
       try {
-        final fileName = '${DateTime.now().millisecondsSinceEpoch}_${images.indexOf(image)}.jpg';
+        final fileName =
+            '${DateTime.now().millisecondsSinceEpoch}_${images.indexOf(image)}.jpg';
         final storageRef = _storage.ref().child('marker_images/$fileName');
         await storageRef.putFile(image);
         final downloadUrl = await storageRef.getDownloadURL();
@@ -74,7 +77,7 @@ class MapMarkerService {
         throw Exception('Failed to upload image: $e');
       }
     }));
-    
+
     return imageUrls;
   }
 
@@ -84,7 +87,8 @@ class MapMarkerService {
     String? notes,
     required String markerOwnerEmail,
   }) async {
-    final userDoc = await _firestore.collection('Users').doc(currentUser.email).get();
+    final userDoc =
+        await _firestore.collection('Users').doc(currentUser.email).get();
     final username = userDoc.data()?['username'] ?? 'Anonymous';
 
     final update = {

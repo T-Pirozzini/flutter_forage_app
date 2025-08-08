@@ -410,37 +410,46 @@ class _MapPageState extends ConsumerState<MapPage> {
     return Scaffold(
       appBar: AppBar(
         title: const StyledHeading('Forage Map'),
+        toolbarHeight: 60,
       ),
       body: Column(
         children: [
           const MapHeader(),
           Expanded(
-            child: MapView(
-              markers: markers,
-              circles: circles,
-              initialCameraPosition: CameraPosition(
-                target: widget.initialLocation ??
-                    LatLng(currentPosition.latitude, currentPosition.longitude),
-                zoom: 16,
-              ),
-              focusLocation: widget.initialLocation,
-              onMapCreated: (controller) {
-                _mapController.completeController(controller);
-                controller.setMapStyle(mapstyle);
-              },
+            child: Stack(
+              children: [
+                // Map View
+                MapView(
+                  markers: markers,
+                  circles: circles,
+                  initialCameraPosition: CameraPosition(
+                    target: widget.initialLocation ??
+                        LatLng(currentPosition.latitude,
+                            currentPosition.longitude),
+                    zoom: 16,
+                  ),
+                  focusLocation: widget.initialLocation,
+                  onMapCreated: (controller) {
+                    _mapController.completeController(controller);
+                    controller.setMapStyle(mapstyle);
+                  },
+                ),
+
+                // Floating Controls Overlay
+                MapFloatingControls(
+                  followUser: followUser,
+                  onFollowPressed: () {
+                    ref.read(followUserProvider.notifier).state = !followUser;
+                  },
+                  onAddMarkerPressed: (dialogContext, type) =>
+                      _showMarkerDetailsDialog(context, dialogContext, type),
+                  onPlaceSelected: _goToPlace,
+                  onShowLocationsPressed: _showLocationsBottomSheet,
+                ),
+              ],
             ),
           ),
         ],
-      ),
-      floatingActionButton: MapFloatingControls(
-        followUser: followUser,
-        onFollowPressed: () {
-          ref.read(followUserProvider.notifier).state = !followUser;
-        },
-        onAddMarkerPressed: (dialogContext, type) =>
-            _showMarkerDetailsDialog(context, dialogContext, type),
-        onPlaceSelected: _goToPlace,
-        onShowLocationsPressed: _showLocationsBottomSheet,
       ),
     );
   }
