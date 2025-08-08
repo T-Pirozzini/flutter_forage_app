@@ -338,14 +338,17 @@ class _ForageLocationsState extends State<ForageLocations> {
                       ),
                       const SizedBox(height: 4),
                       // Description
-                      Text(
-                        marker.description,
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: Colors.grey[600],
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          marker.description,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       // Location coordinates

@@ -430,41 +430,84 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
     );
   }
 
-  Future<void> _refreshData() async {
+  Future<void> _refreshData() async {   
     await _refreshStatusHistory();
     await _refreshComments();
+    
   }
 
   Future<void> _refreshStatusHistory() async {
-    final doc = await FirebaseFirestore.instance
-        .collection('Users')
-        .doc(widget.markerOwner)
-        .collection('Markers')
-        .doc(widget.markerId)
-        .get();
+    try {
+      // Use the same query-based approach instead of document ID
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(widget.markerOwner)
+          .collection('Markers')
+          .where('name', isEqualTo: widget.name)
+          .where('type', isEqualTo: widget.type)
+          .get();
 
-    if (doc.exists) {
-      final data = doc.data() as Map<String, dynamic>;
+      if (querySnapshot.docs.isNotEmpty) {
+        // Take the first matching document (should be unique)
+        final doc = querySnapshot.docs.first;
+        final data = doc.data();
+
+        print('Refreshing status history from document ID: ${doc.id}');
+        print('Status history found: ${data['statusHistory']?.length ?? 0}');
+
+        setState(() {
+          _statusHistory =
+              List<Map<String, dynamic>>.from(data['statusHistory'] ?? []);
+          _selectedStatus = data['currentStatus'] ?? 'active';
+        });
+      } else {
+        print('No marker found for status history refresh');
+        setState(() {
+          _statusHistory = [];
+          _selectedStatus = 'active';
+        });
+      }
+    } catch (e) {
+      print('Error refreshing status history: $e');
       setState(() {
-        _statusHistory =
-            List<Map<String, dynamic>>.from(data['statusHistory'] ?? []);
-        _selectedStatus = data['currentStatus'] ?? 'active';
+        _statusHistory = [];
+        _selectedStatus = 'active';
       });
     }
   }
 
   Future<void> _refreshComments() async {
-    final doc = await FirebaseFirestore.instance
-        .collection('Users')
-        .doc(widget.markerOwner)
-        .collection('Markers')
-        .doc(widget.markerId)
-        .get();
+    try {
+      // Use the same query-based approach instead of document ID
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(widget.markerOwner)
+          .collection('Markers')
+          .where('name', isEqualTo: widget.name)
+          .where('type', isEqualTo: widget.type)
+          .get();
 
-    if (doc.exists) {
-      final data = doc.data() as Map<String, dynamic>;
+      if (querySnapshot.docs.isNotEmpty) {
+        // Take the first matching document (should be unique)
+        final doc = querySnapshot.docs.first;
+        final data = doc.data();
+
+        print('Refreshing comments from document ID: ${doc.id}');
+        print('Comments found: ${data['comments']?.length ?? 0}');
+
+        setState(() {
+          _comments = List<Map<String, dynamic>>.from(data['comments'] ?? []);
+        });
+      } else {
+        print('No marker found for comments refresh');
+        setState(() {
+          _comments = [];
+        });
+      }
+    } catch (e) {
+      print('Error refreshing comments: $e');
       setState(() {
-        _comments = List<Map<String, dynamic>>.from(data['comments'] ?? []);
+        _comments = [];
       });
     }
   }
@@ -474,10 +517,14 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
 
     try {
       final markerService = MarkerService(FirebaseAuth.instance.currentUser!);
+
+      // Always use the name and type approach for reliability
       await markerService.addComment(
-        markerId: widget.markerId,
+        markerId: widget.markerId, 
         text: _commentController.text.trim(),
         markerOwnerEmail: widget.markerOwner,
+        markerName: widget.name, 
+        markerType: widget.type, 
       );
 
       await _refreshComments();
@@ -501,10 +548,12 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
     try {
       final markerService = MarkerService(FirebaseAuth.instance.currentUser!);
       await markerService.updateMarkerStatus(
-        markerId: widget.markerId,
+        markerId: widget.markerId, // This will be ignored
         newStatus: newStatus,
         notes: notes,
         markerOwnerEmail: widget.markerOwner,
+        markerName: widget.name, // Required
+        markerType: widget.type, // Required
       );
 
       await _refreshStatusHistory();
@@ -592,12 +641,19 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   StyledTitleSmall('Update Status', color: AppColors.textColor),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       Expanded(
                         child: InputDecorator(
                           decoration: InputDecoration(
                             labelText: 'Current Status',
+                            labelStyle: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: Colors.deepOrange,
+                            ),
+                            fillColor: Colors.white,
+                            filled: true,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -609,7 +665,7 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                               value: _selectedStatus,
                               style: GoogleFonts.poppins(
                                 fontSize: 14,
-                                color: AppColors.textColor,
+                                color: Colors.white,
                               ),
                               isExpanded: true,
                               items: const [
@@ -700,20 +756,15 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                                     Row(
                                       children: [
                                         CircleAvatar(
-                                          radius: 20, // Adjust size as needed
-                                          backgroundColor: Colors.deepOrange
-                                              .withOpacity(0.2),
-                                          foregroundImage: _ownerProfilePic !=
-                                                  ""
-                                              ? AssetImage(
-                                                  'lib/assets/images/${_ownerProfilePic}')
-                                              : null,
-                                          child: _ownerProfilePic == ""
-                                              ? const Icon(Icons.person,
-                                                  size: 20,
-                                                  color: Colors.deepOrange)
-                                              : null,
-                                        ),
+  radius: 20,
+  backgroundColor: Colors.deepOrange.withOpacity(0.2),
+  foregroundImage: (comment['profilePic'] != null && comment['profilePic'].toString().isNotEmpty)
+      ? AssetImage('lib/assets/images/${comment['profilePic']}')
+      : null,
+  child: (comment['profilePic'] == null || comment['profilePic'].toString().isEmpty)
+      ? const Icon(Icons.person, size: 20, color: Colors.deepOrange)
+      : null,
+),
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: Text(
