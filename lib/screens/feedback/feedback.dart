@@ -123,31 +123,32 @@ class _FeedbackPageState extends State<FeedbackPage>
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        body: Column(
-          children: [
-            const ScreenHeading(title: 'Feedback'),
-            _IntroSection(
-                onSupportPressed: () =>
-                    _showSnackBar('Buy Me a Coffee link coming soon!'),
-                currentUserCount: currentUserCount),
-            _CustomTabBar(controller: _tabController),
-            Expanded(
-                child: _TabContent(
-              tabController: _tabController,
-              feedbackController: _feedbackController,
-              messageController: _messageController,
-              progressController: _progressController,
-              userProfilePic: _userProfilePic,
-              timeFormat: _timeFormat,
-              onFeedbackSubmit: () =>
-                  _submitData(SubmissionConfig.feedback(_feedbackController)),
-              onMessageSubmit: () =>
-                  _submitData(SubmissionConfig.message(_messageController)),
-              onProgressSubmit: () =>
-                  _submitData(SubmissionConfig.progress(_progressController)),
-              isOwner: _currentUser.email == _ownerEmail,
-            )),
-          ],
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              const ScreenHeading(title: 'Feedback'),
+              _IntroSection(
+                  onSupportPressed: () =>
+                      _showSnackBar('Buy Me a Coffee link coming soon!'),
+                  currentUserCount: currentUserCount),
+              _CustomTabBar(controller: _tabController),
+              _TabContent(
+                tabController: _tabController,
+                feedbackController: _feedbackController,
+                messageController: _messageController,
+                progressController: _progressController,
+                userProfilePic: _userProfilePic,
+                timeFormat: _timeFormat,
+                onFeedbackSubmit: () =>
+                    _submitData(SubmissionConfig.feedback(_feedbackController)),
+                onMessageSubmit: () =>
+                    _submitData(SubmissionConfig.message(_messageController)),
+                onProgressSubmit: () =>
+                    _submitData(SubmissionConfig.progress(_progressController)),
+                isOwner: _currentUser.email == _ownerEmail,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -234,7 +235,7 @@ class _IntroSectionState extends State<_IntroSection> {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4),
       decoration: BoxDecoration(
         color: AppColors.titleBarColor,
         borderRadius: const BorderRadius.only(
@@ -246,11 +247,11 @@ class _IntroSectionState extends State<_IntroSection> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Center(
-            child: StyledHeadingMedium('Welcome Back to Forager!',
+            child: StyledHeadingSmall('Welcome Back to Forager!',
                 color: AppColors.textColor),
           ),
           const SizedBox(height: 8),
-          StyledTextMedium(
+          StyledTextSmall(
               "I'm sorry! Our foraging community is growing rapidly, but we haven't pulled our weight.",
               color: AppColors.textColor),
           const SizedBox(height: 8),
@@ -367,33 +368,45 @@ class _IntroSectionState extends State<_IntroSection> {
                               const SizedBox(height: 12),
                               Row(
                                 children: [
-                                  ElevatedButton.icon(
-                                    onPressed: _launchURL,
-                                    label: StyledTextMedium(
-                                        'Treat us to a coffee ☕'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor:
-                                          AppColors.textColor.withOpacity(0.9),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
+                                  Flexible(
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: ElevatedButton.icon(
+                                        onPressed: _launchURL,
+                                        label: StyledTextMedium(
+                                            'Buy us a coffee ☕'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AppColors.textColor
+                                              .withOpacity(0.9),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          padding: EdgeInsets.symmetric(
+                                              horizontal: 16, vertical: 10),
+                                        ),
                                       ),
-                                      padding: EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 10),
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  ElevatedButton.icon(
-                                    onPressed: _watchInterstitialAd,
-                                    label:
-                                        StyledTextMedium('Watch a short Ad 📺'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor:
-                                          AppColors.textColor.withOpacity(0.9),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
+                                  FittedBox(
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: ElevatedButton.icon(
+                                        onPressed: _watchInterstitialAd,
+                                        label:
+                                            StyledTextMedium('Watch an Ad 📺'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AppColors.textColor
+                                              .withOpacity(0.9),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          padding: EdgeInsets.symmetric(
+                                              horizontal: 16, vertical: 10),
+                                        ),
                                       ),
-                                      padding: EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 10),
                                     ),
                                   ),
                                 ],
@@ -472,29 +485,41 @@ class _TabContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TabBarView(
-      controller: tabController,
-      children: [
-        _FeedbackTab(
-          controller: feedbackController,
-          userProfilePic: userProfilePic,
-          timeFormat: timeFormat,
-          onSubmit: onFeedbackSubmit,
-        ),
-        _MessagesTab(
-          controller: messageController,
-          userProfilePic: userProfilePic,
-          timeFormat: timeFormat,
-          onSubmit: onMessageSubmit,
-        ),
-        _ProgressTab(
-          controller: progressController,
-          userProfilePic: userProfilePic,
-          timeFormat: timeFormat,
-          onSubmit: onProgressSubmit,
-          isOwner: isOwner,
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Estimate height for non-TabBarView content (ScreenHeading, IntroSection, TabBar)
+        final reservedHeight = 250.0; // Adjust based on your layout
+        final tabBarViewHeight =
+            MediaQuery.of(context).size.height - reservedHeight;
+        return SizedBox(
+          height:
+              tabBarViewHeight > 0 ? tabBarViewHeight : 400, // Fallback height
+          child: TabBarView(
+            controller: tabController,
+            children: [
+              _FeedbackTab(
+                controller: feedbackController,
+                userProfilePic: userProfilePic,
+                timeFormat: timeFormat,
+                onSubmit: onFeedbackSubmit,
+              ),
+              _MessagesTab(
+                controller: messageController,
+                userProfilePic: userProfilePic,
+                timeFormat: timeFormat,
+                onSubmit: onMessageSubmit,
+              ),
+              _ProgressTab(
+                controller: progressController,
+                userProfilePic: userProfilePic,
+                timeFormat: timeFormat,
+                onSubmit: onProgressSubmit,
+                isOwner: isOwner,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -515,7 +540,6 @@ class _FeedbackTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
       child: Column(
         children: [
           _InputSection(
@@ -534,6 +558,7 @@ class _FeedbackTab extends StatelessWidget {
                 FeedbackItem(data: data, timeFormat: timeFormat),
             emptyMessage: 'No feedback yet. Be the first to share!',
           ),
+          const SizedBox(height: 200),
         ],
       ),
     );
@@ -556,7 +581,6 @@ class _MessagesTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
       child: Column(
         children: [
           _InputSection(
@@ -575,6 +599,7 @@ class _MessagesTab extends StatelessWidget {
                 MessageItem(data: data, timeFormat: timeFormat),
             emptyMessage: 'No messages yet. Start the conversation!',
           ),
+          const SizedBox(height: 200),
         ],
       ),
     );
@@ -599,7 +624,6 @@ class _ProgressTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
       child: Column(
         children: [
           if (isOwner)
@@ -619,6 +643,7 @@ class _ProgressTab extends StatelessWidget {
                 ProgressItem(data: data, timeFormat: timeFormat),
             emptyMessage: 'No items in progress yet.',
           ),
+          const SizedBox(height: 200),
         ],
       ),
     );

@@ -323,6 +323,8 @@ class _PostCardState extends State<PostCard> {
         newStatus: newStatus,
         notes: notes,
         markerOwnerEmail: widget.post.originalMarkerOwner,
+        markerName: widget.post.name,
+        markerType: widget.post.type,
       );
 
       // Update the Posts collection to keep status in sync
@@ -401,10 +403,14 @@ class _PostCardState extends State<PostCard> {
                     height: 20,
                   ),
                   const SizedBox(width: 5),
-                  AutoSizeText(
-                    widget.post.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
+                  Flexible(
+                    child: Text(
+                      widget.post.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
@@ -415,25 +421,31 @@ class _PostCardState extends State<PostCard> {
                 child: _buildStatusChip(widget.post.currentStatus),
               ),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (statusUpdate != null) ...[
-                  StyledTextMedium(
-                    '${statusUpdate['username']?.toString().toUpperCase() ?? 'Unknown user'}: ',
-                  ),
-                  StyledTextMedium(
-                    statusUpdate['notes']?.toString() ?? 'No notes',
-                  ),
-                  const SizedBox(width: 20),
-                  StyledTextSmall(
-                    statusUpdate['timestamp'] is Timestamp
-                        ? dateFormat.format(
-                            (statusUpdate['timestamp'] as Timestamp).toDate())
-                        : 'No date',
-                  ),
+            Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (statusUpdate != null) ...[
+                    Text(
+                      '${statusUpdate['username']?.toString().toUpperCase() ?? 'Unknown user'}: ',
+                      maxLines: 1,
+                    ),
+                    Flexible(
+                      child: StyledTextSmall(
+                        statusUpdate['notes']?.toString() ?? 'No notes',
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+                    StyledTextSmall(
+                      statusUpdate['timestamp'] is Timestamp
+                          ? dateFormat.format(
+                              (statusUpdate['timestamp'] as Timestamp).toDate())
+                          : 'No date',
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -615,7 +627,7 @@ class _PostCardState extends State<PostCard> {
         status.replaceAll('_', ' ').toUpperCase(),
         style: const TextStyle(
           color: Colors.white,
-          fontSize: 12,
+          fontSize: 8,
         ),
       ),
       backgroundColor: chipColor,

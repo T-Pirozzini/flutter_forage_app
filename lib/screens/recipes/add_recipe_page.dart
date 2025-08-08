@@ -247,7 +247,7 @@ class _AddRecipePageState extends State<AddRecipePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Recipe Name
-            StyledHeadingLarge(
+            StyledHeadingMedium(
               'Recipe Name*',
               color: AppColors.textColor,
             ),
@@ -256,6 +256,8 @@ class _AddRecipePageState extends State<AddRecipePage> {
               controller: _nameController,
               decoration: InputDecoration(
                 hintText: 'e.g. Wild Mushroom Risotto',
+                fillColor: Colors.white,
+                filled: true,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -264,7 +266,7 @@ class _AddRecipePageState extends State<AddRecipePage> {
             const SizedBox(height: 20),
 
             // Description
-            StyledHeadingLarge(
+            StyledHeadingMedium(
               'Description (Optional)',
               color: AppColors.textColor,
             ),
@@ -273,6 +275,8 @@ class _AddRecipePageState extends State<AddRecipePage> {
               controller: _descriptionController,
               maxLines: 3,
               decoration: InputDecoration(
+                fillColor: Colors.white,
+                filled: true,
                 hintText:
                     'Tell us about this recipe or your foraging experience...',
                 border: OutlineInputBorder(
@@ -283,7 +287,7 @@ class _AddRecipePageState extends State<AddRecipePage> {
             const SizedBox(height: 20),
 
             // Photos
-            StyledHeadingLarge(
+            StyledHeadingMedium(
               'Photos (Max 3)',
               color: AppColors.textColor,
             ),
@@ -334,6 +338,7 @@ class _AddRecipePageState extends State<AddRecipePage> {
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.grey),
                           borderRadius: BorderRadius.circular(12),
+                          color: Colors.white.withOpacity(0.8),
                         ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -352,7 +357,7 @@ class _AddRecipePageState extends State<AddRecipePage> {
             const SizedBox(height: 20),
 
             // Ingredients
-            StyledHeadingLarge(
+            StyledHeadingMedium(
               'Ingredients*',
               color: AppColors.textColor,
             ),
@@ -364,6 +369,8 @@ class _AddRecipePageState extends State<AddRecipePage> {
                   child: TextField(
                     controller: _quantityController,
                     decoration: InputDecoration(
+                      fillColor: Colors.white,
+                      filled: true,
                       hintText: 'Quantity',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -377,6 +384,8 @@ class _AddRecipePageState extends State<AddRecipePage> {
                   child: TextField(
                     controller: _ingredientController,
                     decoration: InputDecoration(
+                      fillColor: Colors.white,
+                      filled: true,
                       hintText: 'Ingredient',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -426,7 +435,7 @@ class _AddRecipePageState extends State<AddRecipePage> {
             const SizedBox(height: 20),
 
             // Instructions
-            StyledHeadingLarge(
+            StyledHeadingMedium(
               'Instructions*',
               color: AppColors.textColor,
             ),
@@ -438,6 +447,8 @@ class _AddRecipePageState extends State<AddRecipePage> {
                     controller: _stepController,
                     decoration: InputDecoration(
                       hintText: 'Add step by step instructions',
+                      fillColor: Colors.white,
+                      filled: true,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
