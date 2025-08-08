@@ -59,112 +59,129 @@ class MapFloatingControls extends ConsumerWidget {
       'shellfish'
     ];
 
-    return Stack(
-      children: [
-        Positioned(
-          top: 250,
-          left: 20,
-          right: 20,
-          child: SearchField(
-            onPlaceSelected: onPlaceSelected,
-          ),
-        ),
-        Positioned(
-          bottom: 150.0,
-          right: 0.0,
-          child: Tooltip(
-            message: followUser
-                ? 'Following your location (2s delay after manual move)'
-                : 'Tap to follow your location',
-            child: FloatingActionButton(
-              heroTag: 'locationButton',
-              onPressed: () {
-                onFollowPressed();
-                if (followUser) {
-                  ref.read(lastManualMoveProvider.notifier).state = null;
-                }
-              },
-              shape: const RoundedRectangleBorder(),
-              mini: true,
-              backgroundColor: Colors.grey.shade800,
-              child: Icon(
-                Icons.my_location,
-                color: followUser ? Colors.deepOrange.shade300 : Colors.white,
-              ),
+    final screenSize = MediaQuery.of(context).size;
+    final safePadding = MediaQuery.of(context).padding;
+
+    return SafeArea(
+      child: Stack(
+        children: [
+          // Search Field - Top Center
+          Positioned(
+            top: safePadding.top + 20, // 20px below safe area
+            left: 20,
+            right: 20,
+            child: SearchField(
+              onPlaceSelected: onPlaceSelected,
             ),
           ),
-        ),
-        Positioned(
-          top: 350.0,
-          right: 0.0,
-          child: Tooltip(
-            message: 'View your locations',
-            child: FloatingActionButton(
-              heroTag: 'locationsButton',
-              onPressed: onShowLocationsPressed,
-              shape: const RoundedRectangleBorder(),
-              mini: true,
-              backgroundColor: Colors.grey.shade800,
-              child: const Icon(
-                Icons.list,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          bottom: 50.0,
-          left: 25.0, // Aligned with other FABs
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4),
-            color: Colors.black87,
+
+          // Right Side Controls Column
+          Positioned(
+            right: 16,
+            top: screenSize.height * 0.3, // Start at 30% of screen height
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                SpeedDial(
-                  icon: Icons.add,
-                  activeIcon: Icons.close,
-                  activeLabel: const Text(
-                    'Close',
-                    style: TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.w500),
+                // View Locations Button
+                Tooltip(
+                  message: 'View your locations',
+                  child: FloatingActionButton(
+                    heroTag: 'locationsButton',
+                    onPressed: onShowLocationsPressed,
+                    mini: true,
+                    backgroundColor: Colors.grey.shade800,
+                    child: const Icon(
+                      Icons.list,
+                      color: Colors.white,
+                    ),
                   ),
-                  backgroundColor: Colors.deepOrange.shade300,
-                  foregroundColor: Colors.white,
-                  shape: const RoundedRectangleBorder(),
-                  tooltip: 'Add a new marker',
-                  children: markerTypes.map((type) {
-                    return SpeedDialChild(
-                      child: ImageIcon(
-                        AssetImage(
-                            'lib/assets/images/${type.toLowerCase()}_marker.png'),
-                        color: _getTypeColor(type),
-                        size: 24,
-                      ),
-                      // label: type[0].toUpperCase() + type.substring(1),
-                      // labelStyle:
-                      // const TextStyle(color: Colors.black87, fontSize: 12),
-                      backgroundColor: Colors.white,
-                      onTap: () => onAddMarkerPressed(context, type),
-                    );
-                  }).toList(),
-                  animationDuration: const Duration(milliseconds: 200),
-                  overlayColor: Colors.black,
-                  overlayOpacity: 0.2,
                 ),
-                const SizedBox(height: 10), // Spacing between buttons
-                Text(
-                  'Add a Marker',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
-                    fontSize: 12,
+                const SizedBox(height: 16),
+                // Follow Location Button
+                Tooltip(
+                  message: followUser
+                      ? 'Following your location (2s delay after manual move)'
+                      : 'Tap to follow your location',
+                  child: FloatingActionButton(
+                    heroTag: 'locationButton',
+                    onPressed: () {
+                      onFollowPressed();
+                      if (followUser) {
+                        ref.read(lastManualMoveProvider.notifier).state = null;
+                      }
+                    },
+                    mini: true,
+                    backgroundColor: Colors.grey.shade800,
+                    child: Icon(
+                      Icons.my_location,
+                      color: followUser
+                          ? Colors.deepOrange.shade300
+                          : Colors.white,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-        ),
-      ],
+
+          // Add Marker SpeedDial - Bottom Left
+          Positioned(
+            bottom: safePadding.bottom - 20,
+            left: 16,
+            child: Container(
+              padding: const EdgeInsets.all(8.0),
+              decoration: BoxDecoration(
+                color: Colors.black87,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SpeedDial(
+                    icon: Icons.add,
+                    activeIcon: Icons.close,
+                    activeLabel: const Text(
+                      'Close',
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.w500),
+                    ),
+                    backgroundColor: Colors.deepOrange.shade300,
+                    foregroundColor: Colors.white,
+                    buttonSize: const Size(56, 56), // Standard FAB size
+                    childrenButtonSize: const Size(40, 40),
+                    tooltip: 'Add a new marker',
+                    children: markerTypes.map((type) {
+                      return SpeedDialChild(
+                        child: ImageIcon(
+                          AssetImage(
+                              'lib/assets/images/${type.toLowerCase()}_marker.png'),
+                          color: _getTypeColor(type),
+                          size: 18,
+                        ),
+                        backgroundColor: Colors.white,
+                        onTap: () => onAddMarkerPressed(context, type),
+                      );
+                    }).toList(),
+                    animationDuration: const Duration(milliseconds: 200),
+                    overlayColor: Colors.black,
+                    overlayOpacity: 0.2,
+                    direction: SpeedDialDirection.up, // Opens upward
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Add Marker',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -174,17 +191,32 @@ class MapHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 50,
-      width: double.infinity,
-      color: AppColors.primaryAccent,
-      child: Column(
-        children: [
-          StyledTextLarge("Explore your local area for forageable ingredients.",
-              color: AppColors.textColor),
-          StyledTextLarge('Mark the location so you can find it again!',
-              color: AppColors.textColor),
-        ],
+    return SafeArea(
+      bottom: false, // Only apply safe area to top
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        color: AppColors.primaryAccent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: StyledTextLarge(
+                "Explore your local area for forageable ingredients.",
+                color: AppColors.textColor,
+              ),
+            ),
+            const SizedBox(height: 4),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: StyledTextLarge(
+                'Mark the location so you can find it again!',
+                color: AppColors.textColor,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

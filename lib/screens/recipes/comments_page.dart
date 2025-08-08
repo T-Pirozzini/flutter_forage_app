@@ -152,6 +152,7 @@ class _CommentsPageState extends State<CommentsPage> {
               fontWeight: FontWeight.bold,
             )),
         centerTitle: true,
+        toolbarHeight: 80,
         elevation: 0,
       ),
       body: Column(
@@ -175,7 +176,7 @@ class _CommentsPageState extends State<CommentsPage> {
                         child: Text(
                           widget.recipe.name,
                           style: GoogleFonts.josefinSans(
-                            fontSize: 22,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -205,7 +206,7 @@ class _CommentsPageState extends State<CommentsPage> {
                         const SizedBox(height: 8),
                         Text(
                           widget.recipe.description!,
-                          style: GoogleFonts.josefinSans(fontSize: 16),
+                          style: GoogleFonts.josefinSans(fontSize: 12),
                         ),
                         const SizedBox(height: 12),
                       ],

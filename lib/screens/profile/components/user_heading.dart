@@ -37,10 +37,6 @@ class UserHeading extends StatelessWidget {
           child: buildProfileImage(),
         ),
         Positioned(
-          top: top + 45,
-          child: StyledHeading(username.isNotEmpty ? username : 'Username'),
-        ),
-        Positioned(
           top: 20,
           left: 20,
           child: Container(

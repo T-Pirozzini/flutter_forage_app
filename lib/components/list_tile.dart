@@ -15,14 +15,15 @@ class CustomListTile extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(10.0, 0, 0, 0),
           child: ListTile(
+            dense: true,
             leading: Icon(
               icon,
               color: Colors.white,
-              size: 24,
+              size: 18,
             ),
             title: Text(text,
                 style: const TextStyle(
-                    color: Colors.white, fontSize: 14, letterSpacing: 2)),
+                    color: Colors.white, fontSize: 12, letterSpacing: 2)),
             onTap: onTap,
           ),
         ),

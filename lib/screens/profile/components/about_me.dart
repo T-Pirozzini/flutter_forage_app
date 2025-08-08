@@ -3,15 +3,16 @@ import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_forager_app/theme.dart';
 
 class AboutMe extends StatelessWidget {
-  const AboutMe({required this.bio, super.key});
+  const AboutMe({required this.bio, required this.username, super.key});
 
   final bio;
+  final username;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
         color: Colors.grey[50], // Light subtle background
         borderRadius: BorderRadius.circular(12),
@@ -30,20 +31,27 @@ class AboutMe extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'ABOUT ME',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 1.2,
-              color: Colors.grey,
-            ),
+          Row(
+            children: [
+              const Text(
+                'ABOUT ME:',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.2,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(width: 24),
+              StyledHeading(username.isNotEmpty ? username : 'Username',
+                  color: Colors.black54),
+            ],
           ),
           const SizedBox(height: 8),
           Text(
             bio.isNotEmpty ? bio : 'No bio yet...',
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 10,
               height: 1.4, // Better line spacing
               color: Colors.grey[800],
             ),
@@ -61,16 +69,18 @@ class AboutMe extends StatelessWidget {
                     context: context,
                     builder: (context) => AlertDialog(
                       title: Center(
-                        child: StyledTitleMedium('More About Me',
+                        child: StyledTitleSmall('More About Me',
                             color: AppColors.textColor),
                       ),
                       content: SingleChildScrollView(
-                        child: StyledTextLarge(bio, color: AppColors.textColor),
+                        child:
+                            StyledTextMedium(bio, color: AppColors.textColor),
                       ),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context),
-                          child: const StyledText('Close'),
+                          child:
+                              StyledText('Close', color: AppColors.textColor),
                         ),
                       ],
                     ),

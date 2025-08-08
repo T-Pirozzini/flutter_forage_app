@@ -66,6 +66,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
             children: [
               const StyledTitleMedium(
                 "Edit Profile",
+                color: Colors.white,
               ),
               const SizedBox(height: 20),
 

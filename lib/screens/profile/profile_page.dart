@@ -1,3 +1,4 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -194,14 +195,23 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 title: _isCurrentUser
                     ? 'Profile'
                     : '${widget.user.username}\'s Profile'),
-            UserHeading(
-              selectedBackgroundOption: selectedBackgroundOption,
-              selectedProfileOption: selectedProfileOption,
-              username: username,
-              createdAt: createdAt,
-              lastActive: lastActive,
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final screenWidth = constraints.maxWidth;
+                final adjustedCoverHeight = screenWidth < 400 ? 150.0 : 200.0;
+                final adjustedProfileHeight = screenWidth < 400 ? 80.0 : 100.0;
+                return UserHeading(
+                  username: username,
+                  selectedBackgroundOption: selectedBackgroundOption,
+                  selectedProfileOption: selectedProfileOption,
+                  createdAt: createdAt,
+                  lastActive: lastActive,
+                  coverHeight: adjustedCoverHeight,
+                  profileHeight: adjustedProfileHeight,
+                );
+              },
             ),
-            const SizedBox(height: 70),
+            const SizedBox(height: 20),
             Expanded(
               child: StreamBuilder<DocumentSnapshot>(
                 stream: FirebaseFirestore.instance
@@ -222,7 +232,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     return Center(
                       child: ListView(
                         children: [
-                          AboutMe(bio: bio),
+                          AboutMe(bio: bio, username: username),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -355,7 +365,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                   );
                                 },
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 60),
 
                               // Friend Requests Button (only for current user)
                               if (_isCurrentUser &&
@@ -435,32 +445,38 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         onTap: enabled ? onTap : null,
         child: Padding(
           padding: const EdgeInsets.all(12),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Icon(icon,
-                    size: 18, color: enabled ? Colors.deepOrange : Colors.grey),
-              ),
-              const SizedBox(height: 8),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(value,
-                    style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: enabled ? Colors.black : Colors.grey)),
-              ),
-              const SizedBox(height: 4),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(title,
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: enabled ? Colors.grey[600] : Colors.grey)),
-              ),
-            ],
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.center,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 18,
+                  color: enabled ? Colors.deepOrange : Colors.grey,
+                ),
+                const SizedBox(height: 8),
+                AutoSizeText(
+                  value,
+                  minFontSize: 6,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: enabled ? Colors.black : Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                AutoSizeText(
+                  title,
+                  minFontSize: 6,
+                  maxLines: 1,
+                  style: TextStyle(
+                    color: enabled ? Colors.grey[600] : Colors.grey,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

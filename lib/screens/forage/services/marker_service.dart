@@ -145,61 +145,124 @@ class MarkerService {
   }
 
   Future<void> updateMarkerStatus({
-    required String markerId,
+    required String markerId, // We'll ignore this too
     required String newStatus,
-    String? notes,
+    required String notes,
     required String markerOwnerEmail,
+    String? markerName,
+    String? markerType,
   }) async {
-    final userDoc = await _firestore.collection('Users').doc(user.email).get();
-    final username = userDoc.data()?['username'] ?? 'Anonymous';
-    final now = DateTime.now(); // Use local timestamp
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser!;
 
-    await _firestore
-        .collection('Users')
-        .doc(markerOwnerEmail)
-        .collection('Markers')
-        .doc(markerId)
-        .update({
-      'currentStatus': newStatus,
-      'statusHistory': FieldValue.arrayUnion([
-        {
-          'status': newStatus,
-          'userId': user.uid,
-          'userEmail': user.email,
-          'username': username,
-          'timestamp':
-              Timestamp.fromDate(now), // Convert to Firestore Timestamp
-          if (notes != null && notes.isNotEmpty) 'notes': notes,
+      // Get username
+      final userDoc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(currentUser.email)
+          .get();
+
+      final username =
+          userDoc.exists ? userDoc['username'] ?? 'Anonymous' : 'Anonymous';
+
+      final statusUpdate = {
+        'status': newStatus,
+        'userId': currentUser.uid,
+        'userEmail': currentUser.email!,
+        'username': username,
+        'timestamp': Timestamp.now(),
+        if (notes.isNotEmpty) 'notes': notes,
+      };
+
+      final markersCollection = FirebaseFirestore.instance
+          .collection('Users')
+          .doc(markerOwnerEmail)
+          .collection('Markers');
+
+      if (markerName != null && markerType != null) {
+        final querySnapshot = await markersCollection
+            .where('name', isEqualTo: markerName)
+            .where('type', isEqualTo: markerType)
+            .get();
+
+        if (querySnapshot.docs.isEmpty) {
+          throw Exception(
+              'No marker found with name: $markerName and type: $markerType');
         }
-      ]),
-    });
+
+        for (final doc in querySnapshot.docs) {
+          await doc.reference.update({
+            'currentStatus': newStatus,
+            'statusHistory': FieldValue.arrayUnion([statusUpdate])
+          });
+        }
+      } else {
+        throw Exception('Marker name and type are required to update status');
+      }
+    } catch (e) {
+      print('Error updating marker status: $e');
+      rethrow;
+    }
   }
 
   Future<void> addComment({
-    required String markerId,
+    required String markerId, // We'll ignore this and find the correct one
     required String text,
     required String markerOwnerEmail,
+    String? markerName,
+    String? markerType,
   }) async {
-    final userDoc = await _firestore.collection('Users').doc(user.email).get();
-    final username = userDoc.data()?['username'] ?? 'Anonymous';
-    final now = DateTime.now(); // Use local timestamp
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser!;
 
-    await _firestore
-        .collection('Users')
-        .doc(markerOwnerEmail)
-        .collection('Markers')
-        .doc(markerId)
-        .update({
-      'comments': FieldValue.arrayUnion([
-        {
-          'userId': user.uid,
-          'userEmail': user.email,
-          'username': username,
-          'text': text,
-          'timestamp':
-              Timestamp.fromDate(now), // Convert to Firestore Timestamp
+      // Get the current user's username and profile pic
+      final userDoc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(currentUser.email)
+          .get();
+
+      final username =
+          userDoc.exists ? userDoc['username'] ?? 'Anonymous' : 'Anonymous';
+      final profilePic = userDoc.exists ? userDoc['profilePic'] ?? '' : '';
+
+      final comment = {
+        'userId': currentUser.uid,
+        'userEmail': currentUser.email!,
+        'username': username,
+        'profilePic': profilePic, // Add profile pic to comment
+        'text': text,
+        'timestamp': Timestamp.now(),
+      };
+
+      final markersCollection = FirebaseFirestore.instance
+          .collection('Users')
+          .doc(markerOwnerEmail)
+          .collection('Markers');
+
+      // Always use query-based approach to find the correct document
+      if (markerName != null && markerType != null) {
+        final querySnapshot = await markersCollection
+            .where('name', isEqualTo: markerName)
+            .where('type', isEqualTo: markerType)
+            .get();
+
+        if (querySnapshot.docs.isEmpty) {
+          throw Exception(
+              'No marker found with name: $markerName and type: $markerType');
         }
-      ])
-    });
+
+        // Update all matching documents (should typically be just one)
+        for (final doc in querySnapshot.docs) {
+          print('Adding comment to document ID: ${doc.id}');
+          await doc.reference.update({
+            'comments': FieldValue.arrayUnion([comment])
+          });
+        }
+      } else {
+        throw Exception('Marker name and type are required to add comments');
+      }
+    } catch (e) {
+      print('Error adding comment: $e');
+      rethrow;
+    }
   }
 }

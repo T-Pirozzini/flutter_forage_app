@@ -76,7 +76,7 @@ class _HomePageState extends State<HomePage>
       ),
     )..load();
   }
-  
+
   @override
   void dispose() {
     _animationController.dispose();
@@ -94,15 +94,16 @@ class _HomePageState extends State<HomePage>
 
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: 80,
         title: Padding(
-          padding: const EdgeInsets.all(18.0),
+          padding: const EdgeInsets.all(2.0),
           child: Image.asset(
             'assets/images/forager_logo_2.png',
           ),
         ),
         actions: [
           Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: const EdgeInsets.all(8.0),
             child: AnimatedBuilder(
               animation: _borderColorAnimation,
               builder: (context, child) {
@@ -124,7 +125,7 @@ class _HomePageState extends State<HomePage>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(FontAwesomeIcons.compass,
-                          color: AppColors.textColor, size: 32),
+                          color: AppColors.textColor, size: 24),
                       const SizedBox(height: 4),
                       Text("Let's Forage!",
                           style: TextStyle(color: AppColors.textColor)),
@@ -164,6 +165,7 @@ class _HomePageState extends State<HomePage>
       ),
       bottomNavigationBar: ConvexAppBar(
         style: TabStyle.reactCircle,
+        height: 50,
         items: const [
           TabItem(
             icon: Icons.home,
@@ -177,7 +179,7 @@ class _HomePageState extends State<HomePage>
         color: AppColors.textColor,
         backgroundColor: AppColors.primaryAccent,
         activeColor: AppColors.secondaryColor,
-        curveSize: 100,
+        curveSize: 80,
         top: -30,
         onTap: (int i) => setState(() => currentIndex = i),
         curve: Curves.easeInOutQuad,

@@ -249,10 +249,12 @@ class _MapPageState extends ConsumerState<MapPage> {
                 AssetImage(
                     'lib/assets/images/${type.toLowerCase()}_marker.png'),
                 color: _getTypeColor(type),
-                size: 32,
+                size: 24,
               ),
               const SizedBox(width: 8),
-              Text('Add ${type[0].toUpperCase() + type.substring(1)} Marker'),
+              Text('Add ${type[0].toUpperCase() + type.substring(1)} Marker',
+                  style: GoogleFonts.poppins(
+                      fontSize: 14, fontWeight: FontWeight.bold)),
             ],
           ),
           content: Form(
@@ -306,17 +308,27 @@ class _MapPageState extends ConsumerState<MapPage> {
                 ],
               ),
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  Icon(Icons.person, color: Colors.deepOrangeAccent),
-                  StyledTitleMedium('Profile', color: AppColors.textColor),
-                  Spacer(),
-                  Icon(Icons.arrow_circle_right_outlined, color: Colors.white),
-                  Spacer(),
-                  Icon(Icons.location_on, color: Colors.deepOrangeAccent),
-                  StyledTitleMedium('Locations', color: AppColors.textColor)
-                ],
-              ),
+              SizedBox(
+                width: double.infinity,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.person, color: Colors.deepOrangeAccent),
+                      SizedBox(width: 8),
+                      StyledTitleMedium('Profile', color: AppColors.textColor),
+                      SizedBox(width: 20),
+                      Icon(Icons.arrow_circle_right_outlined,
+                          color: Colors.white),
+                      SizedBox(width: 20),
+                      Icon(Icons.location_on, color: Colors.deepOrangeAccent),
+                      SizedBox(width: 8),
+                      StyledTitleMedium('Locations', color: AppColors.textColor)
+                    ],
+                  ),
+                ),
+              )
             ]),
           ),
           actions: [
@@ -410,37 +422,46 @@ class _MapPageState extends ConsumerState<MapPage> {
     return Scaffold(
       appBar: AppBar(
         title: const StyledHeading('Forage Map'),
+        toolbarHeight: 60,
       ),
       body: Column(
         children: [
           const MapHeader(),
           Expanded(
-            child: MapView(
-              markers: markers,
-              circles: circles,
-              initialCameraPosition: CameraPosition(
-                target: widget.initialLocation ??
-                    LatLng(currentPosition.latitude, currentPosition.longitude),
-                zoom: 16,
-              ),
-              focusLocation: widget.initialLocation,
-              onMapCreated: (controller) {
-                _mapController.completeController(controller);
-                controller.setMapStyle(mapstyle);
-              },
+            child: Stack(
+              children: [
+                // Map View
+                MapView(
+                  markers: markers,
+                  circles: circles,
+                  initialCameraPosition: CameraPosition(
+                    target: widget.initialLocation ??
+                        LatLng(currentPosition.latitude,
+                            currentPosition.longitude),
+                    zoom: 16,
+                  ),
+                  focusLocation: widget.initialLocation,
+                  onMapCreated: (controller) {
+                    _mapController.completeController(controller);
+                    controller.setMapStyle(mapstyle);
+                  },
+                ),
+
+                // Floating Controls Overlay
+                MapFloatingControls(
+                  followUser: followUser,
+                  onFollowPressed: () {
+                    ref.read(followUserProvider.notifier).state = !followUser;
+                  },
+                  onAddMarkerPressed: (dialogContext, type) =>
+                      _showMarkerDetailsDialog(context, dialogContext, type),
+                  onPlaceSelected: _goToPlace,
+                  onShowLocationsPressed: _showLocationsBottomSheet,
+                ),
+              ],
             ),
           ),
         ],
-      ),
-      floatingActionButton: MapFloatingControls(
-        followUser: followUser,
-        onFollowPressed: () {
-          ref.read(followUserProvider.notifier).state = !followUser;
-        },
-        onAddMarkerPressed: (dialogContext, type) =>
-            _showMarkerDetailsDialog(context, dialogContext, type),
-        onPlaceSelected: _goToPlace,
-        onShowLocationsPressed: _showLocationsBottomSheet,
       ),
     );
   }
