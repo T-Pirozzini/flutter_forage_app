@@ -32,7 +32,7 @@ def keystoreProperties = new Properties()
 
 android {
     namespace "com.example.flutter_forager_app"
-    compileSdkVersion 35
+    compileSdkVersion 36
     ndkVersion flutter.ndkVersion
 
     compileOptions {
@@ -53,8 +53,8 @@ android {
         applicationId "com.tpiro.flutter_forager_app"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
-        minSdkVersion 23
-        targetSdkVersion 35
+        minSdkVersion flutter.minSdkVersion
+        targetSdkVersion 36
         versionCode 8
         // versionName "4.0"
     }

@@ -129,11 +129,13 @@ class _AddRecipePageState extends State<AddRecipePage> {
     final quantity = _quantityController.text.trim();
     if (ingredientName.isNotEmpty && quantity.isNotEmpty) {
       setState(() {
-        _ingredients.add(Ingredient(
-          name: ingredientName,
-          quantity: quantity,
-          isForaged: _isForaged,
-        ));
+        _ingredients.add(
+          Ingredient(
+            name: ingredientName,
+            quantity: quantity,
+            isForaged: _isForaged,
+          ),
+        );
         _ingredientController.clear();
         _quantityController.clear();
         _isForaged = false;
@@ -153,14 +155,14 @@ class _AddRecipePageState extends State<AddRecipePage> {
       // Upload new images (if any)
       final List<String> newImageUrls = _images.isNotEmpty
           ? (await Future.wait(
-                  _images.map((image) => _uploadImageToFirebaseStorage(image))))
-              .cast<String>()
+              _images.map((image) => _uploadImageToFirebaseStorage(image)),
+            )).cast<String>()
           : <String>[];
 
       // Combine new and existing images
       final List<String> allImageUrls = [
         ..._existingImageUrls,
-        ...newImageUrls
+        ...newImageUrls,
       ];
 
       final recipe = Recipe(
@@ -212,9 +214,7 @@ class _AddRecipePageState extends State<AddRecipePage> {
         content: Text(message),
         backgroundColor: Colors.red[400],
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
@@ -225,9 +225,7 @@ class _AddRecipePageState extends State<AddRecipePage> {
         content: Text('Recipe submitted successfully!'),
         backgroundColor: Colors.green[400],
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
@@ -247,10 +245,7 @@ class _AddRecipePageState extends State<AddRecipePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Recipe Name
-            StyledHeadingMedium(
-              'Recipe Name*',
-              color: AppColors.textColor,
-            ),
+            StyledHeadingMedium('Recipe Name*', color: AppColors.textColor),
             const SizedBox(height: 8),
             TextField(
               controller: _nameController,
@@ -287,48 +282,50 @@ class _AddRecipePageState extends State<AddRecipePage> {
             const SizedBox(height: 20),
 
             // Photos
-            StyledHeadingMedium(
-              'Photos (Max 3)',
-              color: AppColors.textColor,
-            ),
+            StyledHeadingMedium('Photos (Max 3)', color: AppColors.textColor),
             const SizedBox(height: 8),
             SizedBox(
               height: 100,
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 children: [
-                  ..._images.map((image) => Padding(
-                        padding: const EdgeInsets.only(right: 10),
-                        child: Stack(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.file(
-                                image,
-                                width: 100,
-                                height: 100,
-                                fit: BoxFit.cover,
-                              ),
+                  ..._images.map(
+                    (image) => Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.file(
+                              image,
+                              width: 100,
+                              height: 100,
+                              fit: BoxFit.cover,
                             ),
-                            Positioned(
-                              top: 5,
-                              right: 5,
-                              child: GestureDetector(
-                                onTap: () =>
-                                    setState(() => _images.remove(image)),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.black54,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(Icons.close,
-                                      size: 20, color: Colors.white),
+                          ),
+                          Positioned(
+                            top: 5,
+                            right: 5,
+                            child: GestureDetector(
+                              onTap: () =>
+                                  setState(() => _images.remove(image)),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.black54,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.close,
+                                  size: 20,
+                                  color: Colors.white,
                                 ),
                               ),
                             ),
-                          ],
-                        ),
-                      )),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                   if (_images.length < 3)
                     GestureDetector(
                       onTap: () => _pickImage(ImageSource.gallery),
@@ -343,10 +340,15 @@ class _AddRecipePageState extends State<AddRecipePage> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.add_a_photo,
-                                size: 30, color: Colors.grey),
-                            Text('Add Photo',
-                                style: TextStyle(color: Colors.grey)),
+                            Icon(
+                              Icons.add_a_photo,
+                              size: 30,
+                              color: Colors.grey,
+                            ),
+                            Text(
+                              'Add Photo',
+                              style: TextStyle(color: Colors.grey),
+                            ),
                           ],
                         ),
                       ),
@@ -357,10 +359,7 @@ class _AddRecipePageState extends State<AddRecipePage> {
             const SizedBox(height: 20),
 
             // Ingredients
-            StyledHeadingMedium(
-              'Ingredients*',
-              color: AppColors.textColor,
-            ),
+            StyledHeadingMedium('Ingredients*', color: AppColors.textColor),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -415,30 +414,28 @@ class _AddRecipePageState extends State<AddRecipePage> {
               spacing: 8,
               runSpacing: 8,
               children: _ingredients
-                  .map((ingredient) => Chip(
-                        label:
-                            Text('${ingredient.quantity} ${ingredient.name}'),
-                        deleteIcon: Icon(Icons.close, size: 18),
-                        onDeleted: () =>
-                            setState(() => _ingredients.remove(ingredient)),
-                        backgroundColor: ingredient.isForaged
-                            ? Colors.green[50]
-                            : Colors.grey[100],
-                        labelStyle: TextStyle(
-                          color: ingredient.isForaged
-                              ? Colors.green[800]
-                              : Colors.grey[800],
-                        ),
-                      ))
+                  .map(
+                    (ingredient) => Chip(
+                      label: Text('${ingredient.quantity} ${ingredient.name}'),
+                      deleteIcon: Icon(Icons.close, size: 18),
+                      onDeleted: () =>
+                          setState(() => _ingredients.remove(ingredient)),
+                      backgroundColor: ingredient.isForaged
+                          ? Colors.green[50]
+                          : Colors.grey[100],
+                      labelStyle: TextStyle(
+                        color: ingredient.isForaged
+                            ? Colors.green[800]
+                            : Colors.grey[800],
+                      ),
+                    ),
+                  )
                   .toList(),
             ),
             const SizedBox(height: 20),
 
             // Instructions
-            StyledHeadingMedium(
-              'Instructions*',
-              color: AppColors.textColor,
-            ),
+            StyledHeadingMedium('Instructions*', color: AppColors.textColor),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -471,35 +468,40 @@ class _AddRecipePageState extends State<AddRecipePage> {
               ],
             ),
             const SizedBox(height: 10),
-            ..._steps.asMap().entries.map((entry) => Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 12,
-                          backgroundColor: Colors.blue,
-                          child: Text(
-                            '${entry.key + 1}',
-                            style: TextStyle(color: Colors.white, fontSize: 12),
-                          ),
+            ..._steps.asMap().entries.map(
+              (entry) => Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 12,
+                        backgroundColor: Colors.blue,
+                        child: Text(
+                          '${entry.key + 1}',
+                          style: TextStyle(color: Colors.white, fontSize: 12),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(child: Text(entry.value)),
-                        IconButton(
-                          icon: Icon(Icons.delete,
-                              color: Colors.red[300], size: 20),
-                          onPressed: () =>
-                              setState(() => _steps.removeAt(entry.key)),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text(entry.value)),
+                      IconButton(
+                        icon: Icon(
+                          Icons.delete,
+                          color: Colors.red[300],
+                          size: 20,
                         ),
-                      ],
-                    ),
+                        onPressed: () =>
+                            setState(() => _steps.removeAt(entry.key)),
+                      ),
+                    ],
                   ),
-                )),
+                ),
+              ),
+            ),
             const SizedBox(height: 30),
 
             // Submit Button
