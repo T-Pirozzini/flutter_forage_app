@@ -63,9 +63,8 @@ class MapService {
       ],
     };
 
+    // UPDATED: Save to root Markers collection
     await _firestore
-        .collection('Users')
-        .doc(_user.email)
         .collection('Markers')
         .add(markerData);
   }

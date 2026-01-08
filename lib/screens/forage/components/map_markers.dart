@@ -29,9 +29,8 @@ class MapMarkerService {
           await _firestore.collection('Users').doc(currentUser.email).get();
       final username = userDoc.data()?['username'] ?? 'Anonymous';
 
+      // UPDATED: Save to root Markers collection
       await _firestore
-          .collection('Users')
-          .doc(currentUser.email)
           .collection('Markers')
           .add({
         'name': name,
@@ -44,6 +43,7 @@ class MapMarkerService {
         },
         'timestamp': Timestamp.now(),
         'markerOwner': currentUser.email,
+        'userId': currentUser.email, // Added for consistency
         'currentStatus': 'active', // New field
         'statusHistory': [
           // New field

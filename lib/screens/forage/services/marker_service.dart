@@ -22,10 +22,9 @@ class MarkerService {
 
   MarkerService(this.user);
 
+  // UPDATED: Use root Markers collection
   Future<MarkerModel> getMarkerById(String markerId, String ownerEmail) async {
     final doc = await _firestore
-        .collection('Users')
-        .doc(ownerEmail)
         .collection('Markers')
         .doc(markerId)
         .get();
@@ -33,10 +32,9 @@ class MarkerService {
     return MarkerModel.fromFirestore(doc);
   }
 
+  // UPDATED: Use root Markers collection
   Stream<MarkerModel> getMarkerStream(String markerId, String ownerEmail) {
     return _firestore
-        .collection('Users')
-        .doc(ownerEmail)
         .collection('Markers')
         .doc(markerId)
         .snapshots()
@@ -76,10 +74,9 @@ class MarkerService {
           await _firestore.collection('Users').doc(user.email).get();
       final username = userDoc.data()?['username'] ?? 'Anonymous';
 
+      // UPDATED: Save to root Markers collection instead of subcollection
       await _firestore
-          .collection('Users')
-          .doc(user.email)
-          .collection('Markers')
+          .collection('Markers')  // Changed from Users/{email}/Markers
           .add({
         'name': name,
         'description': description,
@@ -91,6 +88,7 @@ class MarkerService {
         },
         'timestamp': FieldValue.serverTimestamp(),
         'markerOwner': user.email,
+        'userId': user.email,  // Added for consistency with migration
         'currentStatus': 'active',
         'statusHistory': [
           {
@@ -173,13 +171,13 @@ class MarkerService {
         if (notes.isNotEmpty) 'notes': notes,
       };
 
+      // UPDATED: Use root Markers collection
       final markersCollection = FirebaseFirestore.instance
-          .collection('Users')
-          .doc(markerOwnerEmail)
           .collection('Markers');
 
       if (markerName != null && markerType != null) {
         final querySnapshot = await markersCollection
+            .where('markerOwner', isEqualTo: markerOwnerEmail)
             .where('name', isEqualTo: markerName)
             .where('type', isEqualTo: markerType)
             .get();
@@ -233,14 +231,14 @@ class MarkerService {
         'timestamp': Timestamp.now(),
       };
 
+      // UPDATED: Use root Markers collection
       final markersCollection = FirebaseFirestore.instance
-          .collection('Users')
-          .doc(markerOwnerEmail)
           .collection('Markers');
 
       // Always use query-based approach to find the correct document
       if (markerName != null && markerType != null) {
         final querySnapshot = await markersCollection
+            .where('markerOwner', isEqualTo: markerOwnerEmail)
             .where('name', isEqualTo: markerName)
             .where('type', isEqualTo: markerType)
             .get();

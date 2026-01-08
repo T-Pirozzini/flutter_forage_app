@@ -7,6 +7,7 @@ import 'package:flutter_forager_app/models/user.dart';
 import 'package:flutter_forager_app/providers/markers/marker_data.dart';
 import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
 import 'package:flutter_forager_app/screens/friends/friends_controller.dart';
+import 'package:flutter_forager_app/screens/onboarding/onboarding_screen.dart';
 import 'package:flutter_forager_app/screens/profile/components/about_me.dart';
 import 'package:flutter_forager_app/screens/profile/components/edit_profile_dialog.dart';
 import 'package:flutter_forager_app/screens/profile/components/user_heading.dart';
@@ -397,6 +398,40 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                           builder: (context) =>
                                               const FriendsController(
                                                   currentTab: 1),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+
+                              // Tutorial/Help Button (only for current user)
+                              if (_isCurrentUser)
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                                  child: OutlinedButton.icon(
+                                    icon: const Icon(Icons.help_outline, size: 20),
+                                    label: const Text(
+                                      'App Tutorial',
+                                      style: TextStyle(fontSize: 14),
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: AppColors.secondaryColor,
+                                      side: BorderSide(
+                                          color: AppColors.secondaryColor),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const OnboardingScreen(
+                                                  isTutorial: true),
                                         ),
                                       );
                                     },

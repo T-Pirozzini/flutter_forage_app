@@ -290,19 +290,18 @@ class _MarkerButtonsState extends State<MarkerButtons> {
     DateTime timestamp,
     String? currentUser,
   ) async {
+    // UPDATED: Query root Markers collection
     final userMarkersRef = FirebaseFirestore.instance
-        .collection('Users')
-        .doc(currentUser)
-        .collection('Markers');
+        .collection('Markers')
+        .where('markerOwner', isEqualTo: currentUser);
     final markerQuerySnapshot = await userMarkersRef.get();
     final markerCount = markerQuerySnapshot.size;
     print(markerCount);
 
     if (markerCount <= 10) {
       if (markerImageUrl != null) {
+        // UPDATED: Save to root Markers collection
         FirebaseFirestore.instance
-            .collection('Users')
-            .doc(currentUser)
             .collection('Markers')
             .add({
           'name': markerName,
@@ -315,11 +314,11 @@ class _MarkerButtonsState extends State<MarkerButtons> {
           },
           'timestamp': timestamp,
           'markerOwner': currentUser,
+          'userId': currentUser, // Added for consistency
         });
       } else {
+        // UPDATED: Save to root Markers collection
         FirebaseFirestore.instance
-            .collection('Users')
-            .doc(currentUser)
             .collection('Markers')
             .add({
           'name': markerName,
@@ -332,6 +331,7 @@ class _MarkerButtonsState extends State<MarkerButtons> {
             'longitude': currentPosition.longitude,
           },
           'timestamp': timestamp,
+          'userId': currentUser, // Added for consistency
           'markerOwner': currentUser,
         });
       }

@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/components/ad_mob_service.dart';
 import 'package:flutter_forager_app/components/screen_heading.dart';
+import 'package:flutter_forager_app/screens/debug/migration_screen.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_forager_app/theme.dart';
 import 'package:intl/intl.dart';
@@ -127,6 +128,18 @@ class _FeedbackPageState extends State<FeedbackPage>
           child: Column(
             children: [
               const ScreenHeading(title: 'Feedback'),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const MigrationScreen(),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                child: const Text('🔧 Database Migration'),
+              ),
               _IntroSection(
                   onSupportPressed: () =>
                       _showSnackBar('Buy Me a Coffee link coming soon!'),
