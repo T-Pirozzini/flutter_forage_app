@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_forager_app/core/constants/firestore_collections.dart';
 import 'package:flutter_forager_app/data/repositories/base_repository.dart';
 import 'package:flutter_forager_app/data/services/firebase/firestore_service.dart';
-import 'package:flutter_forager_app/models/marker.dart';
+import 'package:flutter_forager_app/data/models/marker.dart';
 
 /// Repository for managing Marker data
 ///

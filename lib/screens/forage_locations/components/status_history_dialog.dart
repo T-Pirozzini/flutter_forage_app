@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_forager_app/models/marker.dart';
+import 'package:flutter_forager_app/data/models/marker.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:intl/intl.dart';
 

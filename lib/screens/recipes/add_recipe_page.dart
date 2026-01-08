@@ -1,9 +1,9 @@
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_forager_app/models/ingredient.dart';
-import 'package:flutter_forager_app/models/recipe.dart';
+import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
+import 'package:flutter_forager_app/data/models/ingredient.dart';
+import 'package:flutter_forager_app/data/models/recipe.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_forager_app/theme.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
@@ -11,14 +11,14 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 
-class AddRecipePage extends StatefulWidget {
+class AddRecipePage extends ConsumerStatefulWidget {
   final Recipe? recipeToEdit;
   const AddRecipePage({Key? key, this.recipeToEdit}) : super(key: key);
   @override
-  _AddRecipePageState createState() => _AddRecipePageState();
+  ConsumerState<AddRecipePage> createState() => _AddRecipePageState();
 }
 
-class _AddRecipePageState extends State<AddRecipePage> {
+class _AddRecipePageState extends ConsumerState<AddRecipePage> {
   final ImagePicker _picker = ImagePicker();
   final List<File> _images = [];
   final List<String> _existingImageUrls = [];
@@ -54,13 +54,11 @@ class _AddRecipePageState extends State<AddRecipePage> {
 
   Future<void> _fetchUsername() async {
     try {
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(_userEmail)
-          .get();
-      if (userDoc.exists) {
+      final userRepo = ref.read(userRepositoryProvider);
+      final user = await userRepo.getById(_userEmail);
+      if (user != null) {
         setState(() {
-          _username = userDoc.get('username');
+          _username = user.username;
         });
       }
     } catch (e) {
@@ -165,10 +163,12 @@ class _AddRecipePageState extends State<AddRecipePage> {
         ...newImageUrls,
       ];
 
+      final recipeRepo = ref.read(recipeRepositoryProvider);
+
       final recipe = Recipe(
         id: _isEditing
             ? widget.recipeToEdit!.id
-            : FirebaseFirestore.instance.collection('Recipes').doc().id,
+            : DateTime.now().millisecondsSinceEpoch.toString(),
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
         ingredients: _ingredients,
@@ -180,10 +180,13 @@ class _AddRecipePageState extends State<AddRecipePage> {
         likes: _isEditing ? widget.recipeToEdit!.likes : [],
       );
 
-      await FirebaseFirestore.instance
-          .collection('Recipes')
-          .doc(recipe.id)
-          .set(recipe.toMap());
+      if (_isEditing) {
+        // Update existing recipe
+        await recipeRepo.update(recipe.id, recipe.toMap());
+      } else {
+        // Create new recipe
+        await recipeRepo.create(recipe, id: recipe.id);
+      }
 
       _clearForm();
       _showSuccess();

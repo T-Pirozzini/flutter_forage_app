@@ -2,8 +2,9 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_forager_app/components/screen_heading.dart';
-import 'package:flutter_forager_app/models/user.dart';
+import 'package:flutter_forager_app/shared/screen_heading.dart';
+import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
+import 'package:flutter_forager_app/data/models/user.dart';
 import 'package:flutter_forager_app/providers/markers/marker_data.dart';
 import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
 import 'package:flutter_forager_app/screens/friends/friends_controller.dart';
@@ -30,9 +31,6 @@ class ProfilePage extends ConsumerStatefulWidget {
 class _ProfilePageState extends ConsumerState<ProfilePage> {
   // current user
   final currentUser = FirebaseAuth.instance.currentUser!;
-
-  // all users
-  final usersCollection = FirebaseFirestore.instance.collection('Users');
 
   // profile UI
   final double coverHeight = 200.0;
@@ -83,26 +81,21 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 
   void loadUserProfileImages() async {
-    final docSnapshot = await usersCollection.doc(_profileUserId).get();
-    if (docSnapshot.exists) {
-      final userData = docSnapshot.data() as Map<String, dynamic>;
-      setState(() {
-        // Handle null, empty strings, and missing fields
-        String? bgImage = userData['profileBackground']?.toString();
-        String? profImage = userData['profilePic']?.toString();
+    final userRepo = ref.read(userRepositoryProvider);
+    final user = await userRepo.getById(_profileUserId);
 
-        selectedBackgroundOption =
-            (bgImage != null && bgImage.trim().isNotEmpty)
-                ? bgImage
-                : 'backgroundProfileImage1.jpg';
-        selectedProfileOption =
-            (profImage != null && profImage.trim().isNotEmpty)
-                ? profImage
-                : 'profileImage1.jpg';
-        username = userData['username']?.toString() ?? '';
-        bio = userData['bio']?.toString() ?? '';
-        createdAt = userData['createdAt'] ?? Timestamp.now();
-        lastActive = userData['lastActive'] ?? Timestamp.now();
+    if (user != null) {
+      setState(() {
+        selectedBackgroundOption = user.profileBackground.isNotEmpty
+            ? user.profileBackground
+            : 'backgroundProfileImage1.jpg';
+        selectedProfileOption = user.profilePic.isNotEmpty
+            ? user.profilePic
+            : 'profileImage1.jpg';
+        username = user.username;
+        bio = user.bio;
+        createdAt = user.createdAt;
+        lastActive = user.lastActive;
       });
     }
   }
@@ -126,7 +119,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             selectedBackgroundOption = newBackgroundImage;
           });
 
-          await usersCollection.doc(currentUser.email).update({
+          final userRepo = ref.read(userRepositoryProvider);
+          await userRepo.update(currentUser.email!, {
             'username': username,
             'bio': bio,
             'profilePic': selectedProfileOption,
@@ -214,21 +208,19 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             ),
             const SizedBox(height: 20),
             Expanded(
-              child: StreamBuilder<DocumentSnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('Users')
-                    .doc(_profileUserId)
-                    .snapshots(),
+              child: StreamBuilder<UserModel?>(
+                stream: ref.read(userRepositoryProvider).streamById(_profileUserId),
                 builder: (context, snapshot) {
-                  if (snapshot.hasData) {
-                    final userData =
-                        snapshot.data!.data() as Map<String, dynamic>;
-                    selectedBackgroundOption = userData['profileBackground'] ??
-                        selectedBackgroundOption;
-                    selectedProfileOption =
-                        userData['profilePic'] ?? selectedProfileOption;
-                    username = userData['username'] ?? '';
-                    bio = userData['bio'] ?? '';
+                  if (snapshot.hasData && snapshot.data != null) {
+                    final userData = snapshot.data!;
+                    selectedBackgroundOption = userData.profileBackground.isNotEmpty
+                        ? userData.profileBackground
+                        : selectedBackgroundOption;
+                    selectedProfileOption = userData.profilePic.isNotEmpty
+                        ? userData.profilePic
+                        : selectedProfileOption;
+                    username = userData.username;
+                    bio = userData.bio;
 
                     return Center(
                       child: ListView(
@@ -252,20 +244,16 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                 ),
                               ),
                               // Stats Grid
-                              FutureBuilder<QuerySnapshot>(
-                                future: FirebaseFirestore.instance
-                                    .collection('Recipes')
-                                    .where('userEmail',
-                                        isEqualTo: _profileUserId)
-                                    .get(),
+                              FutureBuilder<int>(
+                                future: ref
+                                    .read(recipeRepositoryProvider)
+                                    .getRecipeCountByUser(_profileUserId),
                                 builder: (context, recipeSnapshot) {
                                   String recipeCount = '0';
                                   if (recipeSnapshot.connectionState ==
                                       ConnectionState.done) {
                                     if (recipeSnapshot.hasData) {
-                                      recipeCount = recipeSnapshot
-                                          .data!.docs.length
-                                          .toString();
+                                      recipeCount = recipeSnapshot.data.toString();
                                     } else if (recipeSnapshot.hasError) {
                                       recipeCount = 'Err';
                                     }

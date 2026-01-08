@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_forager_app/data/repositories/marker_repository.dart';
+import 'package:flutter_forager_app/data/repositories/post_repository.dart';
+import 'package:flutter_forager_app/data/repositories/recipe_repository.dart';
 import 'package:flutter_forager_app/data/repositories/user_repository.dart';
 import 'package:flutter_forager_app/data/services/firebase/firestore_service.dart';
 
@@ -23,4 +25,16 @@ final markerRepositoryProvider = Provider<MarkerRepository>((ref) {
 final userRepositoryProvider = Provider<UserRepository>((ref) {
   final firestoreService = ref.watch(firestoreServiceProvider);
   return UserRepository(firestoreService: firestoreService);
+});
+
+/// PostRepository provider
+final postRepositoryProvider = Provider<PostRepository>((ref) {
+  final firestoreService = ref.watch(firestoreServiceProvider);
+  return PostRepository(firestoreService: firestoreService);
+});
+
+/// RecipeRepository provider
+final recipeRepositoryProvider = Provider<RecipeRepository>((ref) {
+  final firestoreService = ref.watch(firestoreServiceProvider);
+  return RecipeRepository(firestoreService: firestoreService);
 });

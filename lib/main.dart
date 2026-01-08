@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter_forager_app/components/ad_mob_service.dart';
+import 'package:flutter_forager_app/data/services/ad_mob_service.dart';
 import 'package:flutter_forager_app/screens/drawer/about_page.dart';
 import 'package:flutter_forager_app/screens/drawer/about_us_page.dart';
 import 'package:flutter_forager_app/screens/drawer/credits_page.dart';

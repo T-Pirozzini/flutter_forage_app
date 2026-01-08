@@ -1,9 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_forager_app/models/marker.dart';
+import 'package:flutter_forager_app/data/models/marker.dart';
 import 'package:flutter_forager_app/screens/forage/components/map_markers.dart';
 import 'package:flutter_forager_app/screens/forage/components/map_style.dart';
-import 'package:flutter_forager_app/screens/forage/services/map_permissions.dart';
+import 'package:flutter_forager_app/data/services/map_permissions.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_forager_app/theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

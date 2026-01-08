@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_forager_app/core/constants/firestore_collections.dart';
 import 'package:flutter_forager_app/data/repositories/base_repository.dart';
 import 'package:flutter_forager_app/data/services/firebase/firestore_service.dart';
-import 'package:flutter_forager_app/models/user.dart';
+import 'package:flutter_forager_app/data/models/user.dart';
 
 /// Repository for managing User data
 ///
@@ -175,6 +175,29 @@ class UserRepository extends BaseRepository<UserModel> {
       firestoreService.collection(collectionPath).doc(friendId),
       {
         'friends': FieldValue.arrayUnion([userId]),
+        'sentFriendRequests.$userId': FieldValue.delete(),
+      },
+    );
+
+    await batch.commit();
+  }
+
+  /// Reject a friend request
+  Future<void> rejectFriendRequest(String userId, String requesterId) async {
+    final batch = firestoreService.batch();
+
+    // Remove from user's friend requests
+    batch.update(
+      firestoreService.collection(collectionPath).doc(userId),
+      {
+        'friendRequests.$requesterId': FieldValue.delete(),
+      },
+    );
+
+    // Remove from requester's sent requests
+    batch.update(
+      firestoreService.collection(collectionPath).doc(requesterId),
+      {
         'sentFriendRequests.$userId': FieldValue.delete(),
       },
     );

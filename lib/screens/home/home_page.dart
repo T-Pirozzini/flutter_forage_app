@@ -1,13 +1,14 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_forager_app/components/ad_mob_service.dart';
-import 'package:flutter_forager_app/models/user.dart';
+import 'package:flutter_forager_app/data/services/ad_mob_service.dart';
+import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
+import 'package:flutter_forager_app/data/models/user.dart';
 import 'package:flutter_forager_app/screens/feedback/feedback.dart';
 import 'package:flutter_forager_app/screens/profile/profile_page.dart';
 import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
 import 'package:flutter_forager_app/screens/recipes/recipes_page.dart';
 import 'package:flutter_forager_app/theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../drawer/drawer.dart';
@@ -15,7 +16,7 @@ import '../community/community_page.dart';
 import '../forage/map_page.dart';
 import 'package:convex_bottom_bar/convex_bottom_bar.dart';
 
-class HomePage extends StatefulWidget {
+class HomePage extends ConsumerStatefulWidget {
   final int currentIndex;
 
   const HomePage({
@@ -24,10 +25,10 @@ class HomePage extends StatefulWidget {
   });
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage>
+class _HomePageState extends ConsumerState<HomePage>
     with SingleTickerProviderStateMixin {
   final currentUser = FirebaseAuth.instance.currentUser!;
   int currentIndex = 0;
@@ -189,19 +190,21 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _buildProfileStream() {
-    return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('Users')
-          .doc(currentUser.email)
-          .snapshots(),
+    final userRepo = ref.read(userRepositoryProvider);
+
+    return StreamBuilder<UserModel?>(
+      stream: userRepo.streamById(currentUser.email!),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-        if (!snapshot.hasData || snapshot.hasError) {
-          return const Center(child: Text('Error loading profile'));
+        if (snapshot.hasError) {
+          return Center(child: Text('Error loading profile: ${snapshot.error}'));
         }
-        return ProfilePage(user: UserModel.fromFirestore(snapshot.data!));
+        if (!snapshot.hasData || snapshot.data == null) {
+          return const Center(child: Text('Profile not found'));
+        }
+        return ProfilePage(user: snapshot.data!);
       },
     );
   }

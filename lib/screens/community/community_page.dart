@@ -1,22 +1,23 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_forager_app/components/ad_mob_service.dart';
-import 'package:flutter_forager_app/components/screen_heading.dart';
-import 'package:flutter_forager_app/models/post.dart';
+import 'package:flutter_forager_app/data/services/ad_mob_service.dart';
+import 'package:flutter_forager_app/shared/screen_heading.dart';
+import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
+import 'package:flutter_forager_app/data/models/post.dart';
 import 'package:flutter_forager_app/screens/community/components/post_card.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_forager_app/theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geocoding/geocoding.dart';
 
-class CommunityPage extends StatefulWidget {
+class CommunityPage extends ConsumerStatefulWidget {
   const CommunityPage({super.key});
 
   @override
-  State<CommunityPage> createState() => _CommunityPageState();
+  ConsumerState<CommunityPage> createState() => _CommunityPageState();
 }
 
-class _CommunityPageState extends State<CommunityPage> {
+class _CommunityPageState extends ConsumerState<CommunityPage> {
   final currentUser = FirebaseAuth.instance.currentUser!;
   String? username;
   final Map<String, bool> _expandedPosts = {};
@@ -41,14 +42,12 @@ class _CommunityPageState extends State<CommunityPage> {
   }
 
   Future<void> fetchUsername() async {
-    final userDoc = await FirebaseFirestore.instance
-        .collection('Users')
-        .doc(currentUser.email)
-        .get();
+    final userRepo = ref.read(userRepositoryProvider);
+    final user = await userRepo.getById(currentUser.email!);
 
-    if (userDoc.exists) {
+    if (user != null) {
       setState(() {
-        username = userDoc.data()?['username'];
+        username = user.username;
       });
     }
   }
@@ -65,120 +64,105 @@ class _CommunityPageState extends State<CommunityPage> {
     try {
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('You must be logged in to comment')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('You must be logged in to comment')),
+          );
+        }
         return;
       }
 
-      // Create the comment data with proper null checks
-      final commentData = {
-        'userId': currentUser.uid,
-        'userEmail': currentUser.email!,
-        'text': comment,
-        'timestamp': DateTime.now(),
-        'username': username ?? currentUser.email!.split('@')[0],
-      };
-
-      await FirebaseFirestore.instance.collection('Posts').doc(postId).update({
-        'comments': FieldValue.arrayUnion([commentData]),
-        'commentCount': FieldValue.increment(1),
-      });
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to add comment: ${e.toString()}')),
+      final postRepo = ref.read(postRepositoryProvider);
+      await postRepo.addComment(
+        postId: postId,
+        userId: currentUser.uid,
+        userEmail: currentUser.email!,
+        username: username ?? currentUser.email!.split('@')[0],
+        text: comment,
       );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to add comment: ${e.toString()}')),
+        );
+      }
       debugPrint('Error adding comment: $e');
     }
   }
 
   Future<void> updateStatus(String postId, String status, String? notes) async {
     try {
-      final statusUpdate = {
-        'status': status,
-        'userId': currentUser.uid,
-        'userEmail': currentUser.email!,
-        'username': username,
-        'timestamp': FieldValue.serverTimestamp(),
-        if (notes?.isNotEmpty == true) 'notes': notes,
-      };
-
-      await FirebaseFirestore.instance.collection('Posts').doc(postId).update({
-        'currentStatus': status,
-        'statusHistory': FieldValue.arrayUnion([statusUpdate]),
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Status updated successfully')),
+      final postRepo = ref.read(postRepositoryProvider);
+      await postRepo.updateStatus(
+        postId: postId,
+        status: status,
+        userId: currentUser.uid,
+        userEmail: currentUser.email!,
+        username: username ?? currentUser.email!.split('@')[0],
+        notes: notes,
       );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Status updated successfully')),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update status: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update status: $e')),
+        );
+      }
     }
   }
 
   Future<void> toggleFavorite(String postId, bool isCurrentlyLiked) async {
     try {
-      if (isCurrentlyLiked) {
-        await FirebaseFirestore.instance
-            .collection('Posts')
-            .doc(postId)
-            .update({
-          'likedBy': FieldValue.arrayRemove([currentUser.email]),
-          'likeCount': FieldValue.increment(-1),
-        });
-      } else {
-        await FirebaseFirestore.instance
-            .collection('Posts')
-            .doc(postId)
-            .update({
-          'likedBy': FieldValue.arrayUnion([currentUser.email]),
-          'likeCount': FieldValue.increment(1),
-        });
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update like: $e')),
+      final postRepo = ref.read(postRepositoryProvider);
+      await postRepo.toggleLike(
+        postId: postId,
+        userEmail: currentUser.email!,
+        isCurrentlyLiked: isCurrentlyLiked,
       );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update like: $e')),
+        );
+      }
     }
   }
 
   Future<void> toggleBookmark(String postId, bool isCurrentlyBookmarked) async {
     try {
-      if (isCurrentlyBookmarked) {
-        await FirebaseFirestore.instance
-            .collection('Posts')
-            .doc(postId)
-            .update({
-          'bookmarkedBy': FieldValue.arrayRemove([currentUser.email]),
-          'bookmarkCount': FieldValue.increment(-1),
-        });
-      } else {
-        await FirebaseFirestore.instance
-            .collection('Posts')
-            .doc(postId)
-            .update({
-          'bookmarkedBy': FieldValue.arrayUnion([currentUser.email]),
-          'bookmarkCount': FieldValue.increment(1),
-        });
-        if (mounted) {
-        await Future.delayed(const Duration(seconds: 1)); 
+      final postRepo = ref.read(postRepositoryProvider);
+      await postRepo.toggleBookmark(
+        postId: postId,
+        userEmail: currentUser.email!,
+        isCurrentlyBookmarked: isCurrentlyBookmarked,
+      );
+
+      // Show ad after bookmarking (not unbookmarking)
+      if (!isCurrentlyBookmarked && mounted) {
+        await Future.delayed(const Duration(seconds: 1));
         AdMobService.showInterstitialAd();
       }
-      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update bookmark: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update bookmark: $e')),
+        );
+      }
     }
   }
 
   Future<void> deletePost(String postId, String postOwner) async {
     if (postOwner != currentUser.email) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You can only delete your own posts')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('You can only delete your own posts')),
+        );
+      }
       return;
     }
 
@@ -204,17 +188,24 @@ class _CommunityPageState extends State<CommunityPage> {
 
     if (shouldDelete) {
       try {
-        await FirebaseFirestore.instance
-            .collection('Posts')
-            .doc(postId)
-            .delete();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Post deleted successfully')),
+        final postRepo = ref.read(postRepositoryProvider);
+        await postRepo.deletePost(
+          postId: postId,
+          currentUserEmail: currentUser.email!,
+          postOwnerEmail: postOwner,
         );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Post deleted successfully')),
+          );
+        }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to delete post: $e')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to delete post: $e')),
+          );
+        }
       }
     }
   }
@@ -255,24 +246,25 @@ class _CommunityPageState extends State<CommunityPage> {
             ),
           ),
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('Posts')
-                  .orderBy('postTimestamp', descending: true)
-                  .snapshots(),
+            child: StreamBuilder<List<PostModel>>(
+              stream: ref.read(postRepositoryProvider).streamAllPosts(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text('Error loading posts: ${snapshot.error}'),
+                  );
+                }
+
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
                   return const Center(
                       child: Text('No posts yet. Be the first to share!'));
                 }
 
-                final posts = snapshot.data!.docs
-                    .map((doc) => PostModel.fromFirestore(doc))
-                    .toList();
+                final posts = snapshot.data!;
 
                 return ListView.builder(
                   itemCount: posts.length,

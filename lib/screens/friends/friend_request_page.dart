@@ -1,21 +1,20 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:flutter/material.dart';
-import 'package:flutter_forager_app/models/user.dart';
+import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
+import 'package:flutter_forager_app/data/models/user.dart';
 import 'package:flutter_forager_app/screens/profile/profile_page.dart';
-import 'package:flutter_forager_app/services/friend_service.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class FriendRequestPage extends StatefulWidget {
+class FriendRequestPage extends ConsumerStatefulWidget {
   const FriendRequestPage({Key? key}) : super(key: key);
 
   @override
-  State<FriendRequestPage> createState() => _FriendRequestPageState();
+  ConsumerState<FriendRequestPage> createState() => _FriendRequestPageState();
 }
 
-class _FriendRequestPageState extends State<FriendRequestPage> {
+class _FriendRequestPageState extends ConsumerState<FriendRequestPage> {
   final TextEditingController _searchController = TextEditingController();
   List<UserModel> _searchResults = [];
   bool _isSearching = false;
@@ -62,20 +61,22 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
 
     try {
       final currentUser = FirebaseAuth.instance.currentUser!;
-      final snapshot = await FirebaseFirestore.instance
-          .collection('Users')
-          .where('username', isGreaterThanOrEqualTo: query)
-          .where('username', isLessThanOrEqualTo: '$query\uf8ff')
-          .get();
+      final userRepo = ref.read(userRepositoryProvider);
 
-      final currentUserDoc = await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(currentUser.email)
-          .get();
-      final currentUserData = UserModel.fromFirestore(currentUserDoc);
+      // Search for users using repository
+      final allUsers = await userRepo.searchByUsername(query);
 
-      final results = await Future.wait(snapshot.docs.map((doc) async {
-        final user = UserModel.fromFirestore(doc);
+      // Get current user data to check friend status
+      final currentUserData = await userRepo.getById(currentUser.email!);
+
+      if (currentUserData == null) {
+        setState(() {
+          _isSearching = false;
+        });
+        return;
+      }
+
+      final results = allUsers.map((user) {
         final isFriend = currentUserData.friends.contains(user.email);
         final hasPendingRequest = currentUserData.friendRequests
                 .containsKey(user.email) ||
@@ -85,7 +86,7 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
           isFriend: isFriend,
           hasPendingRequest: hasPendingRequest,
         );
-      }));
+      }).toList();
 
       setState(() {
         _searchResults =
@@ -96,17 +97,20 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
       setState(() {
         _isSearching = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error searching users: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error searching users: $e')),
+        );
+      }
     }
   }
 
   Future<void> _sendFriendRequest(String recipientEmail) async {
     try {
       final currentUser = FirebaseAuth.instance.currentUser!;
-      await FriendsService()
-          .sendFriendRequest(currentUser.email!, recipientEmail);
+      final userRepo = ref.read(userRepositoryProvider);
+
+      await userRepo.sendFriendRequest(currentUser.email!, recipientEmail);
 
       setState(() {
         _searchResults = _searchResults.map((user) {
@@ -117,13 +121,17 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
         }).toList();
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Friend request sent!')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Friend request sent!')),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to send request: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send request: $e')),
+        );
+      }
     }
   }
 
@@ -245,17 +253,16 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
   }
 
   Widget _buildReceivedRequests(String userId) {
-    return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('Users')
-          .doc(userId)
-          .snapshots(),
+    final userRepo = ref.read(userRepositoryProvider);
+
+    return StreamBuilder<UserModel?>(
+      stream: userRepo.streamById(userId),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
+        if (!snapshot.hasData || snapshot.data == null) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final user = UserModel.fromFirestore(snapshot.data!);
+        final user = snapshot.data!;
         final pendingRequests = user.pendingIncomingRequests;
 
         if (pendingRequests.isEmpty) {
@@ -266,18 +273,14 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
           itemCount: pendingRequests.length,
           itemBuilder: (context, index) {
             final requesterId = pendingRequests[index];
-            return FutureBuilder<DocumentSnapshot>(
-              future: FirebaseFirestore.instance
-                  .collection('Users')
-                  .doc(requesterId)
-                  .get(),
+            return FutureBuilder<UserModel?>(
+              future: userRepo.getById(requesterId),
               builder: (context, requesterSnapshot) {
-                if (!requesterSnapshot.hasData) {
+                if (!requesterSnapshot.hasData || requesterSnapshot.data == null) {
                   return const ListTile(title: Text('Loading...'));
                 }
 
-                final requester =
-                    UserModel.fromFirestore(requesterSnapshot.data!);
+                final requester = requesterSnapshot.data!;
                 return Card(
                   margin: const EdgeInsets.symmetric(
                       horizontal: 8.0, vertical: 4.0),
@@ -322,20 +325,17 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
   }
 
   Widget _buildSentRequests(String userId) {
-    return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('Users')
-          .doc(userId)
-          .snapshots(),
+    final userRepo = ref.read(userRepositoryProvider);
+
+    return StreamBuilder<UserModel?>(
+      stream: userRepo.streamById(userId),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
+        if (!snapshot.hasData || snapshot.data == null) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final userData = snapshot.data!.data() as Map<String, dynamic>;
-        final sentRequests = userData['sentFriendRequests'] is Map
-            ? (userData['sentFriendRequests'] as Map).keys.toList()
-            : <String>[];
+        final user = snapshot.data!;
+        final sentRequests = user.sentFriendRequests?.keys.toList() ?? <String>[];
 
         if (sentRequests.isEmpty) {
           return const Center(child: Text('No sent requests'));
@@ -345,20 +345,15 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
           itemCount: sentRequests.length,
           itemBuilder: (context, index) {
             final recipientId = sentRequests[index];
-            return FutureBuilder<DocumentSnapshot>(
-              future: FirebaseFirestore.instance
-                  .collection('Users')
-                  .doc(recipientId)
-                  .get(),
+            return FutureBuilder<UserModel?>(
+              future: userRepo.getById(recipientId),
               builder: (context, recipientSnapshot) {
-                if (!recipientSnapshot.hasData) {
+                if (!recipientSnapshot.hasData || recipientSnapshot.data == null) {
                   return const ListTile(title: Text('Loading...'));
                 }
 
-                final recipient =
-                    UserModel.fromFirestore(recipientSnapshot.data!);
-                final status =
-                    userData['sentFriendRequests'][recipientId] ?? 'pending';
+                final recipient = recipientSnapshot.data!;
+                final status = user.sentFriendRequests?[recipientId] ?? 'pending';
 
                 return Card(
                   margin: const EdgeInsets.symmetric(
@@ -398,16 +393,30 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
 
   Future<void> _handleRequest(BuildContext context, String userId,
       String requesterId, bool accept) async {
-    if (accept) {
-      await FriendsService().acceptFriendRequest(userId, requesterId);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Friend request accepted')),
-      );
-    } else {
-      await FriendsService().rejectFriendRequest(userId, requesterId);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Friend request rejected')),
-      );
+    try {
+      final userRepo = ref.read(userRepositoryProvider);
+
+      if (accept) {
+        await userRepo.acceptFriendRequest(userId, requesterId);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Friend request accepted')),
+          );
+        }
+      } else {
+        await userRepo.rejectFriendRequest(userId, requesterId);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Friend request rejected')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to handle request: $e')),
+        );
+      }
     }
   }
 
@@ -433,20 +442,24 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
     );
 
     if (confirmed == true) {
-      await FirebaseFirestore.instance.collection('Users').doc(userId).update({
-        'sentFriendRequests.$recipientId': FieldValue.delete(),
-      });
+      try {
+        final userRepo = ref.read(userRepositoryProvider);
 
-      await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(recipientId)
-          .update({
-        'friendRequests.$userId': FieldValue.delete(),
-      });
+        // Use the rejectFriendRequest method which handles both sides
+        await userRepo.rejectFriendRequest(recipientId, userId);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Request cancelled')),
-      );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Request cancelled')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to cancel request: $e')),
+          );
+        }
+      }
     }
   }
 }
