@@ -1,23 +1,52 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_forager_app/data/models/notification_preferences.dart';
 
 class UserModel {
+  // Basic info
   final String uid;
   final String email;
   final String username;
   final String bio;
   final String profilePic;
   final String profileBackground;
+
+  // Social
   final List<String> friends;
   final Map<String, String> friendRequests;
   final Map<String, String> sentFriendRequests;
+
+  // Saved content
   final List<String> savedRecipes;
   final List<String> savedLocations;
+
+  // Legacy stats
   final Map<String, int> forageStats;
   final Map<String, dynamic> preferences;
+
+  // Timestamps
   final Timestamp createdAt;
   final Timestamp lastActive;
+
+  // UI state (should be computed, not stored - kept for backwards compatibility)
   final bool isFriend;
   final bool hasPendingRequest;
+
+  // GAMIFICATION - New fields
+  final int points; // Total points earned
+  final int level; // User level based on points
+  final List<String> achievements; // List of achievement IDs unlocked
+  final Map<String, int> activityStats; // Detailed stats for gamification
+  final int currentStreak; // Current daily activity streak
+  final int longestStreak; // Best streak ever achieved
+  final DateTime? lastActivityDate; // Last time user was active (for streak tracking)
+
+  // PREMIUM - New fields
+  final String subscriptionTier; // 'free', 'premium', 'pro'
+  final DateTime? subscriptionExpiry; // When premium expires
+  final bool hasCompletedOnboarding; // Track if user has seen onboarding
+
+  // NOTIFICATIONS - New fields
+  final NotificationPreferences notificationPreferences;
 
   UserModel({
     required this.uid,
@@ -37,6 +66,20 @@ class UserModel {
     required this.lastActive,
     this.isFriend = false,
     this.hasPendingRequest = false,
+    // Gamification fields
+    this.points = 0,
+    this.level = 1,
+    this.achievements = const [],
+    this.activityStats = const {},
+    this.currentStreak = 0,
+    this.longestStreak = 0,
+    this.lastActivityDate,
+    // Premium fields
+    this.subscriptionTier = 'free',
+    this.subscriptionExpiry,
+    this.hasCompletedOnboarding = false,
+    // Notification fields
+    this.notificationPreferences = const NotificationPreferences(),
   });
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
@@ -98,6 +141,26 @@ class UserModel {
     lastActive: data['lastActive'] is Timestamp
         ? data['lastActive'] as Timestamp
         : Timestamp.now(),
+    // Gamification fields (backwards compatible - default if missing)
+    points: data['points'] as int? ?? 0,
+    level: data['level'] as int? ?? 1,
+    achievements: safeStringListConvert(data['achievements']),
+    activityStats: safeIntMapConvert(data['activityStats']),
+    currentStreak: data['currentStreak'] as int? ?? 0,
+    longestStreak: data['longestStreak'] as int? ?? 0,
+    lastActivityDate: data['lastActivityDate'] != null
+        ? (data['lastActivityDate'] as Timestamp).toDate()
+        : null,
+    // Premium fields (backwards compatible)
+    subscriptionTier: data['subscriptionTier']?.toString() ?? 'free',
+    subscriptionExpiry: data['subscriptionExpiry'] != null
+        ? (data['subscriptionExpiry'] as Timestamp).toDate()
+        : null,
+    hasCompletedOnboarding: data['hasCompletedOnboarding'] as bool? ?? false,
+    // Notification preferences (backwards compatible)
+    notificationPreferences: NotificationPreferences.fromMap(
+      data['notificationPreferences'] as Map<String, dynamic>?,
+    ),
   );
 }
 
@@ -118,6 +181,24 @@ class UserModel {
       'preferences': preferences,
       'createdAt': createdAt,
       'lastActive': lastActive,
+      // Gamification fields
+      'points': points,
+      'level': level,
+      'achievements': achievements,
+      'activityStats': activityStats,
+      'currentStreak': currentStreak,
+      'longestStreak': longestStreak,
+      'lastActivityDate': lastActivityDate != null
+          ? Timestamp.fromDate(lastActivityDate!)
+          : null,
+      // Premium fields
+      'subscriptionTier': subscriptionTier,
+      'subscriptionExpiry': subscriptionExpiry != null
+          ? Timestamp.fromDate(subscriptionExpiry!)
+          : null,
+      'hasCompletedOnboarding': hasCompletedOnboarding,
+      // Notification preferences
+      'notificationPreferences': notificationPreferences.toMap(),
     };
   }
 
@@ -138,6 +219,37 @@ class UserModel {
       .map((e) => e.key)
       .toList();
 
+  // GAMIFICATION HELPERS
+
+  /// Check if user is a premium subscriber
+  bool get isPremium => subscriptionTier != 'free' &&
+      (subscriptionExpiry == null || subscriptionExpiry!.isAfter(DateTime.now()));
+
+  /// Check if user has completed onboarding
+  bool get needsOnboarding => !hasCompletedOnboarding;
+
+  /// Calculate points needed for next level
+  int get pointsNeededForNextLevel {
+    // Formula: level * 100 points per level
+    final nextLevelPoints = level * 100;
+    return nextLevelPoints - points;
+  }
+
+  /// Get progress to next level (0.0 to 1.0)
+  double get progressToNextLevel {
+    final currentLevelPoints = (level - 1) * 100;
+    final nextLevelPoints = level * 100;
+    final pointsInLevel = points - currentLevelPoints;
+    final pointsNeeded = nextLevelPoints - currentLevelPoints;
+    return (pointsInLevel / pointsNeeded).clamp(0.0, 1.0);
+  }
+
+  /// Check if user has a specific achievement
+  bool hasAchievement(String achievementId) => achievements.contains(achievementId);
+
+  /// Get total number of achievements unlocked
+  int get achievementCount => achievements.length;
+
   UserModel copyWith({
     String? uid,
     String? email,
@@ -156,6 +268,20 @@ class UserModel {
     Timestamp? lastActive,
     bool? isFriend,
     bool? hasPendingRequest,
+    // Gamification fields
+    int? points,
+    int? level,
+    List<String>? achievements,
+    Map<String, int>? activityStats,
+    int? currentStreak,
+    int? longestStreak,
+    DateTime? lastActivityDate,
+    // Premium fields
+    String? subscriptionTier,
+    DateTime? subscriptionExpiry,
+    bool? hasCompletedOnboarding,
+    // Notification fields
+    NotificationPreferences? notificationPreferences,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -175,6 +301,20 @@ class UserModel {
       lastActive: lastActive ?? this.lastActive,
       isFriend: isFriend ?? this.isFriend,
       hasPendingRequest: hasPendingRequest ?? this.hasPendingRequest,
+      // Gamification
+      points: points ?? this.points,
+      level: level ?? this.level,
+      achievements: achievements ?? this.achievements,
+      activityStats: activityStats ?? this.activityStats,
+      currentStreak: currentStreak ?? this.currentStreak,
+      longestStreak: longestStreak ?? this.longestStreak,
+      lastActivityDate: lastActivityDate ?? this.lastActivityDate,
+      // Premium
+      subscriptionTier: subscriptionTier ?? this.subscriptionTier,
+      subscriptionExpiry: subscriptionExpiry ?? this.subscriptionExpiry,
+      hasCompletedOnboarding: hasCompletedOnboarding ?? this.hasCompletedOnboarding,
+      // Notifications
+      notificationPreferences: notificationPreferences ?? this.notificationPreferences,
     );
   }
 }

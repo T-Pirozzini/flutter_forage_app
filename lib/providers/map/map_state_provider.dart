@@ -1,6 +1,7 @@
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_forager_app/core/utils/forage_type_utils.dart';
+import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -30,7 +31,7 @@ class PositionNotifier extends StateNotifier<Position?> {
 }
 
 // Map overlays
-final markersProvider = StateNotifierProvider<MarkersNotifier, Set<Marker>>(
+final markersProvider = StateNotifierProvider.autoDispose<MarkersNotifier, Set<Marker>>(
   (ref) => MarkersNotifier(ref), // Pass ref to MarkersNotifier
 );
 
@@ -40,39 +41,62 @@ final circlesProvider = StateNotifierProvider<CirclesNotifier, Set<Circle>>(
 
 class MarkersNotifier extends StateNotifier<Set<Marker>> {
   final Ref _ref;
-  StreamSubscription<QuerySnapshot>? _userMarkersSubscription;
-  StreamSubscription<QuerySnapshot>? _communityMarkersSubscription;
+  StreamSubscription? _userMarkersSubscription;
+  StreamSubscription? _communityMarkersSubscription;
 
   MarkersNotifier(this._ref) : super({}) {
     _init();
+
+    // Setup cleanup on disposal
+    _ref.onDispose(() {
+      _userMarkersSubscription?.cancel();
+      _communityMarkersSubscription?.cancel();
+    });
   }
 
   void _init() {
     final userId = FirebaseAuth.instance.currentUser?.email ?? '';
     if (userId.isEmpty) return;
 
-    // Listen to user markers
-    _userMarkersSubscription = FirebaseFirestore.instance
-        .collection('Users')
-        .doc(userId)
-        .collection('Markers')
-        .where('markerOwner', isEqualTo: userId)
-        .snapshots()
-        .listen((snapshot) {
-      final markers = _createMarkersFromSnapshot(snapshot);
+    // Get marker repository
+    final markerRepo = _ref.read(markerRepositoryProvider);
+
+    // Listen to user markers using repository
+    _userMarkersSubscription = markerRepo
+        .streamByUserId(userId)
+        .listen((markerModels) {
+      final markers = markerModels.map((model) {
+        return Marker(
+          markerId: MarkerId(model.id),
+          position: LatLng(model.latitude, model.longitude),
+          infoWindow: InfoWindow(
+            title: model.name,
+            snippet: model.description,
+          ),
+          icon: ForageTypeUtils.getMarkerIcon(model.type),
+        );
+      }).toSet();
       updateMarkers(markers);
     });
 
-    // Listen to community markers
-    _communityMarkersSubscription = FirebaseFirestore.instance
-        .collection('Users')
-        .doc(userId)
-        .collection('Markers')
-        .where('markerOwner', isNotEqualTo: userId)
-        .snapshots()
-        .listen((snapshot) {
-      final markers = _createMarkersFromSnapshot(snapshot);
-      addMarkers(markers);
+    // Listen to community markers (all markers not owned by user)
+    _communityMarkersSubscription = markerRepo
+        .streamPublicMarkers()
+        .listen((markerModels) {
+      final communityMarkers = markerModels
+          .where((model) => model.markerOwner != userId)
+          .map((model) {
+        return Marker(
+          markerId: MarkerId(model.id),
+          position: LatLng(model.latitude, model.longitude),
+          infoWindow: InfoWindow(
+            title: model.name,
+            snippet: model.description,
+          ),
+          icon: ForageTypeUtils.getMarkerIcon(model.type),
+        );
+      }).toSet();
+      addMarkers(communityMarkers);
     });
 
     // Add current location marker
@@ -89,58 +113,10 @@ class MarkersNotifier extends StateNotifier<Set<Marker>> {
     });
   }
 
-  Set<Marker> _createMarkersFromSnapshot(QuerySnapshot snapshot) {
-    return snapshot.docs.map((doc) {
-      final data = doc.data() as Map<String, dynamic>;
-      final location = data['location'] as Map<String, dynamic>;
-      return Marker(
-        markerId: MarkerId(doc.id),
-        position: LatLng(
-          (location['latitude'] as num).toDouble(),
-          (location['longitude'] as num).toDouble(),
-        ),
-        infoWindow: InfoWindow(
-          title: data['name'] ?? 'Unnamed',
-          snippet: data['description'] ?? '',
-        ),
-        icon: _getMarkerIcon(data['type'] ?? ''),
-      );
-    }).toSet();
-  }
-
-  BitmapDescriptor _getMarkerIcon(String type) {
-    switch (type.toLowerCase()) {
-      case 'berries':
-        return BitmapDescriptor.defaultMarkerWithHue(
-            BitmapDescriptor.hueViolet);
-      case 'mushrooms':
-        return BitmapDescriptor.defaultMarkerWithHue(
-            BitmapDescriptor.hueOrange);
-      case 'nuts':
-        return BitmapDescriptor.defaultMarkerWithHue(
-            BitmapDescriptor.hueViolet);
-      case 'herbs':
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
-      case 'tree':
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan);
-      case 'fish':
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue);
-      default:
-        return BitmapDescriptor.defaultMarker;
-    }
-  }
-
   void updateMarkers(Set<Marker> markers) => state = markers;
   void addMarkers(Set<Marker> markers) => state = {...state, ...markers};
   void removeMarkers(Set<MarkerId> ids) =>
       state = state.where((m) => !ids.contains(m.markerId)).toSet();
-
-  @override
-  void dispose() {
-    _userMarkersSubscription?.cancel();
-    _communityMarkersSubscription?.cancel();
-    super.dispose();
-  }
 }
 
 class CirclesNotifier extends StateNotifier<Set<Circle>> {
