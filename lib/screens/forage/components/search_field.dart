@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_forager_app/services/location_service.dart';
+import 'package:flutter_forager_app/data/services/location_service.dart';
 import 'dart:async';
 
 class SearchField extends StatefulWidget {

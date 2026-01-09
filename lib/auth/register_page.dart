@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../components/button.dart';
-import '../shared/text_field.dart';
+import 'package:flutter_forager_app/shared/buttons.dart';
+import 'package:flutter_forager_app/shared/text_fields.dart';
 
 class RegisterPage extends StatefulWidget {
   final Function()? onTap;
@@ -55,14 +55,14 @@ class _RegisterPageState extends State<RegisterPage> {
         'sentFriendRequests': [],
 
         // Future features
-        'badges': [], 
-        'streak': 0, 
+        'badges': [],
+        'streak': 0,
         'totalForages': 0,
         'preferences': {
           'notifications': true,
           'privateProfile': false,
         },
-        'createdAt': FieldValue.serverTimestamp(), 
+        'createdAt': FieldValue.serverTimestamp(),
         'lastActive': FieldValue.serverTimestamp(),
       });
 

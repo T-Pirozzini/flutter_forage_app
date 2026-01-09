@@ -5,10 +5,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_forager_app/models/marker.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_forager_app/data/models/marker.dart';
 import 'package:flutter_forager_app/screens/forage/map_page.dart';
-import 'package:flutter_forager_app/screens/forage/services/marker_service.dart';
+import 'package:flutter_forager_app/data/services/marker_service.dart';
 import 'package:flutter_forager_app/screens/forage_locations/components/status_history_dialog.dart';
+import 'package:flutter_forager_app/shared/gamification/gamification_helper.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_forager_app/theme.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,7 +18,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
-class ForageLocationInfo extends StatefulWidget {
+class ForageLocationInfo extends ConsumerStatefulWidget {
   final String name;
   final String description;
   final List<String> imageUrls;
@@ -47,10 +49,10 @@ class ForageLocationInfo extends StatefulWidget {
   });
 
   @override
-  State<ForageLocationInfo> createState() => _ForageLocationInfoState();
+  ConsumerState<ForageLocationInfo> createState() => _ForageLocationInfoState();
 }
 
-class _ForageLocationInfoState extends State<ForageLocationInfo> {
+class _ForageLocationInfoState extends ConsumerState<ForageLocationInfo> {
   final currentUser = FirebaseAuth.instance.currentUser!;
   final picker = ImagePicker();
   late List<String> imageUrls;
@@ -296,10 +298,14 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
         'originalMarkerOwner': widget.markerOwner,
       });
 
+      // Award points for sharing location
+      await GamificationHelper.awardLocationShared(
+        context: context,
+        ref: ref,
+        userId: currentUser.email!,
+      );
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Location shared with community!')),
-        );
         Navigator.of(context).pop(); // Close the dialog
       }
     } catch (e) {
@@ -430,10 +436,9 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
     );
   }
 
-  Future<void> _refreshData() async {   
+  Future<void> _refreshData() async {
     await _refreshStatusHistory();
     await _refreshComments();
-    
   }
 
   Future<void> _refreshStatusHistory() async {
@@ -520,11 +525,11 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
 
       // Always use the name and type approach for reliability
       await markerService.addComment(
-        markerId: widget.markerId, 
+        markerId: widget.markerId,
         text: _commentController.text.trim(),
         markerOwnerEmail: widget.markerOwner,
-        markerName: widget.name, 
-        markerType: widget.type, 
+        markerName: widget.name,
+        markerType: widget.type,
       );
 
       await _refreshComments();
@@ -756,15 +761,28 @@ class _ForageLocationInfoState extends State<ForageLocationInfo> {
                                     Row(
                                       children: [
                                         CircleAvatar(
-  radius: 20,
-  backgroundColor: Colors.deepOrange.withOpacity(0.2),
-  foregroundImage: (comment['profilePic'] != null && comment['profilePic'].toString().isNotEmpty)
-      ? AssetImage('lib/assets/images/${comment['profilePic']}')
-      : null,
-  child: (comment['profilePic'] == null || comment['profilePic'].toString().isEmpty)
-      ? const Icon(Icons.person, size: 20, color: Colors.deepOrange)
-      : null,
-),
+                                          radius: 20,
+                                          backgroundColor: Colors.deepOrange
+                                              .withOpacity(0.2),
+                                          foregroundImage: (comment[
+                                                          'profilePic'] !=
+                                                      null &&
+                                                  comment['profilePic']
+                                                      .toString()
+                                                      .isNotEmpty)
+                                              ? AssetImage(
+                                                  'lib/assets/images/${comment['profilePic']}')
+                                              : null,
+                                          child:
+                                              (comment['profilePic'] == null ||
+                                                      comment['profilePic']
+                                                          .toString()
+                                                          .isEmpty)
+                                                  ? const Icon(Icons.person,
+                                                      size: 20,
+                                                      color: Colors.deepOrange)
+                                                  : null,
+                                        ),
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: Text(

@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/data/models/notification_preferences.dart';
 import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
-import 'package:flutter_forager_app/models/user.dart';
+import 'package:flutter_forager_app/data/models/user.dart';
 import 'package:flutter_forager_app/screens/home/home_page.dart';
 import 'package:flutter_forager_app/screens/onboarding/onboarding_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

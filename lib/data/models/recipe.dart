@@ -1,4 +1,4 @@
-import 'package:flutter_forager_app/models/ingredient.dart';
+import 'package:flutter_forager_app/data/models/ingredient.dart';
 
 class Recipe {
   final String id;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_forager_app/components/screen_heading.dart';
-import 'package:flutter_forager_app/models/recipe.dart';
-import 'package:flutter_forager_app/providers/recipe_provider.dart';
+import 'package:flutter_forager_app/shared/screen_heading.dart';
+import 'package:flutter_forager_app/data/models/recipe.dart';
+import 'package:flutter_forager_app/providers/recipes/recipe_provider.dart';
 import 'package:flutter_forager_app/screens/recipes/recipe_card.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_forager_app/theme.dart' show AppColors;

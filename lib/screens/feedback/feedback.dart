@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_forager_app/components/ad_mob_service.dart';
-import 'package:flutter_forager_app/components/screen_heading.dart';
+import 'package:flutter_forager_app/data/services/ad_mob_service.dart';
+import 'package:flutter_forager_app/shared/screen_heading.dart';
 import 'package:flutter_forager_app/screens/debug/migration_screen.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_forager_app/theme.dart';

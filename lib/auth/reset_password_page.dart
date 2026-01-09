@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_forager_app/components/button.dart';
-import 'package:flutter_forager_app/shared/text_field.dart';
+import 'package:flutter_forager_app/shared/buttons.dart';
+import 'package:flutter_forager_app/shared/text_fields.dart';
 
 class ResetPasswordPage extends StatefulWidget {
   const ResetPasswordPage({super.key});

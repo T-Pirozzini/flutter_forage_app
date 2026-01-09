@@ -1,10 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/screens/drawer/feedback.dart';
-import '../../components/list_tile.dart';
+import 'package:flutter_forager_app/shared/list_tiles.dart';
 
 class CustomDrawer extends StatelessWidget {
-  // final void Function()? onProfileTap;
   final void Function()? onForageLocationsTap;
   final void Function()? onSignOutTap;
   final void Function()? onAboutTap;
@@ -12,15 +11,15 @@ class CustomDrawer extends StatelessWidget {
   final void Function()? onCreditsTap;
   final void Function()? showDeleteConfirmationDialog;
 
-  const CustomDrawer(
-      {super.key,
-      // required this.onProfileTap,
-      required this.onSignOutTap,
-      required this.onForageLocationsTap,
-      required this.onAboutTap,
-      required this.onAboutUsTap,
-      required this.onCreditsTap,
-      required this.showDeleteConfirmationDialog});
+  const CustomDrawer({
+    super.key,
+    required this.onSignOutTap,
+    required this.onForageLocationsTap,
+    required this.onAboutTap,
+    required this.onAboutUsTap,
+    required this.onCreditsTap,
+    required this.showDeleteConfirmationDialog,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -43,12 +42,6 @@ class CustomDrawer extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // profile tile
-                  // CustomListTile(
-                  //   icon: Icons.person,
-                  //   text: 'PROFILE',
-                  //   onTap: onProfileTap,
-                  // ),
                   // about tile
                   CustomListTile(
                     icon: Icons.info_outline,
