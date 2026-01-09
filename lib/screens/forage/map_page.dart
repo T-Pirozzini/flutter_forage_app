@@ -13,6 +13,7 @@ import 'package:flutter_forager_app/screens/forage/components/map_view.dart';
 import 'package:flutter_forager_app/providers/map/map_controller_provider.dart';
 import 'package:flutter_forager_app/providers/map/map_state_provider.dart'
     hide mapControllerProvider;
+import 'package:flutter_forager_app/shared/gamification/gamification_helper.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -363,9 +364,12 @@ class _MapPageState extends ConsumerState<MapPage> {
                       images: [],
                       position: position,
                     );
-                    ScaffoldMessenger.of(parentContext).showSnackBar(
-                      const SnackBar(
-                          content: Text('Marker saved successfully')),
+
+                    // Award points for creating marker
+                    await GamificationHelper.awardMarkerCreated(
+                      context: parentContext,
+                      ref: ref,
+                      userId: FirebaseAuth.instance.currentUser!.email!,
                     );
                   } catch (e) {
                     ScaffoldMessenger.of(parentContext).showSnackBar(

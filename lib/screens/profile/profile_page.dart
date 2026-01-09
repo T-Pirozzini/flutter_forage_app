@@ -13,8 +13,11 @@ import 'package:flutter_forager_app/screens/profile/components/about_me.dart';
 import 'package:flutter_forager_app/screens/profile/components/edit_profile_dialog.dart';
 import 'package:flutter_forager_app/screens/profile/components/user_heading.dart';
 import 'package:flutter_forager_app/screens/recipes/recipes_page.dart';
+import 'package:flutter_forager_app/screens/achievements/achievements_page.dart';
+import 'package:flutter_forager_app/shared/gamification/stats_card.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_forager_app/theme.dart';
+import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
@@ -89,9 +92,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         selectedBackgroundOption = user.profileBackground.isNotEmpty
             ? user.profileBackground
             : 'backgroundProfileImage1.jpg';
-        selectedProfileOption = user.profilePic.isNotEmpty
-            ? user.profilePic
-            : 'profileImage1.jpg';
+        selectedProfileOption =
+            user.profilePic.isNotEmpty ? user.profilePic : 'profileImage1.jpg';
         username = user.username;
         bio = user.bio;
         createdAt = user.createdAt;
@@ -209,13 +211,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             const SizedBox(height: 20),
             Expanded(
               child: StreamBuilder<UserModel?>(
-                stream: ref.read(userRepositoryProvider).streamById(_profileUserId),
+                stream:
+                    ref.read(userRepositoryProvider).streamById(_profileUserId),
                 builder: (context, snapshot) {
                   if (snapshot.hasData && snapshot.data != null) {
                     final userData = snapshot.data!;
-                    selectedBackgroundOption = userData.profileBackground.isNotEmpty
-                        ? userData.profileBackground
-                        : selectedBackgroundOption;
+                    selectedBackgroundOption =
+                        userData.profileBackground.isNotEmpty
+                            ? userData.profileBackground
+                            : selectedBackgroundOption;
                     selectedProfileOption = userData.profilePic.isNotEmpty
                         ? userData.profilePic
                         : selectedProfileOption;
@@ -226,6 +230,24 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       child: ListView(
                         children: [
                           AboutMe(bio: bio, username: username),
+                          // Gamification Stats Card
+                          if (_isCurrentUser)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              child: StatsCard(
+                                user: userData,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const AchievementsPage(),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -253,7 +275,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                   if (recipeSnapshot.connectionState ==
                                       ConnectionState.done) {
                                     if (recipeSnapshot.hasData) {
-                                      recipeCount = recipeSnapshot.data.toString();
+                                      recipeCount =
+                                          recipeSnapshot.data.toString();
                                     } else if (recipeSnapshot.hasError) {
                                       recipeCount = 'Err';
                                     }
@@ -398,7 +421,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                   padding:
                                       const EdgeInsets.fromLTRB(16, 8, 16, 16),
                                   child: OutlinedButton.icon(
-                                    icon: const Icon(Icons.help_outline, size: 20),
+                                    icon: const Icon(Icons.help_outline,
+                                        size: 20),
                                     label: const Text(
                                       'App Tutorial',
                                       style: TextStyle(fontSize: 14),

@@ -7,7 +7,7 @@ import 'package:flutter_forager_app/screens/drawer/about_page.dart';
 import 'package:flutter_forager_app/screens/drawer/about_us_page.dart';
 import 'package:flutter_forager_app/screens/drawer/credits_page.dart';
 import 'package:flutter_forager_app/screens/home/home_page.dart';
-import 'package:flutter_forager_app/theme.dart';
+import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'auth/auth_page.dart';
 import 'firebase_options.dart';
@@ -48,7 +48,9 @@ class _MyAppState extends State<MyApp> {
         FocusScope.of(context).requestFocus(FocusNode());
       },
       child: MaterialApp(
-        theme: primaryTheme,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.light, // Can be changed to ThemeMode.system
         initialRoute: '/auth',
         routes: {
           '/auth': (context) => const AuthPage(),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
 import 'package:flutter_forager_app/data/models/user.dart';
 import 'package:flutter_forager_app/screens/profile/profile_page.dart';
+import 'package:flutter_forager_app/shared/gamification/gamification_helper.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -398,11 +399,13 @@ class _FriendRequestPageState extends ConsumerState<FriendRequestPage> {
 
       if (accept) {
         await userRepo.acceptFriendRequest(userId, requesterId);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Friend request accepted')),
-          );
-        }
+
+        // Award points for adding friend
+        await GamificationHelper.awardFriendAdded(
+          context: context,
+          ref: ref,
+          userId: userId,
+        );
       } else {
         await userRepo.rejectFriendRequest(userId, requesterId);
         if (mounted) {
