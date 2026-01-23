@@ -68,7 +68,14 @@ class _SearchFieldState extends State<SearchField> {
                             if (_searchController.text.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                    content: Text('Please enter a city name')),
+                                  content: Text('Please enter a city name'),
+                                  behavior: SnackBarBehavior.floating,
+                                  margin: EdgeInsets.only(
+                                    bottom: 80,
+                                    left: 16,
+                                    right: 16,
+                                  ),
+                                ),
                               );
                               return;
                             }
@@ -82,8 +89,15 @@ class _SearchFieldState extends State<SearchField> {
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                    content:
-                                        Text('No place found for your search')),
+                                  content:
+                                      Text('No place found for your search'),
+                                  behavior: SnackBarBehavior.floating,
+                                  margin: EdgeInsets.only(
+                                    bottom: 80,
+                                    left: 16,
+                                    right: 16,
+                                  ),
+                                ),
                               );
                             }
                           } catch (e) {
@@ -97,7 +111,15 @@ class _SearchFieldState extends State<SearchField> {
                                   'Network error. Please check your connection.';
                             }
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(message)),
+                              SnackBar(
+                                content: Text(message),
+                                behavior: SnackBarBehavior.floating,
+                                margin: const EdgeInsets.only(
+                                  bottom: 80,
+                                  left: 16,
+                                  right: 16,
+                                ),
+                              ),
                             );
                           }
                         },
@@ -146,24 +168,41 @@ class _SearchFieldState extends State<SearchField> {
                   onTap: () async {
                     try {
                       setState(() => _isLoading = true);
-                      final place = await LocationService()
-                          .getPlace(suggestion['place_id']);
+                      // Use the description text instead of place_id
+                      final description = suggestion['description'] ?? '';
+                      final place =
+                          await LocationService().getPlace(description);
                       setState(() => _isLoading = false);
                       if (place.isNotEmpty) {
                         widget.onPlaceSelected.call(place);
-                        _searchController.text =
-                            suggestion['description'] ?? '';
+                        _searchController.text = description;
                         setState(() => _suggestions = []);
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Unable to fetch place details')),
+                          SnackBar(
+                            content:
+                                const Text('Unable to fetch place details'),
+                            behavior: SnackBarBehavior.floating,
+                            margin: const EdgeInsets.only(
+                              bottom: 80,
+                              left: 16,
+                              right: 16,
+                            ),
+                          ),
                         );
                       }
                     } catch (e) {
                       setState(() => _isLoading = false);
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error: ${e.toString()}')),
+                        SnackBar(
+                          content: Text('Error: ${e.toString()}'),
+                          behavior: SnackBarBehavior.floating,
+                          margin: const EdgeInsets.only(
+                            bottom: 80,
+                            left: 16,
+                            right: 16,
+                          ),
+                        ),
                       );
                     }
                   },

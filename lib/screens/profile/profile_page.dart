@@ -2,7 +2,6 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_forager_app/shared/screen_heading.dart';
 import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
 import 'package:flutter_forager_app/data/models/user.dart';
 import 'package:flutter_forager_app/providers/markers/marker_data.dart';
@@ -14,9 +13,9 @@ import 'package:flutter_forager_app/screens/profile/components/edit_profile_dial
 import 'package:flutter_forager_app/screens/profile/components/user_heading.dart';
 import 'package:flutter_forager_app/screens/recipes/recipes_page.dart';
 import 'package:flutter_forager_app/screens/achievements/achievements_page.dart';
+import 'package:flutter_forager_app/screens/leaderboard/leaderboard_page.dart';
 import 'package:flutter_forager_app/shared/gamification/stats_card.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
-import 'package:flutter_forager_app/theme.dart';
 import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -105,6 +104,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   Future<void> showProfileEditDialog() async {
     await showDialog(
       context: context,
+      barrierDismissible: false, // Prevent accidental dismissal during save
       builder: (context) => EditProfileDialog(
         username: username,
         bio: bio,
@@ -146,7 +146,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
     return Container(
       decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
+        gradient: AppTheme.primaryGradient,
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -155,21 +155,21 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 backgroundColor: Colors.transparent,
                 elevation: 0,
                 leading: IconButton(
-                  icon: Icon(Icons.arrow_back, color: AppColors.textColor),
+                  icon: Icon(Icons.arrow_back, color: AppTheme.textWhite),
                   onPressed: () => Navigator.pop(context),
                 ),
                 title: Text(
                   _isCurrentUser
                       ? 'My Profile'
                       : '${widget.user.username}\'s Profile',
-                  style: TextStyle(color: AppColors.textColor),
+                  style: AppTheme.heading(size: 20, color: AppTheme.textWhite),
                 ),
                 centerTitle: true,
                 // Only show edit button for current user
                 actions: _isCurrentUser
                     ? [
                         IconButton(
-                          icon: Icon(Icons.edit, color: AppColors.textColor),
+                          icon: Icon(Icons.edit, color: AppTheme.textWhite),
                           onPressed: showProfileEditDialog,
                         ),
                       ]
@@ -179,19 +179,17 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         // Show floating action button only when there's no AppBar
         floatingActionButton: !widget.showBackButton && _isCurrentUser
             ? FloatingActionButton(
-                backgroundColor: AppColors.secondaryColor,
+                heroTag: 'profileEditButton',
+                backgroundColor: AppTheme.secondary,
                 onPressed: showProfileEditDialog,
-                child: Icon(Icons.edit, color: AppColors.textColor),
+                child: Icon(Icons.edit, color: AppTheme.textWhite),
                 mini: true,
               )
             : null,
         floatingActionButtonLocation: FloatingActionButtonLocation.miniEndTop,
         body: Column(
           children: [
-            ScreenHeading(
-                title: _isCurrentUser
-                    ? 'Profile'
-                    : '${widget.user.username}\'s Profile'),
+            // Removed ScreenHeading - user already knows they're on their profile
             LayoutBuilder(
               builder: (context, constraints) {
                 final screenWidth = constraints.maxWidth;
@@ -246,6 +244,49 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                     ),
                                   );
                                 },
+                              ),
+                            ),
+                          // Progress Section - Achievements & Leaderboard
+                          if (_isCurrentUser)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildProgressButton(
+                                      icon: Icons.workspace_premium,
+                                      label: 'Achievements',
+                                      color: AppTheme.xp,
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                const AchievementsPage(),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: _buildProgressButton(
+                                      icon: Icons.leaderboard,
+                                      label: 'Leaderboard',
+                                      color: AppTheme.secondary,
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                const LeaderboardPage(),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           Column(
@@ -383,58 +424,80 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               if (_isCurrentUser &&
                                   widget.user.friendRequests.isNotEmpty)
                                 Padding(
-                                  padding:
-                                      const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                                  child: OutlinedButton.icon(
-                                    icon:
-                                        const Icon(Icons.person_add, size: 20),
-                                    label: Text(
-                                      'Friend Requests (${widget.user.friendRequests.length})',
-                                      style: const TextStyle(fontSize: 14),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: AppTheme.space16,
+                                      vertical: AppTheme.space8),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: AppTheme.accentGradient,
+                                      borderRadius: AppTheme.borderRadiusMedium,
+                                      boxShadow: AppTheme.shadowMedium,
                                     ),
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: Colors.deepOrange,
-                                      side: const BorderSide(
-                                          color: Colors.deepOrange),
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 12),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        borderRadius:
+                                            AppTheme.borderRadiusMedium,
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  const FriendsController(
+                                                      currentTab: 1),
+                                            ),
+                                          );
+                                        },
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: AppTheme.space16),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Icon(Icons.person_add,
+                                                  size: 20,
+                                                  color: AppTheme.textWhite),
+                                              const SizedBox(
+                                                  width: AppTheme.space8),
+                                              Text(
+                                                'Friend Requests (${widget.user.friendRequests.length})',
+                                                style: AppTheme.title(
+                                                  size: 14,
+                                                  color: AppTheme.textWhite,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
                                       ),
                                     ),
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              const FriendsController(
-                                                  currentTab: 1),
-                                        ),
-                                      );
-                                    },
                                   ),
                                 ),
 
                               // Tutorial/Help Button (only for current user)
                               if (_isCurrentUser)
                                 Padding(
-                                  padding:
-                                      const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: AppTheme.space16,
+                                      vertical: AppTheme.space8),
                                   child: OutlinedButton.icon(
                                     icon: const Icon(Icons.help_outline,
                                         size: 20),
-                                    label: const Text(
+                                    label: Text(
                                       'App Tutorial',
-                                      style: TextStyle(fontSize: 14),
+                                      style: AppTheme.title(
+                                          size: 14, color: AppTheme.secondary),
                                     ),
                                     style: OutlinedButton.styleFrom(
-                                      foregroundColor: AppColors.secondaryColor,
+                                      foregroundColor: AppTheme.secondary,
                                       side: BorderSide(
-                                          color: AppColors.secondaryColor),
+                                          color: AppTheme.secondary, width: 2),
                                       padding: const EdgeInsets.symmetric(
-                                          vertical: 12),
+                                          vertical: AppTheme.space16),
                                       shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
+                                        borderRadius:
+                                            AppTheme.borderRadiusMedium,
                                       ),
                                     ),
                                     onPressed: () {
@@ -482,16 +545,25 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     bool enabled = true,
   }) {
     return Card(
-      elevation: 2,
+      elevation: enabled ? 4 : 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppTheme.borderRadiusMedium,
       ),
       color: enabled ? Colors.white : Colors.grey[100],
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppTheme.borderRadiusMedium,
         onTap: enabled ? onTap : null,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
+        child: Container(
+          padding: const EdgeInsets.all(AppTheme.space12),
+          decoration: BoxDecoration(
+            borderRadius: AppTheme.borderRadiusMedium,
+            border: enabled
+                ? Border.all(
+                    color: AppTheme.primary.withValues(alpha: 0.1),
+                    width: 1,
+                  )
+                : null,
+          ),
           child: FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.center,
@@ -500,30 +572,74 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               children: [
                 Icon(
                   icon,
-                  size: 18,
-                  color: enabled ? Colors.deepOrange : Colors.grey,
+                  size: 24,
+                  color: enabled ? AppTheme.primary : Colors.grey,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppTheme.space8),
                 AutoSizeText(
                   value,
-                  minFontSize: 6,
+                  minFontSize: 8,
                   maxLines: 1,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: enabled ? Colors.black : Colors.grey,
+                  style: AppTheme.stats(
+                    size: 20,
+                    color: enabled ? AppTheme.primary : Colors.grey,
                   ),
                 ),
                 const SizedBox(height: 4),
                 AutoSizeText(
                   title,
-                  minFontSize: 6,
+                  minFontSize: 8,
                   maxLines: 1,
-                  style: TextStyle(
-                    color: enabled ? Colors.grey[600] : Colors.grey,
+                  style: AppTheme.caption(
+                    size: 11,
+                    color: enabled ? AppTheme.textMedium : Colors.grey,
                   ),
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProgressButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppTheme.borderRadiusMedium,
+      ),
+      child: InkWell(
+        borderRadius: AppTheme.borderRadiusMedium,
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          decoration: BoxDecoration(
+            borderRadius: AppTheme.borderRadiusMedium,
+            border: Border.all(
+              color: color.withValues(alpha: 0.3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 20, color: color),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: AppTheme.title(
+                  size: 14,
+                  color: color,
+                  weight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         ),
       ),

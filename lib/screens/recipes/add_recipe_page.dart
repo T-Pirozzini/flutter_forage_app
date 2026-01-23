@@ -5,7 +5,7 @@ import 'package:flutter_forager_app/data/repositories/repository_providers.dart'
 import 'package:flutter_forager_app/data/models/ingredient.dart';
 import 'package:flutter_forager_app/data/models/recipe.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
-import 'package:flutter_forager_app/theme.dart';
+import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -239,7 +239,7 @@ class _AddRecipePageState extends ConsumerState<AddRecipePage> {
       appBar: AppBar(
         title: StyledTitleLarge(
           _isEditing ? 'Edit Recipe' : 'Share A Recipe',
-          color: AppColors.textColor,
+          color: AppTheme.textDark,
         ),
       ),
       body: SingleChildScrollView(
@@ -248,7 +248,7 @@ class _AddRecipePageState extends ConsumerState<AddRecipePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Recipe Name
-            StyledHeadingMedium('Recipe Name*', color: AppColors.textColor),
+            StyledHeadingMedium('Recipe Name*', color: AppTheme.textDark),
             const SizedBox(height: 8),
             TextField(
               controller: _nameController,
@@ -266,7 +266,7 @@ class _AddRecipePageState extends ConsumerState<AddRecipePage> {
             // Description
             StyledHeadingMedium(
               'Description (Optional)',
-              color: AppColors.textColor,
+              color: AppTheme.textDark,
             ),
             const SizedBox(height: 8),
             TextField(
@@ -285,7 +285,7 @@ class _AddRecipePageState extends ConsumerState<AddRecipePage> {
             const SizedBox(height: 20),
 
             // Photos
-            StyledHeadingMedium('Photos (Max 3)', color: AppColors.textColor),
+            StyledHeadingMedium('Photos (Max 3)', color: AppTheme.textDark),
             const SizedBox(height: 8),
             SizedBox(
               height: 100,
@@ -362,7 +362,7 @@ class _AddRecipePageState extends ConsumerState<AddRecipePage> {
             const SizedBox(height: 20),
 
             // Ingredients
-            StyledHeadingMedium('Ingredients*', color: AppColors.textColor),
+            StyledHeadingMedium('Ingredients*', color: AppTheme.textDark),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -438,7 +438,7 @@ class _AddRecipePageState extends ConsumerState<AddRecipePage> {
             const SizedBox(height: 20),
 
             // Instructions
-            StyledHeadingMedium('Instructions*', color: AppColors.textColor),
+            StyledHeadingMedium('Instructions*', color: AppTheme.textDark),
             const SizedBox(height: 8),
             Row(
               children: [

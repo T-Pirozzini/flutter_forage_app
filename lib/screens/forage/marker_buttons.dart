@@ -301,9 +301,7 @@ class _MarkerButtonsState extends State<MarkerButtons> {
     if (markerCount <= 10) {
       if (markerImageUrl != null) {
         // UPDATED: Save to root Markers collection
-        FirebaseFirestore.instance
-            .collection('Markers')
-            .add({
+        FirebaseFirestore.instance.collection('Markers').add({
           'name': markerName,
           'description': markerDescription,
           'type': markerType,
@@ -318,9 +316,7 @@ class _MarkerButtonsState extends State<MarkerButtons> {
         });
       } else {
         // UPDATED: Save to root Markers collection
-        FirebaseFirestore.instance
-            .collection('Markers')
-            .add({
+        FirebaseFirestore.instance.collection('Markers').add({
           'name': markerName,
           'description': markerDescription,
           'type': markerType,

@@ -6,19 +6,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-// Google Maps controller completer
-final mapControllerProvider =
+// Google Maps controller completer (renamed to avoid conflict with MapController provider)
+final mapCompleterProvider =
     Provider.autoDispose<Completer<GoogleMapController>>(
   (ref) => Completer<GoogleMapController>(),
 );
 
-// UI State Providers
-final followUserProvider = StateProvider<bool>((ref) => true);
-final lastManualMoveProvider = StateProvider<DateTime?>((ref) => null);
+// UI State Providers (autoDispose to prevent memory leaks when leaving map)
+final followUserProvider = StateProvider.autoDispose<bool>((ref) => true);
+final lastManualMoveProvider = StateProvider.autoDispose<DateTime?>((ref) => null);
 
-// Current position state
+// Current position state (autoDispose to clean up when map is closed)
 final currentPositionProvider =
-    StateNotifierProvider<PositionNotifier, Position?>(
+    StateNotifierProvider.autoDispose<PositionNotifier, Position?>(
   (ref) => PositionNotifier(),
 );
 

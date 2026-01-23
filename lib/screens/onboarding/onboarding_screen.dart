@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/data/models/onboarding_page_model.dart';
-import 'package:flutter_forager_app/theme.dart';
+import 'package:flutter_forager_app/theme/app_theme.dart';
 
 /// Onboarding screen that introduces new users to the app
 ///
@@ -76,7 +76,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
-          gradient: AppColors.primaryGradient,
+          gradient: AppTheme.primaryGradient,
         ),
         child: SafeArea(
           child: Column(
@@ -93,7 +93,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         child: Text(
                           'Close',
                           style: TextStyle(
-                            color: AppColors.textColor,
+                            color: AppTheme.textWhite,
                             fontSize: 16,
                           ),
                         ),
@@ -103,7 +103,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     Text(
                       widget.isTutorial ? 'Tutorial' : 'Welcome',
                       style: TextStyle(
-                        color: AppColors.textColor,
+                        color: AppTheme.textWhite,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.5,
@@ -115,7 +115,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         child: Text(
                           'Skip',
                           style: TextStyle(
-                            color: AppColors.secondaryColor,
+                            color: AppTheme.secondary,
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
@@ -155,8 +155,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       width: _currentPage == index ? 32 : 8,
                       decoration: BoxDecoration(
                         color: _currentPage == index
-                            ? AppColors.secondaryColor
-                            : AppColors.textColor.withValues(alpha: 0.3),
+                            ? AppTheme.secondary
+                            : AppTheme.textWhite.withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -176,12 +176,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         onPressed: _previousPage,
                         icon: Icon(
                           Icons.arrow_back,
-                          color: AppColors.textColor,
+                          color: AppTheme.textWhite,
                         ),
                         label: Text(
                           'Back',
                           style: TextStyle(
-                            color: AppColors.textColor,
+                            color: AppTheme.textWhite,
                             fontSize: 16,
                           ),
                         ),
@@ -193,8 +193,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ElevatedButton(
                       onPressed: _nextPage,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.secondaryColor,
-                        foregroundColor: AppColors.textColor,
+                        backgroundColor: AppTheme.secondary,
+                        foregroundColor: AppTheme.textWhite,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 32,
                           vertical: 16,
@@ -255,10 +255,10 @@ class _OnboardingPage extends StatelessWidget {
             width: 200,
             height: 200,
             decoration: BoxDecoration(
-              color: AppColors.secondaryColor.withValues(alpha: 0.2),
+              color: AppTheme.secondary.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: AppColors.secondaryColor.withValues(alpha: 0.5),
+                color: AppTheme.secondary.withValues(alpha: 0.5),
                 width: 2,
               ),
             ),
@@ -266,7 +266,7 @@ class _OnboardingPage extends StatelessWidget {
               child: Icon(
                 _getIconForPage(),
                 size: 100,
-                color: AppColors.secondaryColor,
+                color: AppTheme.secondary,
               ),
             ),
           ),
@@ -278,7 +278,7 @@ class _OnboardingPage extends StatelessWidget {
             page.title,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: AppColors.textColor,
+              color: AppTheme.textWhite,
               fontSize: 28,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.5,
@@ -292,7 +292,7 @@ class _OnboardingPage extends StatelessWidget {
             page.description,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: AppColors.textColor.withValues(alpha: 0.9),
+              color: AppTheme.textWhite.withValues(alpha: 0.9),
               fontSize: 16,
               height: 1.5,
             ),
@@ -307,7 +307,7 @@ class _OnboardingPage extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.check_circle,
-                      color: AppColors.successColor,
+                      color: AppTheme.success,
                       size: 24,
                     ),
                     const SizedBox(width: 12),
@@ -315,7 +315,7 @@ class _OnboardingPage extends StatelessWidget {
                       child: Text(
                         feature,
                         style: TextStyle(
-                          color: AppColors.textColor,
+                          color: AppTheme.textWhite,
                           fontSize: 14,
                           letterSpacing: 0.5,
                         ),

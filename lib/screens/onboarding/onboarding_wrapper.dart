@@ -155,7 +155,7 @@ class OnboardingWrapper extends ConsumerWidget {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const HomePage(currentIndex: 0),
+                    builder: (context) => const HomePage(currentIndex: 2),
                   ),
                 );
               }
@@ -164,7 +164,7 @@ class OnboardingWrapper extends ConsumerWidget {
         }
 
         // User has completed onboarding, show home page
-        return const HomePage(currentIndex: 0);
+        return const HomePage(currentIndex: 2);
       },
     );
   }

@@ -4,9 +4,8 @@ import 'package:flutter_forager_app/data/models/recipe.dart';
 import 'package:flutter_forager_app/providers/recipes/recipe_provider.dart';
 import 'package:flutter_forager_app/screens/recipes/recipe_card.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
-import 'package:flutter_forager_app/theme.dart' show AppColors;
+import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'add_recipe_page.dart';
 
 class RecipesPage extends ConsumerWidget {
@@ -33,24 +32,24 @@ class RecipesPage extends ConsumerWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
                       vertical: 8.0, horizontal: 16.0),
-                  color: AppColors.titleBarColor,
+                  color: AppTheme.primary.withValues(alpha: 0.1),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       StyledTextMedium(
                         "Cook a meal with your foraged ingredients",
-                        color: AppColors.textColor,
+                        color: AppTheme.textDark,
                       ),
                       StyledTextMedium('and share with the community!',
-                          color: AppColors.textColor),
+                          color: AppTheme.textDark),
                       Row(
                         children: [
                           StyledTextMedium('Foraged:',
-                              color: AppColors.textColor),
+                              color: AppTheme.textDark),
                           SizedBox(width: 4),
                           Icon(
                             Icons.eco,
-                            color: Colors.green,
+                            color: AppTheme.success,
                             size: 18,
                           ),
                         ],
@@ -58,10 +57,10 @@ class RecipesPage extends ConsumerWidget {
                       Row(
                         children: [
                           StyledTextMedium('Purchased:',
-                              color: AppColors.textColor),
+                              color: AppTheme.textDark),
                           SizedBox(width: 4),
                           Icon(Icons.shopping_basket,
-                              color: Colors.orangeAccent, size: 18),
+                              color: AppTheme.secondary, size: 18),
                         ],
                       ),
                     ],
@@ -94,8 +93,9 @@ class RecipesPage extends ConsumerWidget {
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 80),
         child: FloatingActionButton(
+          heroTag: 'addRecipeButton',
           foregroundColor: Colors.white,
-          backgroundColor: Colors.deepOrange,
+          backgroundColor: AppTheme.accent,
           onPressed: () {
             Navigator.push(
               context,

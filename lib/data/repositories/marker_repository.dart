@@ -66,10 +66,12 @@ class MarkerRepository extends BaseRepository<MarkerModel> {
   }
 
   /// Stream all public markers (real-time)
-  Stream<List<MarkerModel>> streamPublicMarkers() {
+  /// [limit] controls max markers loaded (default 100 for performance)
+  Stream<List<MarkerModel>> streamPublicMarkers({int limit = 100}) {
     return firestoreService
         .collection(collectionPath)
         .orderBy(FirestoreFields.timestamp, descending: true)
+        .limit(limit)
         .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) => fromFirestore(doc)).toList();

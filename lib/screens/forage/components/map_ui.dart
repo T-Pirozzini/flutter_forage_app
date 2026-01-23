@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/providers/map/map_state_provider.dart';
 import 'package:flutter_forager_app/screens/forage/components/search_field.dart';
-import 'package:flutter_forager_app/shared/styled_text.dart';
-import 'package:flutter_forager_app/theme.dart';
+import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
@@ -22,28 +21,102 @@ class MapFloatingControls extends ConsumerWidget {
     required this.onShowLocationsPressed,
   });
 
+  void _showExploreInfoDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: AppTheme.borderRadiusMedium,
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.explore, color: AppTheme.secondary),
+            const SizedBox(width: 8),
+            Text(
+              'Explore & Forage',
+              style: AppTheme.heading(size: 18, color: AppTheme.textDark),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Explore your local area for forageable ingredients.',
+              style: AppTheme.body(size: 14, color: AppTheme.textDark),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Mark the location so you can find it again!',
+              style: AppTheme.body(size: 14, color: AppTheme.textDark),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Icon(Icons.add_circle_outline, color: AppTheme.accent, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Tap the + button to add a new marker',
+                    style: AppTheme.caption(size: 12, color: AppTheme.textMedium),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.my_location, color: AppTheme.primary, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Tap to center map on your location',
+                    style: AppTheme.caption(size: 12, color: AppTheme.textMedium),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Got it!',
+              style: AppTheme.button(color: AppTheme.secondary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Color _getTypeColor(String type) {
+    // Using AppTheme colors for consistency
     switch (type.toLowerCase()) {
       case 'berries':
       case 'berry':
-        return Colors.purpleAccent;
+        return const Color(0xFF9C27B0); // Purple
       case 'mushrooms':
       case 'mushroom':
-        return Colors.orangeAccent;
+        return AppTheme.secondary; // Warm amber
       case 'nuts':
-        return Colors.brown;
+        return const Color(0xFF795548); // Brown
       case 'herbs':
-        return Colors.lightGreen;
+        return const Color(0xFF8BC34A); // Light green
       case 'tree':
-        return Colors.green;
+        return AppTheme.primary; // Forest green
       case 'fish':
-        return Colors.blue;
+        return const Color(0xFF2196F3); // Blue
       case 'plant':
-        return Colors.greenAccent;
+        return AppTheme.success; // Success green
+      case 'shellfish':
+        return const Color(0xFFE91E63); // Pink
       case 'other':
-        return Colors.grey;
+        return AppTheme.textMedium; // Grey
       default:
-        return Colors.deepOrangeAccent;
+        return AppTheme.accent; // Coral
     }
   }
 
@@ -82,6 +155,21 @@ class MapFloatingControls extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Info Button
+                Tooltip(
+                  message: 'About exploring',
+                  child: FloatingActionButton(
+                    heroTag: 'infoButton',
+                    onPressed: () => _showExploreInfoDialog(context),
+                    mini: true,
+                    backgroundColor: AppTheme.secondary,
+                    child: const Icon(
+                      Icons.info_outline,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 // View Locations Button
                 Tooltip(
                   message: 'View your locations',
@@ -89,7 +177,7 @@ class MapFloatingControls extends ConsumerWidget {
                     heroTag: 'locationsButton',
                     onPressed: onShowLocationsPressed,
                     mini: true,
-                    backgroundColor: Colors.grey.shade800,
+                    backgroundColor: AppTheme.primary,
                     child: const Icon(
                       Icons.list,
                       color: Colors.white,
@@ -111,15 +199,18 @@ class MapFloatingControls extends ConsumerWidget {
                       }
                     },
                     mini: true,
-                    backgroundColor: Colors.grey.shade800,
+                    backgroundColor: AppTheme.primary,
                     child: Icon(
                       Icons.my_location,
                       color: followUser
-                          ? Colors.deepOrange.shade300
+                          ? AppTheme.accent
                           : Colors.white,
                     ),
                   ),
                 ),
+                const SizedBox(height: 8),
+                // GPS Accuracy Indicator
+                _GpsAccuracyBadge(),
               ],
             ),
           ),
@@ -131,7 +222,7 @@ class MapFloatingControls extends ConsumerWidget {
             child: Container(
               padding: const EdgeInsets.all(8.0),
               decoration: BoxDecoration(
-                color: Colors.black87,
+                color: AppTheme.backgroundDark.withValues(alpha: 0.9),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(
@@ -145,7 +236,7 @@ class MapFloatingControls extends ConsumerWidget {
                       style: TextStyle(
                           color: Colors.white, fontWeight: FontWeight.w500),
                     ),
-                    backgroundColor: Colors.deepOrange.shade300,
+                    backgroundColor: AppTheme.accent,
                     foregroundColor: Colors.white,
                     buttonSize: const Size(56, 56), // Standard FAB size
                     childrenButtonSize: const Size(40, 40),
@@ -186,38 +277,64 @@ class MapFloatingControls extends ConsumerWidget {
   }
 }
 
-class MapHeader extends StatelessWidget {
-  const MapHeader({super.key});
-
+/// Small badge showing current GPS accuracy with color coding
+class _GpsAccuracyBadge extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      bottom: false, // Only apply safe area to top
+  Widget build(BuildContext context, WidgetRef ref) {
+    final position = ref.watch(currentPositionProvider);
+
+    if (position == null) {
+      return const SizedBox.shrink();
+    }
+
+    final accuracy = position.accuracy;
+    final color = _getAccuracyColor(accuracy);
+    final icon = _getAccuracyIcon(accuracy);
+
+    return Tooltip(
+      message: 'GPS accuracy: ${accuracy.toInt()}m',
       child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        color: AppColors.primaryAccent,
-        child: Column(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.9),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: StyledTextLarge(
-                "Explore your local area for forageable ingredients.",
-                color: AppColors.textColor,
-              ),
-            ),
-            const SizedBox(height: 4),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: StyledTextLarge(
-                'Mark the location so you can find it again!',
-                color: AppColors.textColor,
+            Icon(icon, size: 14, color: Colors.white),
+            const SizedBox(width: 4),
+            Text(
+              '${accuracy.toInt()}m',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Color _getAccuracyColor(double accuracy) {
+    if (accuracy <= 20) {
+      return AppTheme.success; // Green - excellent
+    } else if (accuracy <= 50) {
+      return AppTheme.warning; // Amber - acceptable
+    } else {
+      return AppTheme.error; // Red - poor
+    }
+  }
+
+  IconData _getAccuracyIcon(double accuracy) {
+    if (accuracy <= 20) {
+      return Icons.gps_fixed; // Strong signal
+    } else if (accuracy <= 50) {
+      return Icons.gps_not_fixed; // Moderate signal
+    } else {
+      return Icons.gps_off; // Weak signal
+    }
   }
 }

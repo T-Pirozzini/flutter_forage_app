@@ -10,6 +10,9 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 class ForageTypeUtils {
   ForageTypeUtils._();
 
+  /// Cache for marker icons to avoid repeated creation
+  static final Map<String, BitmapDescriptor> _markerIconCache = {};
+
   /// All available forage types
   static const List<String> allTypes = [
     'Berries',
@@ -70,9 +73,28 @@ class ForageTypeUtils {
     return hsl.hue;
   }
 
-  /// Get default BitmapDescriptor for a forage type
+  /// Get default BitmapDescriptor for a forage type (cached)
   static BitmapDescriptor getMarkerIcon(String type) {
-    return BitmapDescriptor.defaultMarkerWithHue(getMarkerHue(type));
+    final key = type.toLowerCase();
+    if (_markerIconCache.containsKey(key)) {
+      return _markerIconCache[key]!;
+    }
+    final icon = BitmapDescriptor.defaultMarkerWithHue(getMarkerHue(type));
+    _markerIconCache[key] = icon;
+    return icon;
+  }
+
+  /// Preload all marker icons into cache
+  /// Call this during app initialization for faster map loading
+  static void preloadMarkerIcons() {
+    for (final type in allTypes) {
+      getMarkerIcon(type);
+    }
+  }
+
+  /// Clear the icon cache (useful for memory management)
+  static void clearIconCache() {
+    _markerIconCache.clear();
   }
 
   /// Get a lighter shade of the type color for backgrounds

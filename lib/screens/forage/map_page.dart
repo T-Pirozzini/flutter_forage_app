@@ -1,22 +1,20 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/data/models/marker.dart';
+import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
 import 'package:flutter_forager_app/screens/forage/components/map_markers.dart';
 import 'package:flutter_forager_app/screens/forage/components/map_style.dart';
 import 'package:flutter_forager_app/data/services/map_permissions.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
-import 'package:flutter_forager_app/theme.dart';
+import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter_forager_app/screens/forage/components/map_ui.dart';
 import 'package:flutter_forager_app/screens/forage/components/map_view.dart';
 import 'package:flutter_forager_app/providers/map/map_controller_provider.dart';
-import 'package:flutter_forager_app/providers/map/map_state_provider.dart'
-    hide mapControllerProvider;
+import 'package:flutter_forager_app/providers/map/map_state_provider.dart';
 import 'package:flutter_forager_app/shared/gamification/gamification_helper.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_forager_app/data/services/geocoding_cache.dart';
 import 'package:intl/intl.dart';
 
 class MapPage extends ConsumerStatefulWidget {
@@ -66,17 +64,7 @@ class _MapPageState extends ConsumerState<MapPage> {
   }
 
   Future<String> _getLocationAddress(double lat, double lng) async {
-    try {
-      final placemarks = await placemarkFromCoordinates(lat, lng);
-      if (placemarks.isNotEmpty) {
-        final place = placemarks.first;
-        return '${place.locality ?? ''}${place.locality != null && place.country != null ? ', ' : ''}${place.country ?? ''}'
-            .trim();
-      }
-      return '${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}';
-    } catch (e) {
-      return '${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}';
-    }
+    return GeocodingCache.getAddress(lat, lng);
   }
 
   void _showLocationsBottomSheet() {
@@ -89,51 +77,25 @@ class _MapPageState extends ConsumerState<MapPage> {
         return Consumer(
           builder: (context, ref, _) {
             final currentPosition = ref.watch(currentPositionProvider);
-            return StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('Users')
-                  .doc(_user.email)
-                  .collection('Markers')
-                  .snapshots(),
+            final markerRepo = ref.watch(markerRepositoryProvider);
+
+            return StreamBuilder<List<MarkerModel>>(
+              stream: markerRepo.streamByUserId(_user.email!),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final markers = snapshot.data?.docs.map((doc) {
-                      final data = doc.data() as Map<String, dynamic>;
-                      final location = data['location'] as Map<String, dynamic>;
-                      return MarkerModel(
-                        id: doc.id,
-                        name: data['name'] ?? '',
-                        description: data['description'] ?? '',
-                        type: data['type'] ?? '',
-                        imageUrls: List<String>.from(data['images'] ?? []),
-                        markerOwner: data['markerOwner'] ?? '',
-                        timestamp: (data['timestamp'] as Timestamp).toDate(),
-                        latitude: (location['latitude'] as num).toDouble(),
-                        longitude: (location['longitude'] as num).toDouble(),
-                        status: data['status'] ?? 'active',
-                        comments: (data['comments'] as List<dynamic>?)
-                                ?.map((c) => MarkerComment.fromMap(c))
-                                .toList() ??
-                            [],
-                        currentStatus: data['currentStatus'] ?? 'active',
-                        statusHistory: (data['statusHistory'] as List<dynamic>?)
-                                ?.map((s) => MarkerStatusUpdate.fromMap(s))
-                                .toList() ??
-                            [],
-                      );
-                    }).toList() ??
-                    [];
+                final markers = snapshot.data ?? [];
 
                 return Column(
                   children: [
-                    const Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Text('Locations',
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold)),
+                    Padding(
+                      padding: const EdgeInsets.all(AppTheme.space16),
+                      child: Text(
+                        'Locations',
+                        style: AppTheme.heading(size: 18),
+                      ),
                     ),
                     Expanded(
                       child: ListView(
@@ -141,7 +103,7 @@ class _MapPageState extends ConsumerState<MapPage> {
                           if (currentPosition != null)
                             ListTile(
                               leading: const Icon(Icons.my_location,
-                                  color: Colors.blue),
+                                  color: AppTheme.primary),
                               title: const Text('Current Location'),
                               subtitle: FutureBuilder<String>(
                                 future: _getLocationAddress(
@@ -149,8 +111,8 @@ class _MapPageState extends ConsumerState<MapPage> {
                                     currentPosition.longitude),
                                 builder: (context, snapshot) => Text(
                                   snapshot.data ?? 'Loading...',
-                                  style: GoogleFonts.poppins(
-                                      fontSize: 12, color: Colors.grey[600]),
+                                  style: AppTheme.caption(
+                                      size: 12, color: AppTheme.textMedium),
                                 ),
                               ),
                               onTap: () {
@@ -179,8 +141,8 @@ class _MapPageState extends ConsumerState<MapPage> {
                                     marker.latitude, marker.longitude),
                                 builder: (context, snapshot) => Text(
                                   snapshot.data ?? 'Loading...',
-                                  style: GoogleFonts.poppins(
-                                      fontSize: 12, color: Colors.grey[600]),
+                                  style: AppTheme.caption(
+                                      size: 12, color: AppTheme.textMedium),
                                 ),
                               ),
                               onTap: () {
@@ -222,13 +184,13 @@ class _MapPageState extends ConsumerState<MapPage> {
       case 'tree':
         return Colors.green;
       case 'fish':
-        return Colors.blue;
+        return AppTheme.primary;
       case 'plant':
         return Colors.greenAccent;
       case 'other':
         return Colors.grey;
       default:
-        return Colors.deepOrangeAccent;
+        return AppTheme.accent;
     }
   }
 
@@ -254,8 +216,7 @@ class _MapPageState extends ConsumerState<MapPage> {
               ),
               const SizedBox(width: 8),
               Text('Add ${type[0].toUpperCase() + type.substring(1)} Marker',
-                  style: GoogleFonts.poppins(
-                      fontSize: 14, fontWeight: FontWeight.bold)),
+                  style: AppTheme.title(size: 14, weight: FontWeight.bold)),
             ],
           ),
           content: Form(
@@ -268,7 +229,7 @@ class _MapPageState extends ConsumerState<MapPage> {
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8)),
                   filled: true,
-                  fillColor: Colors.grey[100],
+                  fillColor: AppTheme.backgroundLight,
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -285,7 +246,7 @@ class _MapPageState extends ConsumerState<MapPage> {
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8)),
                   filled: true,
-                  fillColor: Colors.grey[100],
+                  fillColor: AppTheme.backgroundLight,
                 ),
                 maxLines: 3,
                 validator: (value) {
@@ -298,13 +259,12 @@ class _MapPageState extends ConsumerState<MapPage> {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Icon(Icons.camera_alt_outlined,
-                      color: Colors.deepOrangeAccent),
+                  Icon(Icons.camera_alt_outlined, color: AppTheme.accent),
                   SizedBox(width: 8),
                   Flexible(
                     child: StyledTextSmall(
                         'Take photos of your find! Add them to your marker later.',
-                        color: AppColors.textColor),
+                        color: AppTheme.textDark),
                   ),
                 ],
               ),
@@ -316,16 +276,16 @@ class _MapPageState extends ConsumerState<MapPage> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.person, color: Colors.deepOrangeAccent),
+                      Icon(Icons.person, color: AppTheme.accent),
                       SizedBox(width: 8),
-                      StyledTitleMedium('Profile', color: AppColors.textColor),
+                      StyledTitleMedium('Profile', color: AppTheme.textDark),
                       SizedBox(width: 20),
                       Icon(Icons.arrow_circle_right_outlined,
                           color: Colors.white),
                       SizedBox(width: 20),
-                      Icon(Icons.location_on, color: Colors.deepOrangeAccent),
+                      Icon(Icons.location_on, color: AppTheme.accent),
                       SizedBox(width: 8),
-                      StyledTitleMedium('Locations', color: AppColors.textColor)
+                      StyledTitleMedium('Locations', color: AppTheme.textDark)
                     ],
                   ),
                 ),
@@ -343,7 +303,7 @@ class _MapPageState extends ConsumerState<MapPage> {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepOrangeAccent,
+                backgroundColor: AppTheme.accent,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8)),
@@ -352,9 +312,51 @@ class _MapPageState extends ConsumerState<MapPage> {
                 if (formKey.currentState!.validate()) {
                   final name = nameController.text.trim();
                   final description = descriptionController.text.trim();
-                  Navigator.of(context).pop();
+
                   try {
                     final position = await MapPermissions.getCurrentPosition();
+
+                    // Check GPS accuracy before saving
+                    if (position.accuracy > 50) {
+                      final proceed = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          title: Row(
+                            children: [
+                              Icon(Icons.gps_off, color: AppTheme.warning),
+                              const SizedBox(width: 8),
+                              const Text('Low GPS Accuracy'),
+                            ],
+                          ),
+                          content: Text(
+                            'Current GPS accuracy: ${position.accuracy.toInt()}m\n\n'
+                            'The marker location may be inaccurate. '
+                            'For best results, wait for better GPS signal.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: const Text('Wait'),
+                            ),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.accent,
+                              ),
+                              onPressed: () => Navigator.pop(ctx, true),
+                              child: const Text('Save Anyway'),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (proceed != true) return;
+                    }
+
+                    Navigator.of(context).pop();
+
                     final markerService =
                         MapMarkerService(FirebaseAuth.instance.currentUser!);
                     await markerService.saveMarker(
@@ -424,46 +426,34 @@ class _MapPageState extends ConsumerState<MapPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const StyledHeading('Forage Map'),
-        toolbarHeight: 60,
-      ),
-      body: Column(
+      body: Stack(
         children: [
-          const MapHeader(),
-          Expanded(
-            child: Stack(
-              children: [
-                // Map View
-                MapView(
-                  markers: markers,
-                  circles: circles,
-                  initialCameraPosition: CameraPosition(
-                    target: widget.initialLocation ??
-                        LatLng(currentPosition.latitude,
-                            currentPosition.longitude),
-                    zoom: 16,
-                  ),
-                  focusLocation: widget.initialLocation,
-                  onMapCreated: (controller) {
-                    _mapController.completeController(controller);
-                    controller.setMapStyle(mapstyle);
-                  },
-                ),
-
-                // Floating Controls Overlay
-                MapFloatingControls(
-                  followUser: followUser,
-                  onFollowPressed: () {
-                    ref.read(followUserProvider.notifier).state = !followUser;
-                  },
-                  onAddMarkerPressed: (dialogContext, type) =>
-                      _showMarkerDetailsDialog(context, dialogContext, type),
-                  onPlaceSelected: _goToPlace,
-                  onShowLocationsPressed: _showLocationsBottomSheet,
-                ),
-              ],
+          // Map View
+          MapView(
+            markers: markers,
+            circles: circles,
+            initialCameraPosition: CameraPosition(
+              target: widget.initialLocation ??
+                  LatLng(currentPosition.latitude, currentPosition.longitude),
+              zoom: 16,
             ),
+            focusLocation: widget.initialLocation,
+            onMapCreated: (controller) {
+              _mapController.completeController(controller);
+              controller.setMapStyle(mapstyle);
+            },
+          ),
+
+          // Floating Controls Overlay
+          MapFloatingControls(
+            followUser: followUser,
+            onFollowPressed: () {
+              ref.read(followUserProvider.notifier).state = !followUser;
+            },
+            onAddMarkerPressed: (dialogContext, type) =>
+                _showMarkerDetailsDialog(context, dialogContext, type),
+            onPlaceSelected: _goToPlace,
+            onShowLocationsPressed: _showLocationsBottomSheet,
           ),
         ],
       ),
