@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
 import 'package:flutter_forager_app/data/models/marker.dart';
+import 'package:flutter_forager_app/screens/forage_locations/components/bookmark_section.dart';
+import 'package:flutter_forager_app/screens/forage_locations/components/subscribed_collections_section.dart';
 import 'package:flutter_forager_app/screens/forage_locations/forage_location_info_page.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_forager_app/theme.dart';
@@ -161,6 +163,56 @@ class _ForageLocationsState extends ConsumerState<ForageLocations> {
             }
 
             if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              // For user's own locations, still show bookmarks section
+              if (widget.userLocations) {
+                return SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Bookmarked locations section
+                      const BookmarkSection(),
+
+                      // Subscribed collections section
+                      const SubscribedCollectionsSection(),
+
+                      // Empty state for user's locations
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32.0),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.add_location_alt,
+                                size: 64,
+                                color: Colors.grey[400],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No personal locations yet',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 18,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Add markers on the map to save your forage spots',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  color: Colors.grey[500],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              // For friend's locations, show standard empty state
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -178,18 +230,6 @@ class _ForageLocationsState extends ConsumerState<ForageLocations> {
                         color: Colors.grey[600],
                       ),
                     ),
-                    if (!widget.userLocations)
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Text(
-                          'Bookmark community locations to see them here',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: Colors.grey[500],
-                          ),
-                        ),
-                      ),
                   ],
                 ),
               );
@@ -197,6 +237,63 @@ class _ForageLocationsState extends ConsumerState<ForageLocations> {
 
             final markers = snapshot.data!;
 
+            // Show bookmarks section only when viewing user's own locations
+            if (widget.userLocations) {
+              return SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Bookmarked locations section
+                    const BookmarkSection(),
+
+                    // Subscribed collections section
+                    const SubscribedCollectionsSection(),
+
+                    // My Locations header
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.location_on,
+                            color: Colors.deepOrange,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 8),
+                          StyledHeading('My Locations'),
+                          const Spacer(),
+                          Text(
+                            '${markers.length}',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // User's markers list
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16.0, vertical: 8.0),
+                      itemCount: markers.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final marker = markers[index];
+                        return _buildLocationCard(marker);
+                      },
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            // For non-user locations (friend's locations), just show the list
             return Padding(
               padding:
                   const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -217,180 +314,193 @@ class _ForageLocationsState extends ConsumerState<ForageLocations> {
   }
 
   Widget _buildLocationCard(MarkerModel marker) {
-    return Dismissible(
-      key: Key(marker.id),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        decoration: BoxDecoration(
-          color: Colors.red[400],
-          borderRadius: BorderRadius.circular(12),
-        ),
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        child: const Icon(Icons.delete, color: Colors.white),
+    // CRITICAL: Only allow deletion if current user owns this marker
+    final isOwner = marker.markerOwner == currentUser.email;
+
+    final cardContent = Card(
+      elevation: 2,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
       ),
-      confirmDismiss: (direction) async {
-        final shouldDelete = await _deleteConfirmation();
-        if (shouldDelete) {
-          await _deleteMarker(marker.id);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Forage location deleted')),
-          );
-        }
-        return shouldDelete;
-      },
-      child: Card(
-        elevation: 2,
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () => _showMarkerDetails(marker),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Optimized image container
-                if (marker.imageUrl.isNotEmpty)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: SizedBox(
-                      width: 80,
-                      height: 80,
-                      child: CachedNetworkImage(
-                        imageUrl: marker.imageUrl,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          color: Colors.grey[200],
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.grey[400]!,
-                              ),
-                            ),
-                          ),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          color: Colors.grey[200],
-                          child: const Icon(Icons.error),
-                        ),
-                        fadeInDuration: const Duration(milliseconds: 300),
-                        memCacheHeight: 160, // 2x display size for retina
-                      ),
-                    ),
-                  )
-                else
-                  Container(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _showMarkerDetails(marker),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Optimized image container
+              if (marker.imageUrl.isNotEmpty)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: SizedBox(
                     width: 80,
                     height: 80,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.photo,
-                      size: 40,
-                      color: Colors.grey[400],
+                    child: CachedNetworkImage(
+                      imageUrl: marker.imageUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        color: Colors.grey[200],
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.grey[400]!,
+                            ),
+                          ),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: Colors.grey[200],
+                        child: const Icon(Icons.error),
+                      ),
+                      fadeInDuration: const Duration(milliseconds: 300),
+                      memCacheHeight: 160, // 2x display size for retina
                     ),
                   ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Row(
-                          children: [
-                            // Name
-                            StyledHeadingSmall(
-                              marker.name,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      // Description
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          marker.description,
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      // Location coordinates
-                      FutureBuilder<String>(
-                        future: _getLocationAddress(
-                            marker.latitude, marker.longitude),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const SizedBox();
-                          }
-                          return Text(
-                            snapshot.data ??
-                                '${marker.latitude.toStringAsFixed(4)}, ${marker.longitude.toStringAsFixed(4)}',
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: Colors.grey[500],
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          );
-                        },
-                      ),
-                    ],
+                )
+              else
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.photo,
+                    size: 40,
+                    color: Colors.grey[400],
                   ),
                 ),
-                const SizedBox(width: 8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      DateFormat('MMM dd').format(marker.timestamp),
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Type icon
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: _getTypeColor(marker.type).withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Center(
-                        child: ImageIcon(
-                          AssetImage(
-                            'lib/assets/images/${marker.type.toLowerCase()}_marker.png',
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        children: [
+                          // Name
+                          StyledHeadingSmall(
+                            marker.name,
                           ),
-                          size: 32,
-                          color: _getTypeColor(marker.type),
-                        ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(height: 4),
+                    // Description
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        marker.description,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    // Location coordinates
+                    FutureBuilder<String>(
+                      future: _getLocationAddress(
+                          marker.latitude, marker.longitude),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const SizedBox();
+                        }
+                        return Text(
+                          snapshot.data ??
+                              '${marker.latitude.toStringAsFixed(4)}, ${marker.longitude.toStringAsFixed(4)}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: Colors.grey[500],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      },
+                    ),
                   ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    DateFormat('MMM dd').format(marker.timestamp),
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Type icon
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: _getTypeColor(marker.type).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Center(
+                      child: ImageIcon(
+                        AssetImage(
+                          'lib/assets/images/${marker.type.toLowerCase()}_marker.png',
+                        ),
+                        size: 32,
+                        color: _getTypeColor(marker.type),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              ),
+            ],
           ),
         ),
       ),
     );
+
+    // Only wrap with Dismissible if the current user owns this marker
+    if (isOwner) {
+      return Dismissible(
+        key: Key(marker.id),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          decoration: BoxDecoration(
+            color: Colors.red[400],
+            borderRadius: BorderRadius.circular(12),
+          ),
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 20),
+          child: const Icon(Icons.delete, color: Colors.white),
+        ),
+        confirmDismiss: (direction) async {
+          final shouldDelete = await _deleteConfirmation();
+          if (shouldDelete) {
+            await _deleteMarker(marker.id);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Forage location deleted')),
+              );
+            }
+          }
+          return shouldDelete;
+        },
+        child: cardContent,
+      );
+    }
+
+    // Return card without delete functionality for non-owners
+    return cardContent;
   }
 
   Color _getTypeColor(String type) {

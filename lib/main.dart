@@ -3,11 +3,13 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_forager_app/data/services/ad_mob_service.dart';
+import 'package:flutter_forager_app/data/services/marker_icon_service.dart';
 import 'package:flutter_forager_app/screens/drawer/about_page.dart';
 import 'package:flutter_forager_app/screens/drawer/about_us_page.dart';
 import 'package:flutter_forager_app/screens/drawer/credits_page.dart';
 import 'package:flutter_forager_app/screens/home/home_page.dart';
 import 'package:flutter_forager_app/theme/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'auth/auth_page.dart';
 import 'firebase_options.dart';
@@ -16,11 +18,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 Future main() async {
   await dotenv.load(fileName: ".env");
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Allow google_fonts to fetch fonts from network
+  // Fonts are cached after first download
+  GoogleFonts.config.allowRuntimeFetching = true;
+
   MobileAds.instance.initialize();
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Don't block startup - icons will load in background after first frame
   runApp(const ProviderScope(child: MyApp()));
 }
 
@@ -36,6 +45,8 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Defer icon preloading to after first frame (non-blocking startup)
+      MarkerIconService.initialize();
       requestTrackingPermission(context);
     });
   }
@@ -54,7 +65,7 @@ class _MyAppState extends State<MyApp> {
         initialRoute: '/auth',
         routes: {
           '/auth': (context) => const AuthPage(),
-          '/home': (context) => const HomePage(currentIndex: 0),
+          '/home': (context) => const HomePage(currentIndex: 2), // Start on Explore
           '/about': (context) => const AboutPage(),
           '/about-us': (context) => const AboutUsPage(),
           '/credits': (context) => const CreditsPage(),

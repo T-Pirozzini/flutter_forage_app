@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_forager_app/core/constants/firestore_collections.dart';
 import 'package:flutter_forager_app/data/repositories/base_repository.dart';
 import 'package:flutter_forager_app/data/services/firebase/firestore_service.dart';
@@ -51,28 +52,126 @@ class MarkerRepository extends BaseRepository<MarkerModel> {
   }
 
   /// Get all public markers (for community feed)
-  /// In the future, this should exclude private markers
+  /// Only returns markers with visibility set to 'public'
   Future<List<MarkerModel>> getPublicMarkers() async {
+    try {
+      final snapshot = await firestoreService
+          .collection(collectionPath)
+          .where('visibility', isEqualTo: MarkerVisibility.public.name)
+          .orderBy(FirestoreFields.timestamp, descending: true)
+          .get();
+
+      return snapshot.docs.map((doc) => fromFirestore(doc)).toList();
+    } catch (e) {
+      debugPrint('Error fetching public markers: $e');
+      rethrow;
+    }
+  }
+
+  /// Stream all public markers (real-time)
+  /// Only returns markers with visibility set to 'public'
+  /// [limit] controls max markers loaded (default 100 for performance)
+  Stream<List<MarkerModel>> streamPublicMarkers({int limit = 100}) {
+    return firestoreService
+        .collection(collectionPath)
+        .where('visibility', isEqualTo: MarkerVisibility.public.name)
+        .orderBy(FirestoreFields.timestamp, descending: true)
+        .limit(limit)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => fromFirestore(doc)).toList();
+    });
+  }
+
+  /// Stream markers visible to a specific user
+  ///
+  /// Returns markers that the user can see based on visibility settings:
+  /// - All markers owned by the user
+  /// - All public markers
+  /// - Friends-only markers if the user is friends with the owner
+  /// - Specific markers if the user is in the allowedViewers list
+  ///
+  /// [viewerEmail] is the email of the user viewing markers
+  /// [friendEmails] is the list of the viewer's friends' emails
+  Stream<List<MarkerModel>> streamVisibleMarkers({
+    required String viewerEmail,
+    required List<String> friendEmails,
+    int limit = 100,
+  }) {
+    return firestoreService
+        .collection(collectionPath)
+        .orderBy(FirestoreFields.timestamp, descending: true)
+        .limit(limit)
+        .snapshots()
+        .map((snapshot) {
+      final allMarkers = snapshot.docs.map((doc) => fromFirestore(doc)).toList();
+
+      // Filter markers based on visibility
+      return allMarkers.where((marker) {
+        // Always show user's own markers
+        if (marker.markerOwner == viewerEmail) return true;
+
+        switch (marker.visibility) {
+          case MarkerVisibility.public:
+            return true;
+          case MarkerVisibility.private:
+            return false; // Only owner can see
+          case MarkerVisibility.friends:
+            return friendEmails.contains(marker.markerOwner);
+          case MarkerVisibility.specific:
+            return marker.allowedViewers.contains(viewerEmail);
+        }
+      }).toList();
+    });
+  }
+
+  /// Get markers visible to a specific user (one-time fetch)
+  Future<List<MarkerModel>> getVisibleMarkers({
+    required String viewerEmail,
+    required List<String> friendEmails,
+  }) async {
     try {
       final snapshot = await firestoreService
           .collection(collectionPath)
           .orderBy(FirestoreFields.timestamp, descending: true)
           .get();
 
-      return snapshot.docs.map((doc) => fromFirestore(doc)).toList();
+      final allMarkers = snapshot.docs.map((doc) => fromFirestore(doc)).toList();
+
+      // Filter markers based on visibility
+      return allMarkers.where((marker) {
+        // Always show user's own markers
+        if (marker.markerOwner == viewerEmail) return true;
+
+        switch (marker.visibility) {
+          case MarkerVisibility.public:
+            return true;
+          case MarkerVisibility.private:
+            return false;
+          case MarkerVisibility.friends:
+            return friendEmails.contains(marker.markerOwner);
+          case MarkerVisibility.specific:
+            return marker.allowedViewers.contains(viewerEmail);
+        }
+      }).toList();
     } catch (e) {
+      debugPrint('Error fetching visible markers: $e');
       rethrow;
     }
   }
 
-  /// Stream all public markers (real-time)
-  Stream<List<MarkerModel>> streamPublicMarkers() {
-    return firestoreService
+  /// Update marker visibility
+  Future<void> updateVisibility({
+    required String markerId,
+    required MarkerVisibility visibility,
+    List<String> allowedViewers = const [],
+  }) async {
+    await firestoreService
         .collection(collectionPath)
-        .orderBy(FirestoreFields.timestamp, descending: true)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) => fromFirestore(doc)).toList();
+        .doc(markerId)
+        .update({
+      'visibility': visibility.name,
+      'allowedViewers': allowedViewers,
     });
   }
 

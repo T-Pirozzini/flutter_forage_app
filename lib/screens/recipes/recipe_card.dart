@@ -5,8 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/data/models/recipe.dart';
 import 'package:flutter_forager_app/screens/recipes/add_recipe_page.dart';
 import 'package:flutter_forager_app/screens/recipes/comments_page.dart';
-import 'package:flutter_forager_app/theme.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:intl/intl.dart';
 
 class RecipeCard extends StatefulWidget {
@@ -152,8 +151,8 @@ class _RecipeCardState extends State<RecipeCard> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    AppColors.primaryColor.withOpacity(0.8),
-                    AppColors.secondaryColor.withOpacity(0.8),
+                    AppTheme.primary.withValues(alpha: 0.9),
+                    AppTheme.secondary.withValues(alpha: 0.9),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -168,10 +167,9 @@ class _RecipeCardState extends State<RecipeCard> {
                       Flexible(
                         child: Text(
                           widget.recipe.name,
-                          style: GoogleFonts.josefinSans(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                          style: AppTheme.heading(
+                            size: 24,
+                            color: AppTheme.textWhite,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -205,19 +203,18 @@ class _RecipeCardState extends State<RecipeCard> {
                           const SizedBox(width: 4),
                           Text(
                             widget.recipe.userName,
-                            style: GoogleFonts.josefinSans(
-                              fontSize: 14,
-                              color: Colors.white,
+                            style: AppTheme.body(
+                              size: 14,
+                              color: AppTheme.textWhite,
                             ),
                           ),
                         ],
                       ),
                       Text(
                         DateFormat('MMM d, y').format(widget.recipe.timestamp),
-                        style: GoogleFonts.josefinSans(
-                          fontSize: 14,
+                        style: AppTheme.caption(
+                          size: 14,
                           color: Colors.white70,
-                          fontStyle: FontStyle.italic,
                         ),
                       ),
                     ],
@@ -302,19 +299,17 @@ class _RecipeCardState extends State<RecipeCard> {
             else
               Container(
                 height: 120,
-                color: Colors.grey[100],
+                color: AppTheme.backgroundLight,
                 alignment: Alignment.center,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.no_photography,
-                        size: 40, color: Colors.grey[400]),
+                        size: 40, color: AppTheme.textMedium),
                     const SizedBox(height: 8),
                     Text(
                       'No images',
-                      style: GoogleFonts.josefinSans(
-                        color: Colors.grey[500],
-                      ),
+                      style: AppTheme.body(color: AppTheme.textMedium),
                     ),
                   ],
                 ),
@@ -328,10 +323,10 @@ class _RecipeCardState extends State<RecipeCard> {
                 children: [
                   Text(
                     'Ingredients',
-                    style: GoogleFonts.josefinSans(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[800],
+                    style: AppTheme.title(
+                      size: 18,
+                      weight: FontWeight.bold,
+                      color: AppTheme.textDark,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -342,7 +337,7 @@ class _RecipeCardState extends State<RecipeCard> {
                       return Chip(
                         label: Text(
                           '${ingredient.quantity} ${ingredient.name}',
-                          style: GoogleFonts.josefinSans(),
+                          style: AppTheme.body(size: 14),
                         ),
                         avatar: Icon(
                           ingredient.isForaged
@@ -350,10 +345,10 @@ class _RecipeCardState extends State<RecipeCard> {
                               : Icons.shopping_basket,
                           size: 18,
                           color: ingredient.isForaged
-                              ? Colors.green
-                              : Colors.orangeAccent,
+                              ? AppTheme.success
+                              : AppTheme.secondary,
                         ),
-                        backgroundColor: Colors.grey[100],
+                        backgroundColor: AppTheme.backgroundLight,
                         visualDensity: VisualDensity.compact,
                       );
                     }).toList(),
@@ -368,10 +363,10 @@ class _RecipeCardState extends State<RecipeCard> {
               child: ExpansionTile(
                 title: Text(
                   'Instructions',
-                  style: GoogleFonts.josefinSans(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey[800],
+                  style: AppTheme.title(
+                    size: 18,
+                    weight: FontWeight.bold,
+                    color: AppTheme.textDark,
                   ),
                 ),
                 initiallyExpanded: _isExpanded,
@@ -392,9 +387,9 @@ class _RecipeCardState extends State<RecipeCard> {
                           padding: const EdgeInsets.only(bottom: 8),
                           child: RichText(
                             text: TextSpan(
-                              style: GoogleFonts.josefinSans(
-                                fontSize: 16,
-                                color: Colors.grey[700],
+                              style: AppTheme.body(
+                                size: 16,
+                                color: AppTheme.textDark,
                               ),
                               children: [
                                 TextSpan(
@@ -433,16 +428,17 @@ class _RecipeCardState extends State<RecipeCard> {
                   icon: const Icon(Icons.comment_outlined),
                   label: Text(
                     'View Comments',
-                    style: GoogleFonts.josefinSans(
-                      fontWeight: FontWeight.bold,
+                    style: AppTheme.title(
+                      size: 14,
+                      weight: FontWeight.bold,
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppTheme.borderRadiusMedium,
                     ),
-                    side: BorderSide(color: AppColors.primaryColor),
+                    side: BorderSide(color: AppTheme.primary),
                   ),
                 ),
               ),

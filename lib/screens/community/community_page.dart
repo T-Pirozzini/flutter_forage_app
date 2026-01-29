@@ -6,7 +6,7 @@ import 'package:flutter_forager_app/data/repositories/repository_providers.dart'
 import 'package:flutter_forager_app/data/models/post.dart';
 import 'package:flutter_forager_app/screens/community/components/post_card.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
-import 'package:flutter_forager_app/theme.dart';
+import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geocoding/geocoding.dart';
 
@@ -220,7 +220,7 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
             width: double.infinity,
             padding:
                 const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-            color: AppColors.titleBarColor,
+            color: AppTheme.primary.withValues(alpha: 0.1),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -228,19 +228,19 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
                   fit: BoxFit.scaleDown,
                   child: StyledTextMedium(
                       "Care to share your secret spots with us?",
-                      color: AppColors.textColor),
+                      color: AppTheme.textDark),
                 ),
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   child: StyledTextMedium(
                       'Like and/or bookmark forage locations and go explore!',
-                      color: AppColors.textColor),
+                      color: AppTheme.textDark),
                 ),
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   child: StyledTextMedium(
                       '* A short Ad will appear after bookmarking a location. Thank you for your support!',
-                      color: AppColors.textColor),
+                      color: AppTheme.textDark),
                 ),
               ],
             ),

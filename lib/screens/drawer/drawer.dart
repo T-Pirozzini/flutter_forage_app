@@ -5,6 +5,7 @@ import 'package:flutter_forager_app/shared/list_tiles.dart';
 
 class CustomDrawer extends StatelessWidget {
   final void Function()? onForageLocationsTap;
+  final void Function()? onCollectionsTap;
   final void Function()? onSignOutTap;
   final void Function()? onAboutTap;
   final void Function()? onAboutUsTap;
@@ -15,6 +16,7 @@ class CustomDrawer extends StatelessWidget {
     super.key,
     required this.onSignOutTap,
     required this.onForageLocationsTap,
+    required this.onCollectionsTap,
     required this.onAboutTap,
     required this.onAboutUsTap,
     required this.onCreditsTap,
@@ -53,6 +55,12 @@ class CustomDrawer extends StatelessWidget {
                     icon: Icons.people,
                     text: 'ABOUT  US',
                     onTap: onAboutUsTap,
+                  ),
+                  // Collections tile
+                  CustomListTile(
+                    icon: Icons.folder_special,
+                    text: 'COLLECTIONS',
+                    onTap: onCollectionsTap,
                   ),
                   // Credits tile
                   // CustomListTile(

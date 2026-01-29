@@ -107,22 +107,24 @@ class MarkerService {
   }
 
   Future<List<String>> _uploadImages(List<File> images) async {
-    final List<String> imageUrls = [];
+    if (images.isEmpty) return [];
 
-    for (final image in images) {
-      try {
+    try {
+      // Upload all images in parallel for better performance
+      final uploadFutures = images.asMap().entries.map((entry) async {
+        final index = entry.key;
+        final image = entry.value;
         final fileName =
-            '${DateTime.now().millisecondsSinceEpoch}_${images.indexOf(image)}.jpg';
+            '${DateTime.now().millisecondsSinceEpoch}_$index.jpg';
         final storageRef = _storage.ref().child('marker_images/$fileName');
         await storageRef.putFile(image);
-        final downloadUrl = await storageRef.getDownloadURL();
-        imageUrls.add(downloadUrl);
-      } catch (e) {
-        throw Exception('Failed to upload image: $e');
-      }
-    }
+        return await storageRef.getDownloadURL();
+      });
 
-    return imageUrls;
+      return await Future.wait(uploadFutures);
+    } catch (e) {
+      throw Exception('Failed to upload images: $e');
+    }
   }
 
   Future<BitmapDescriptor> _getMarkerIcon(String type) async {

@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:flutter/material.dart';
+import 'package:flutter_forager_app/data/models/friend_request.dart';
 import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
 import 'package:flutter_forager_app/data/models/user.dart';
 import 'package:flutter_forager_app/screens/profile/profile_page.dart';
@@ -63,35 +64,26 @@ class _FriendRequestPageState extends ConsumerState<FriendRequestPage> {
     try {
       final currentUser = FirebaseAuth.instance.currentUser!;
       final userRepo = ref.read(userRepositoryProvider);
+      final friendRepo = ref.read(friendRepositoryProvider);
 
       // Search for users using repository
       final allUsers = await userRepo.searchByUsername(query);
 
-      // Get current user data to check friend status
-      final currentUserData = await userRepo.getById(currentUser.email!);
-
-      if (currentUserData == null) {
-        setState(() {
-          _isSearching = false;
-        });
-        return;
+      // Check friend status for each user using new subcollection-based system
+      final List<UserModel> results = [];
+      for (final user in allUsers) {
+        if (user.email != currentUser.email) {
+          final isFriend = await friendRepo.areFriends(currentUser.email!, user.email);
+          final hasPendingRequest = await friendRepo.hasPendingRequest(currentUser.email!, user.email);
+          results.add(user.copyWith(
+            isFriend: isFriend,
+            hasPendingRequest: hasPendingRequest,
+          ));
+        }
       }
 
-      final results = allUsers.map((user) {
-        final isFriend = currentUserData.friends.contains(user.email);
-        final hasPendingRequest = currentUserData.friendRequests
-                .containsKey(user.email) ||
-            (currentUserData.sentFriendRequests != null &&
-                currentUserData.sentFriendRequests!.containsKey(user.email));
-        return user.copyWith(
-          isFriend: isFriend,
-          hasPendingRequest: hasPendingRequest,
-        );
-      }).toList();
-
       setState(() {
-        _searchResults =
-            results.where((user) => user.email != currentUser.email).toList();
+        _searchResults = results;
         _isSearching = false;
       });
     } catch (e) {
@@ -109,9 +101,18 @@ class _FriendRequestPageState extends ConsumerState<FriendRequestPage> {
   Future<void> _sendFriendRequest(String recipientEmail) async {
     try {
       final currentUser = FirebaseAuth.instance.currentUser!;
+      final friendRepo = ref.read(friendRepositoryProvider);
       final userRepo = ref.read(userRepositoryProvider);
 
-      await userRepo.sendFriendRequest(currentUser.email!, recipientEmail);
+      // Get current user data for display name
+      final currentUserData = await userRepo.getById(currentUser.email!);
+
+      await friendRepo.sendRequest(
+        fromEmail: currentUser.email!,
+        fromDisplayName: currentUserData?.username ?? currentUser.email!,
+        fromPhotoUrl: currentUserData?.profilePic,
+        toEmail: recipientEmail,
+      );
 
       setState(() {
         _searchResults = _searchResults.map((user) {
@@ -254,70 +255,62 @@ class _FriendRequestPageState extends ConsumerState<FriendRequestPage> {
   }
 
   Widget _buildReceivedRequests(String userId) {
-    final userRepo = ref.read(userRepositoryProvider);
+    final friendRepo = ref.read(friendRepositoryProvider);
 
-    return StreamBuilder<UserModel?>(
-      stream: userRepo.streamById(userId),
+    return StreamBuilder<List<FriendRequestModel>>(
+      stream: friendRepo.streamIncomingRequests(userId),
       builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data == null) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final user = snapshot.data!;
-        final pendingRequests = user.pendingIncomingRequests;
-
-        if (pendingRequests.isEmpty) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return const Center(child: Text('No pending requests'));
         }
 
-        return ListView.builder(
-          itemCount: pendingRequests.length,
-          itemBuilder: (context, index) {
-            final requesterId = pendingRequests[index];
-            return FutureBuilder<UserModel?>(
-              future: userRepo.getById(requesterId),
-              builder: (context, requesterSnapshot) {
-                if (!requesterSnapshot.hasData || requesterSnapshot.data == null) {
-                  return const ListTile(title: Text('Loading...'));
-                }
+        final requests = snapshot.data!;
 
-                final requester = requesterSnapshot.data!;
-                return Card(
-                  margin: const EdgeInsets.symmetric(
-                      horizontal: 8.0, vertical: 4.0),
-                  child: ListTile(
-                    leading: FutureBuilder<String>(
-                      future: _getProfileImageUrl(requester.profilePic),
-                      builder: (context, snapshot) {
-                        if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                          return CircleAvatar(
-                            backgroundImage: NetworkImage(snapshot.data!),
-                          );
-                        }
-                        return CircleAvatar(
-                          child: Text(requester.username[0].toUpperCase()),
-                        );
-                      },
+        return ListView.builder(
+          itemCount: requests.length,
+          itemBuilder: (context, index) {
+            final request = requests[index];
+            return Card(
+              margin: const EdgeInsets.symmetric(
+                  horizontal: 8.0, vertical: 4.0),
+              child: ListTile(
+                leading: FutureBuilder<String>(
+                  future: _getProfileImageUrl(request.fromPhotoUrl ?? ''),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                      return CircleAvatar(
+                        backgroundImage: NetworkImage(snapshot.data!),
+                      );
+                    }
+                    return CircleAvatar(
+                      child: Text(request.fromDisplayName.isNotEmpty
+                          ? request.fromDisplayName[0].toUpperCase()
+                          : '?'),
+                    );
+                  },
+                ),
+                title: Text(request.fromDisplayName),
+                subtitle: Text(request.fromEmail),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.check, color: Colors.green),
+                      onPressed: () => _handleRequest(
+                          context, userId, request.id, request.fromEmail, true),
                     ),
-                    title: Text(requester.username),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.check, color: Colors.green),
-                          onPressed: () => _handleRequest(
-                              context, userId, requesterId, true),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close, color: Colors.red),
-                          onPressed: () => _handleRequest(
-                              context, userId, requesterId, false),
-                        ),
-                      ],
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.red),
+                      onPressed: () => _handleRequest(
+                          context, userId, request.id, request.fromEmail, false),
                     ),
-                  ),
-                );
-              },
+                  ],
+                ),
+              ),
             );
           },
         );
@@ -326,65 +319,47 @@ class _FriendRequestPageState extends ConsumerState<FriendRequestPage> {
   }
 
   Widget _buildSentRequests(String userId) {
-    final userRepo = ref.read(userRepositoryProvider);
+    final friendRepo = ref.read(friendRepositoryProvider);
 
-    return StreamBuilder<UserModel?>(
-      stream: userRepo.streamById(userId),
+    return StreamBuilder<List<FriendRequestModel>>(
+      stream: friendRepo.streamOutgoingRequests(userId),
       builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data == null) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final user = snapshot.data!;
-        final sentRequests = user.sentFriendRequests?.keys.toList() ?? <String>[];
-
-        if (sentRequests.isEmpty) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return const Center(child: Text('No sent requests'));
         }
 
+        final requests = snapshot.data!;
+
         return ListView.builder(
-          itemCount: sentRequests.length,
+          itemCount: requests.length,
           itemBuilder: (context, index) {
-            final recipientId = sentRequests[index];
-            return FutureBuilder<UserModel?>(
-              future: userRepo.getById(recipientId),
-              builder: (context, recipientSnapshot) {
-                if (!recipientSnapshot.hasData || recipientSnapshot.data == null) {
-                  return const ListTile(title: Text('Loading...'));
-                }
+            final request = requests[index];
 
-                final recipient = recipientSnapshot.data!;
-                final status = user.sentFriendRequests?[recipientId] ?? 'pending';
-
-                return Card(
-                  margin: const EdgeInsets.symmetric(
-                      horizontal: 8.0, vertical: 4.0),
-                  child: ListTile(
-                    leading: FutureBuilder<String>(
-                      future: _getProfileImageUrl(recipient.profilePic),
-                      builder: (context, snapshot) {
-                        if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                          return CircleAvatar(
-                            backgroundImage: NetworkImage(snapshot.data!),
-                          );
-                        }
-                        return CircleAvatar(
-                          child: Text(recipient.username[0].toUpperCase()),
-                        );
-                      },
-                    ),
-                    title: Text(recipient.username),
-                    subtitle: Text('Status: ${status.capitalize()}'),
-                    trailing: status == 'pending'
-                        ? IconButton(
-                            icon: const Icon(Icons.close, color: Colors.red),
-                            onPressed: () =>
-                                _cancelRequest(context, userId, recipientId),
-                          )
-                        : null,
-                  ),
-                );
-              },
+            return Card(
+              margin: const EdgeInsets.symmetric(
+                  horizontal: 8.0, vertical: 4.0),
+              child: ListTile(
+                leading: CircleAvatar(
+                  child: Text(request.toDisplayName.isNotEmpty
+                      ? request.toDisplayName[0].toUpperCase()
+                      : request.toEmail[0].toUpperCase()),
+                ),
+                title: Text(request.toDisplayName.isNotEmpty
+                    ? request.toDisplayName
+                    : request.toEmail),
+                subtitle: Text('Status: ${request.status.name.capitalize()}'),
+                trailing: request.isPending
+                    ? IconButton(
+                        icon: const Icon(Icons.close, color: Colors.red),
+                        onPressed: () =>
+                            _cancelRequest(context, userId, request.toEmail),
+                      )
+                    : null,
+              ),
             );
           },
         );
@@ -393,21 +368,32 @@ class _FriendRequestPageState extends ConsumerState<FriendRequestPage> {
   }
 
   Future<void> _handleRequest(BuildContext context, String userId,
-      String requesterId, bool accept) async {
+      String requestId, String fromEmail, bool accept) async {
     try {
+      final friendRepo = ref.read(friendRepositoryProvider);
       final userRepo = ref.read(userRepositoryProvider);
 
       if (accept) {
-        await userRepo.acceptFriendRequest(userId, requesterId);
+        // Get current user data for the friend relationship
+        final currentUserData = await userRepo.getById(userId);
+
+        await friendRepo.acceptRequest(
+          userId: userId,
+          requestId: requestId,
+          userDisplayName: currentUserData?.username ?? userId,
+          userPhotoUrl: currentUserData?.profilePic,
+        );
 
         // Award points for adding friend
-        await GamificationHelper.awardFriendAdded(
-          context: context,
-          ref: ref,
-          userId: userId,
-        );
+        if (mounted) {
+          await GamificationHelper.awardFriendAdded(
+            context: context,
+            ref: ref,
+            userId: userId,
+          );
+        }
       } else {
-        await userRepo.rejectFriendRequest(userId, requesterId);
+        await friendRepo.declineRequest(userId, requestId);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Friend request rejected')),
@@ -424,7 +410,7 @@ class _FriendRequestPageState extends ConsumerState<FriendRequestPage> {
   }
 
   Future<void> _cancelRequest(
-      BuildContext context, String userId, String recipientId) async {
+      BuildContext context, String userId, String recipientEmail) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -446,10 +432,9 @@ class _FriendRequestPageState extends ConsumerState<FriendRequestPage> {
 
     if (confirmed == true) {
       try {
-        final userRepo = ref.read(userRepositoryProvider);
+        final friendRepo = ref.read(friendRepositoryProvider);
 
-        // Use the rejectFriendRequest method which handles both sides
-        await userRepo.rejectFriendRequest(recipientId, userId);
+        await friendRepo.cancelRequest(userId, recipientEmail);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

@@ -1,4 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_forager_app/data/repositories/bookmark_repository.dart';
+import 'package:flutter_forager_app/data/repositories/collection_repository.dart';
+import 'package:flutter_forager_app/data/repositories/custom_marker_type_repository.dart';
+import 'package:flutter_forager_app/data/repositories/friend_repository.dart';
 import 'package:flutter_forager_app/data/repositories/marker_repository.dart';
 import 'package:flutter_forager_app/data/repositories/post_repository.dart';
 import 'package:flutter_forager_app/data/repositories/recipe_repository.dart';
@@ -37,4 +41,34 @@ final postRepositoryProvider = Provider<PostRepository>((ref) {
 final recipeRepositoryProvider = Provider<RecipeRepository>((ref) {
   final firestoreService = ref.watch(firestoreServiceProvider);
   return RecipeRepository(firestoreService: firestoreService);
+});
+
+/// CustomMarkerTypeRepository provider
+final customMarkerTypeRepositoryProvider = Provider<CustomMarkerTypeRepository>((ref) {
+  final firestoreService = ref.watch(firestoreServiceProvider);
+  return CustomMarkerTypeRepository(firestoreService: firestoreService);
+});
+
+/// FriendRepository provider
+///
+/// Manages friend relationships and friend requests using subcollections.
+final friendRepositoryProvider = Provider<FriendRepository>((ref) {
+  final firestoreService = ref.watch(firestoreServiceProvider);
+  return FriendRepository(firestoreService: firestoreService);
+});
+
+/// BookmarkRepository provider
+///
+/// Manages user bookmarks (saved locations) using subcollections.
+final bookmarkRepositoryProvider = Provider<BookmarkRepository>((ref) {
+  final firestoreService = ref.watch(firestoreServiceProvider);
+  return BookmarkRepository(firestoreService: firestoreService);
+});
+
+/// CollectionRepository provider
+///
+/// Manages location collections and subscriptions using subcollections.
+final collectionRepositoryProvider = Provider<CollectionRepository>((ref) {
+  final firestoreService = ref.watch(firestoreServiceProvider);
+  return CollectionRepository(firestoreService: firestoreService);
 });

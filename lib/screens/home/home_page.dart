@@ -5,14 +5,15 @@ import 'package:flutter_forager_app/data/repositories/repository_providers.dart'
 import 'package:flutter_forager_app/data/models/user.dart';
 import 'package:flutter_forager_app/screens/profile/profile_page.dart';
 import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
-import 'package:flutter_forager_app/screens/recipes/recipes_page.dart';
-import 'package:flutter_forager_app/screens/progress/progress_page.dart';
+import 'package:flutter_forager_app/screens/collections/collections_page.dart';
+import 'package:flutter_forager_app/screens/feed/feed_page.dart';
+import 'package:flutter_forager_app/screens/tools/tools_page.dart';
+import 'package:flutter_forager_app/screens/feedback/feedback.dart';
 import 'package:flutter_forager_app/shared/gamification/gamification_helper.dart';
 import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../drawer/drawer.dart';
-import '../community/community_page.dart';
 import '../forage/map_page.dart';
 
 class HomePage extends ConsumerStatefulWidget {
@@ -33,19 +34,41 @@ class _HomePageState extends ConsumerState<HomePage> {
   BannerAd? _banner;
   bool _isBannerAdLoaded = false;
 
+  // Keep page instances to prevent recreation
+  late final List<Widget> _pages;
+
   @override
   void initState() {
     super.initState();
     currentIndex = widget.currentIndex;
-    AdMobService.loadInterstitialAd();
 
-    // Update daily streak
+    // Initialize pages once to prevent recreation
+    // New order: Feed | Profile | EXPLORE (center) | Tools | Feedback
+    _pages = [
+      const FeedPage(), // Feed tab (index 0)
+      _buildProfileStream(), // Profile tab (index 1)
+      MapPage(), // EXPLORE tab - CENTER, prominent (index 2)
+      const ToolsPage(), // Tools tab (index 3)
+      const FeedbackPage(), // Feedback tab (index 4)
+    ];
+
+    // Defer non-critical work to let map render first
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      GamificationHelper.updateStreak(
-        context: context,
-        ref: ref,
-        userId: currentUser.email!,
-      );
+      // Delay interstitial ad loading (not needed immediately)
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) AdMobService.loadInterstitialAd();
+      });
+
+      // Delay streak update (Firestore write can wait)
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted) {
+          GamificationHelper.updateStreak(
+            context: context,
+            ref: ref,
+            userId: currentUser.email!,
+          );
+        }
+      });
     });
   }
 
@@ -80,29 +103,65 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // Option A Navigation: Explore | Community | Profile | Recipes | Progress
-    final pages = [
-      MapPage(), // Explore tab - Map is the primary action
-      const CommunityPage(), // Community tab
-      _buildProfileStream(), // Profile tab
-      RecipesPage(), // Recipes tab
-      const ProgressPage(), // Progress tab - Achievements + Leaderboard
-    ];
-
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 70,
         backgroundColor: AppTheme.primary,
-        title: Padding(
-          padding: const EdgeInsets.all(2.0),
-          child: Image.asset(
-            'assets/images/forager_logo_2.png',
+        // User avatar on LEFT - opens drawer
+        leading: Builder(
+          builder: (context) => Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: GestureDetector(
+              onTap: () => Scaffold.of(context).openDrawer(),
+              child: StreamBuilder<UserModel?>(
+                stream: ref.read(userRepositoryProvider).streamById(currentUser.email!),
+                builder: (context, snapshot) {
+                  final profilePic = snapshot.data?.profilePic ?? 'profileImage1.jpg';
+                  return Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppTheme.textWhite, width: 2),
+                      image: DecorationImage(
+                        image: AssetImage('lib/assets/images/$profilePic'),
+                        fit: BoxFit.cover,
+                        onError: (exception, stackTrace) {},
+                      ),
+                    ),
+                    child: snapshot.data?.profilePic == null
+                        ? Icon(Icons.person, color: AppTheme.textWhite, size: 24)
+                        : null,
+                  );
+                },
+              ),
+            ),
           ),
         ),
+        // Forager logo CENTERED - no border, takes ~half the height
+        centerTitle: true,
+        title: Image.asset(
+          'assets/images/forager_logo_2.png',
+          height: 55,
+          fit: BoxFit.contain,
+        ),
+        // Notifications bell on RIGHT
+        actions: [
+          IconButton(
+            icon: Icon(Icons.notifications_outlined, color: AppTheme.textWhite),
+            onPressed: () {
+              // TODO: Navigate to notifications page
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Notifications coming soon!')),
+              );
+            },
+          ),
+        ],
       ),
       drawer: CustomDrawer(
         onSignOutTap: _signOut,
         onForageLocationsTap: _goToForageLocationsPage,
+        onCollectionsTap: _goToCollectionsPage,
         onAboutTap: goToAboutPage,
         onAboutUsTap: goAboutUsPage,
         onCreditsTap: goCreditsPage,
@@ -117,7 +176,12 @@ class _HomePageState extends ConsumerState<HomePage> {
               alignment: Alignment.center,
               child: AdWidget(ad: _banner!),
             ),
-          Expanded(child: pages[currentIndex]),
+          Expanded(
+            child: IndexedStack(
+              index: currentIndex,
+              children: _pages,
+            ),
+          ),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -135,26 +199,53 @@ class _HomePageState extends ConsumerState<HomePage> {
           size: 12,
         ),
         elevation: 8,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.explore),
-            label: 'Explore',
+        // New order: Feed | Profile | EXPLORE (center) | Tools | Feedback
+        items: [
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.dynamic_feed),
+            label: 'Feed',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Community',
-          ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.person),
             label: 'Profile',
           ),
+          // EXPLORE - Prominent center tab with amber background (oversized)
           BottomNavigationBarItem(
-            icon: Icon(Icons.menu_book),
-            label: 'Recipes',
+            icon: Transform.translate(
+              offset: const Offset(0, -12), // Push up to lean over edge
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.secondary, // Always amber - prominent!
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppTheme.surfaceLight,
+                    width: 3,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.secondary.withValues(alpha: 0.5),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.explore,
+                  color: AppTheme.textWhite,
+                  size: 32,
+                ),
+              ),
+            ),
+            label: 'Explore',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.emoji_events),
-            label: 'Progress',
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.build_outlined),
+            label: 'Tools',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.feedback_outlined),
+            label: 'Feedback',
           ),
         ],
       ),
@@ -198,6 +289,16 @@ class _HomePageState extends ConsumerState<HomePage> {
           userName: currentUser.email!.split("@")[0],
           userLocations: true,
         ),
+      ),
+    );
+  }
+
+  void _goToCollectionsPage() {
+    Navigator.pop(context);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const CollectionsPage(),
       ),
     );
   }

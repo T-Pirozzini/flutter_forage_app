@@ -1,4 +1,3 @@
-import 'package:auto_size_text/auto_size_text.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -8,8 +7,7 @@ import 'package:flutter_forager_app/screens/community/community_page.dart';
 import 'package:flutter_forager_app/screens/community/components/comment_tile.dart';
 import 'package:flutter_forager_app/data/services/marker_service.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
-import 'package:flutter_forager_app/theme.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:intl/intl.dart';
 
 class PostCard extends StatefulWidget {
@@ -92,9 +90,11 @@ class _PostCardState extends State<PostCard> {
           .get();
 
       if (snapshot.docs.isNotEmpty) {
-        setState(() {
-          _markerId = snapshot.docs.first.id;
-        });
+        if (mounted) {
+          setState(() {
+            _markerId = snapshot.docs.first.id;
+          });
+        }
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -117,7 +117,7 @@ class _PostCardState extends State<PostCard> {
       builder: (context) => StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
-            title: StyledText('Comments', color: AppColors.secondaryColor),
+            title: StyledText('Comments', color: AppTheme.secondary),
             content: SizedBox(
               width: double.maxFinite,
               child: Column(
@@ -146,9 +146,9 @@ class _PostCardState extends State<PostCard> {
                     decoration: InputDecoration(
                       hintText: 'Add a comment...',
                       hintStyle: TextStyle(
-                          color: AppColors.textColor.withOpacity(0.6)),
+                          color: AppTheme.textDark.withValues(alpha: 0.6)),
                       filled: true,
-                      fillColor: AppColors.primaryAccent.withOpacity(0.3),
+                      fillColor: AppTheme.primary.withValues(alpha: 0.1),
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.send),
                         onPressed: () async {
@@ -163,7 +163,7 @@ class _PostCardState extends State<PostCard> {
                         },
                       ),
                     ),
-                    style: TextStyle(color: AppColors.textColor),
+                    style: TextStyle(color: AppTheme.textDark),
                   ),
                 ],
               ),
@@ -171,7 +171,7 @@ class _PostCardState extends State<PostCard> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: StyledText('Close', color: AppColors.secondaryColor),
+                child: StyledText('Close', color: AppTheme.secondary),
               ),
             ],
           );
@@ -194,19 +194,19 @@ class _PostCardState extends State<PostCard> {
             children: [
               Text(
                 'Current status: ${_selectedStatus.toUpperCase()}',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  color: AppColors.textColor,
-                ),
+                style: AppTheme.body(size: 14, color: AppTheme.textDark),
               ),
               const SizedBox(height: 16),
               Container(
-                color: AppColors.textColor.withValues(alpha: 0.9),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: AppTheme.backgroundLight,
+                  borderRadius: AppTheme.borderRadiusSmall,
+                  border: Border.all(color: AppTheme.primary),
+                ),
                 child: DropdownButton<String>(
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: Colors.white,
-                  ),
+                  style: AppTheme.body(size: 12, color: AppTheme.textDark),
+                  underline: const SizedBox(),
                   value: newStatus,
                   items: [
                     'active',
@@ -219,7 +219,7 @@ class _PostCardState extends State<PostCard> {
                             value: status,
                             child: StyledTextMedium(
                               status.replaceAll('_', ' ').toUpperCase(),
-                              color: Colors.black, // Black font for menu items
+                              color: AppTheme.textDark,
                             ),
                           ))
                       .toList(),
@@ -238,10 +238,7 @@ class _PostCardState extends State<PostCard> {
                   border: OutlineInputBorder(),
                 ),
                 maxLines: 3,
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  color: AppColors.textColor,
-                ),
+                style: AppTheme.body(size: 14, color: AppTheme.textDark),
               ),
             ],
           ),
@@ -282,11 +279,13 @@ class _PostCardState extends State<PostCard> {
 
     if (doc.exists) {
       final data = doc.data() as Map<String, dynamic>;
-      setState(() {
-        _statusHistory =
-            List<Map<String, dynamic>>.from(data['statusHistory'] ?? []);
-        _selectedStatus = data['currentStatus'] ?? 'active';
-      });
+      if (mounted) {
+        setState(() {
+          _statusHistory =
+              List<Map<String, dynamic>>.from(data['statusHistory'] ?? []);
+          _selectedStatus = data['currentStatus'] ?? 'active';
+        });
+      }
     }
   }
 
@@ -302,9 +301,11 @@ class _PostCardState extends State<PostCard> {
 
     if (doc.exists) {
       final data = doc.data() as Map<String, dynamic>;
-      setState(() {
-        _comments = List<Map<String, dynamic>>.from(data['comments'] ?? []);
-      });
+      if (mounted) {
+        setState(() {
+          _comments = List<Map<String, dynamic>>.from(data['comments'] ?? []);
+        });
+      }
     }
   }
 
@@ -383,9 +384,9 @@ class _PostCardState extends State<PostCard> {
       padding: const EdgeInsets.all(10.0),
       child: Card(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.0),
+          borderRadius: AppTheme.borderRadiusMedium,
           side: BorderSide(
-            color: Colors.deepOrange.shade200,
+            color: AppTheme.accent.withValues(alpha: 0.5),
             width: 1.0,
           ),
         ),
@@ -459,43 +460,43 @@ class _PostCardState extends State<PostCard> {
                           Icons.favorite,
                           size: 18,
                           color: widget.isFavorite
-                              ? AppColors.secondaryColor
-                              : AppColors.primaryAccent.withOpacity(0.7),
+                              ? AppTheme.accent
+                              : AppTheme.textMedium,
                         ),
                         onPressed: widget.onToggleFavorite,
-                        color: AppColors.primaryAccent.withOpacity(0.7),
+                        color: AppTheme.textMedium,
                       ),
                       StyledText('${widget.post.likeCount}',
-                          color: AppColors.primaryAccent.withOpacity(0.7)),
+                          color: AppTheme.textMedium),
                       const SizedBox(width: 8),
                       IconButton(
                         icon: Icon(
                           Icons.bookmark_add,
                           size: 18,
                           color: widget.isBookmarked
-                              ? AppColors.secondaryColor
-                              : AppColors.primaryAccent.withOpacity(0.7),
+                              ? AppTheme.secondary
+                              : AppTheme.textMedium,
                         ),
                         onPressed: widget.onToggleBookmark,
-                        color: AppColors.primaryAccent.withOpacity(0.7),
+                        color: AppTheme.textMedium,
                       ),
                       StyledText('${widget.post.bookmarkCount}',
-                          color: AppColors.primaryAccent.withOpacity(0.7)),
+                          color: AppTheme.textMedium),
                       const SizedBox(width: 8),
                       IconButton(
                         icon: const Icon(Icons.comment_outlined, size: 18),
                         onPressed: _showCommentDialog,
-                        color: AppColors.primaryAccent.withOpacity(0.7),
+                        color: AppTheme.textMedium,
                       ),
                       StyledText('${widget.post.commentCount}',
-                          color: AppColors.primaryAccent.withOpacity(0.7)),
+                          color: AppTheme.textMedium),
                     ],
                   ),
                   if (widget.post.userEmail == widget.currentUserEmail)
                     IconButton(
                       icon: const Icon(Icons.delete),
                       onPressed: widget.onDelete,
-                      color: AppColors.primaryAccent.withOpacity(0.7),
+                      color: AppTheme.textMedium,
                     ),
                 ],
               ),
@@ -529,7 +530,7 @@ class _PostCardState extends State<PostCard> {
                     dateFormat.format(widget.post.postTimestamp),
                     style: TextStyle(
                       fontSize: 10,
-                      color: Colors.deepOrange.shade400,
+                      color: AppTheme.accent,
                     ),
                   ),
                 ],
@@ -604,22 +605,22 @@ class _PostCardState extends State<PostCard> {
     Color chipColor;
     switch (status.toLowerCase()) {
       case 'active':
-        chipColor = Colors.blue;
+        chipColor = AppTheme.primary;
         break;
       case 'abundant':
-        chipColor = Colors.green;
+        chipColor = AppTheme.success;
         break;
       case 'sparse':
-        chipColor = Colors.orange;
+        chipColor = AppTheme.secondary;
         break;
       case 'out_of_season':
-        chipColor = Colors.blueGrey;
+        chipColor = AppTheme.textMedium;
         break;
       case 'no_longer_available':
-        chipColor = Colors.red;
+        chipColor = AppTheme.error;
         break;
       default:
-        chipColor = Colors.grey;
+        chipColor = AppTheme.textMedium;
     }
 
     return Chip(

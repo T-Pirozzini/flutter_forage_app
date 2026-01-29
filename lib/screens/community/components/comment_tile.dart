@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
-import 'package:flutter_forager_app/theme.dart';
+import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:intl/intl.dart';
 
 class CommentTile extends StatelessWidget {
@@ -23,8 +23,8 @@ class CommentTile extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 20,
-            backgroundColor: Colors.deepOrange.withOpacity(0.2),
-            child: const Icon(Icons.person, size: 20, color: Colors.deepOrange),
+            backgroundColor: AppTheme.accent.withValues(alpha: 0.2),
+            child: Icon(Icons.person, size: 20, color: AppTheme.accent),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -38,16 +38,16 @@ class CommentTile extends StatelessWidget {
                       comment['username'] ??
                           comment['userEmail']?.split('@')[0] ??
                           'Anonymous',
-                      color: AppColors.secondaryColor,
+                      color: AppTheme.secondary,
                     ),
                     StyledTextSmall(
                       displayTime,
-                      color: AppColors.textColor.withOpacity(0.7),
+                      color: AppTheme.textMedium,
                     ),
                   ],
                 ),
                 const SizedBox(height: 4),
-                StyledText(comment['text'] ?? '', color: AppColors.textColor),
+                StyledText(comment['text'] ?? '', color: AppTheme.textDark),
               ],
             ),
           ),

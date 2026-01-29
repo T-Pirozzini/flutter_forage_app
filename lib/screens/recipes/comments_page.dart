@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_forager_app/data/models/recipe.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:intl/intl.dart';
 
 class CommentsPage extends StatefulWidget {
@@ -93,7 +93,7 @@ class _CommentsPageState extends State<CommentsPage> {
       builder: (context) => AlertDialog(
         title: Text(
           'Liked by',
-          style: GoogleFonts.josefinSans(fontWeight: FontWeight.bold),
+          style: AppTheme.title(weight: FontWeight.bold),
         ),
         content: SizedBox(
           width: double.maxFinite,
@@ -105,9 +105,9 @@ class _CommentsPageState extends State<CommentsPage> {
                 child: Text(users[index][0].toUpperCase()),
               ),
               title: Text(users[index],
-                  style: GoogleFonts.josefinSans(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                  style: AppTheme.title(
+                    weight: FontWeight.bold,
+                    color: AppTheme.textWhite,
                   )),
             ),
           ),
@@ -147,9 +147,8 @@ class _CommentsPageState extends State<CommentsPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Comments',
-            style: GoogleFonts.josefinSans(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
+            style: AppTheme.heading(
+              size: 24,
             )),
         centerTitle: true,
         toolbarHeight: 80,
@@ -175,9 +174,9 @@ class _CommentsPageState extends State<CommentsPage> {
                       Expanded(
                         child: Text(
                           widget.recipe.name,
-                          style: GoogleFonts.josefinSans(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                          style: AppTheme.title(
+                            size: 18,
+                            weight: FontWeight.bold,
                           ),
                         ),
                       ),
@@ -206,7 +205,7 @@ class _CommentsPageState extends State<CommentsPage> {
                         const SizedBox(height: 8),
                         Text(
                           widget.recipe.description!,
-                          style: GoogleFonts.josefinSans(fontSize: 12),
+                          style: AppTheme.body(size: 12),
                         ),
                         const SizedBox(height: 12),
                       ],
@@ -218,14 +217,14 @@ class _CommentsPageState extends State<CommentsPage> {
                     children: [
                       Text(
                         'By ${widget.recipe.userName}',
-                        style: GoogleFonts.josefinSans(
-                          fontStyle: FontStyle.italic,
+                        style: AppTheme.caption(
+                          color: AppTheme.textMedium,
                         ),
                       ),
                       Text(
                         DateFormat.yMMMd().format(widget.recipe.timestamp),
-                        style: GoogleFonts.josefinSans(
-                          fontStyle: FontStyle.italic,
+                        style: AppTheme.caption(
+                          color: AppTheme.textMedium,
                         ),
                       ),
                     ],
@@ -242,9 +241,9 @@ class _CommentsPageState extends State<CommentsPage> {
               alignment: Alignment.centerLeft,
               child: Text(
                 'Comments',
-                style: GoogleFonts.josefinSans(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                style: AppTheme.title(
+                  size: 18,
+                  weight: FontWeight.bold,
                 ),
               ),
             ),
@@ -270,7 +269,7 @@ class _CommentsPageState extends State<CommentsPage> {
                   return Center(
                     child: Text(
                       'No comments yet. Be the first to comment!',
-                      style: GoogleFonts.josefinSans(),
+                      style: AppTheme.body(color: AppTheme.textMedium),
                     ),
                   );
                 }
@@ -299,15 +298,15 @@ class _CommentsPageState extends State<CommentsPage> {
                               children: [
                                 Text(
                                   comment['userName'],
-                                  style: GoogleFonts.josefinSans(
-                                    fontWeight: FontWeight.bold,
+                                  style: AppTheme.title(
+                                    weight: FontWeight.bold,
                                   ),
                                 ),
                                 Text(
                                   DateFormat('MMM d, h:mm a').format(timestamp),
-                                  style: TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 12,
+                                  style: AppTheme.caption(
+                                    size: 12,
+                                    color: AppTheme.textMedium,
                                   ),
                                 ),
                               ],
@@ -315,7 +314,7 @@ class _CommentsPageState extends State<CommentsPage> {
                             const SizedBox(height: 8),
                             Text(
                               comment['message'],
-                              style: GoogleFonts.josefinSans(),
+                              style: AppTheme.body(),
                             ),
                           ],
                         ),

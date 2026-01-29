@@ -3,9 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/data/services/ad_mob_service.dart';
 import 'package:flutter_forager_app/shared/screen_heading.dart';
-import 'package:flutter_forager_app/screens/debug/migration_screen.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
-import 'package:flutter_forager_app/theme.dart';
+import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -128,18 +127,6 @@ class _FeedbackPageState extends State<FeedbackPage>
           child: Column(
             children: [
               const ScreenHeading(title: 'Feedback'),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const MigrationScreen(),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-                child: const Text('🔧 Database Migration'),
-              ),
               _IntroSection(
                   onSupportPressed: () =>
                       _showSnackBar('Buy Me a Coffee link coming soon!'),
@@ -250,7 +237,7 @@ class _IntroSectionState extends State<_IntroSection> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.titleBarColor,
+        color: AppTheme.primary.withValues(alpha: 0.1),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(16),
           bottomRight: Radius.circular(16),
@@ -261,21 +248,21 @@ class _IntroSectionState extends State<_IntroSection> {
         children: [
           Center(
             child: StyledHeadingSmall('Welcome Back to Forager!',
-                color: AppColors.textColor),
+                color: AppTheme.textDark),
           ),
           const SizedBox(height: 8),
           StyledTextSmall(
               "I'm sorry! Our foraging community is growing rapidly, but we haven't pulled our weight.",
-              color: AppColors.textColor),
+              color: AppTheme.textDark),
           const SizedBox(height: 8),
           StyledTextSmall('Current User Count: ${widget.currentUserCount}',
-              color: AppColors.textColor.withOpacity(0.8)),
+              color: AppTheme.textDark.withValues(alpha: 0.8)),
           Container(
             decoration: BoxDecoration(
-              color: AppColors.primaryAccent.withOpacity(0.3),
+              color: AppTheme.backgroundLight.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: AppColors.secondaryColor.withOpacity(0.3),
+                color: AppTheme.secondary.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
@@ -291,18 +278,18 @@ class _IntroSectionState extends State<_IntroSection> {
                         Icon(
                           Icons.info_outline,
                           size: 18,
-                          color: AppColors.secondaryColor,
+                          color: AppTheme.secondary,
                         ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: StyledTextSmall(
                             'Our commitment to the improvement of Forager:',
-                            color: AppColors.secondaryColor,
+                            color: AppTheme.secondary,
                           ),
                         ),
                         Icon(
                           _isExpanded ? Icons.expand_less : Icons.expand_more,
-                          color: AppColors.secondaryColor,
+                          color: AppTheme.secondary,
                         ),
                       ],
                     ),
@@ -319,19 +306,19 @@ class _IntroSectionState extends State<_IntroSection> {
                             children: [
                               Divider(
                                 color:
-                                    AppColors.secondaryColor.withOpacity(0.3),
+                                    AppTheme.secondary.withValues(alpha: 0.3),
                                 height: 1,
                               ),
                               const SizedBox(height: 12),
                               StyledTextSmall(
                                 "I sincerely apologize for the lack of updates—life got in the way, but I'm back and committed to this vision. "
                                 "I want to create something special: an app where we can forage together, share discoveries, and build a community that makes the world a little better.",
-                                color: AppColors.textColor.withOpacity(0.9),
+                                color: AppTheme.textDark.withValues(alpha: 0.9),
                               ),
                               const SizedBox(height: 8),
                               StyledTextSmall(
                                 "Here's what I need from you:",
-                                color: AppColors.secondaryColor,
+                                color: AppTheme.secondary,
                               ),
                               const SizedBox(height: 4),
                               Padding(
@@ -341,26 +328,26 @@ class _IntroSectionState extends State<_IntroSection> {
                                   children: [
                                     StyledTextSmall(
                                       "• Share your ideas and feedback below—I'll implement them!",
-                                      color:
-                                          AppColors.textColor.withOpacity(0.9),
+                                      color: AppTheme.textDark
+                                          .withValues(alpha: 0.9),
                                     ),
                                     const SizedBox(height: 2),
                                     StyledTextSmall(
                                       "• Help grow our community by sharing locations and finds",
-                                      color:
-                                          AppColors.textColor.withOpacity(0.9),
+                                      color: AppTheme.textDark
+                                          .withValues(alpha: 0.9),
                                     ),
                                     const SizedBox(height: 2),
                                     StyledTextSmall(
                                       "• Post photos of meals made from your foraged discoveries",
-                                      color:
-                                          AppColors.textColor.withOpacity(0.9),
+                                      color: AppTheme.textDark
+                                          .withValues(alpha: 0.9),
                                     ),
                                     const SizedBox(height: 2),
                                     StyledTextSmall(
                                       "• Engage with and support fellow foragers",
-                                      color:
-                                          AppColors.textColor.withOpacity(0.9),
+                                      color: AppTheme.textDark
+                                          .withValues(alpha: 0.9),
                                     ),
                                   ],
                                 ),
@@ -370,12 +357,13 @@ class _IntroSectionState extends State<_IntroSection> {
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
                                   color:
-                                      AppColors.secondaryColor.withOpacity(0.1),
+                                      AppTheme.secondary.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: StyledTextSmall(
                                   "Note: Support the future of this application with feedback, engagement, watching ads or treating us to a coffee.",
-                                  color: AppColors.textColor.withOpacity(0.8),
+                                  color:
+                                      AppTheme.textDark.withValues(alpha: 0.8),
                                 ),
                               ),
                               const SizedBox(height: 12),
@@ -389,8 +377,8 @@ class _IntroSectionState extends State<_IntroSection> {
                                         label: StyledTextMedium(
                                             'Buy us a coffee ☕'),
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: AppColors.textColor
-                                              .withOpacity(0.9),
+                                          backgroundColor: AppTheme.textDark
+                                              .withValues(alpha: 0.9),
                                           shape: RoundedRectangleBorder(
                                             borderRadius:
                                                 BorderRadius.circular(12),
@@ -410,8 +398,8 @@ class _IntroSectionState extends State<_IntroSection> {
                                         label:
                                             StyledTextMedium('Watch an Ad 📺'),
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: AppColors.textColor
-                                              .withOpacity(0.9),
+                                          backgroundColor: AppTheme.textDark
+                                              .withValues(alpha: 0.9),
                                           shape: RoundedRectangleBorder(
                                             borderRadius:
                                                 BorderRadius.circular(12),
@@ -450,14 +438,14 @@ class _CustomTabBar extends StatelessWidget {
       child: TabBar(
         controller: controller,
         indicator: BoxDecoration(
-          color: AppColors.secondaryColor,
+          color: AppTheme.secondary,
         ),
         labelStyle: const TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w600,
         ),
-        labelColor: AppColors.textColor,
-        unselectedLabelColor: AppColors.secondaryColor.withOpacity(0.7),
+        labelColor: AppTheme.textDark,
+        unselectedLabelColor: AppTheme.secondary.withValues(alpha: 0.7),
         indicatorSize: TabBarIndicatorSize.tab,
         splashFactory: InkRipple.splashFactory,
         overlayColor: MaterialStateProperty.all(Colors.transparent),
@@ -684,7 +672,7 @@ class _StreamContent<T extends Widget> extends StatelessWidget {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(
-            child: CircularProgressIndicator(color: AppColors.secondaryColor),
+            child: CircularProgressIndicator(color: AppTheme.secondary),
           );
         }
 
@@ -734,7 +722,7 @@ class _InputSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Center(child: StyledHeadingLarge(title, color: AppColors.textColor)),
+        Center(child: StyledHeadingLarge(title, color: AppTheme.textDark)),
         const SizedBox(height: 12),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -746,12 +734,12 @@ class _InputSection extends StatelessWidget {
                 controller: controller,
                 decoration: InputDecoration(
                   hintText: hint,
-                  hintStyle:
-                      TextStyle(color: AppColors.textColor.withOpacity(0.6)),
+                  hintStyle: TextStyle(
+                      color: AppTheme.textDark.withValues(alpha: 0.6)),
                   filled: true,
-                  fillColor: AppColors.primaryAccent.withOpacity(0.3),
+                  fillColor: AppTheme.backgroundLight.withValues(alpha: 0.3),
                 ),
-                style: TextStyle(color: AppColors.textColor),
+                style: TextStyle(color: AppTheme.textDark),
                 maxLines: maxLines,
               ),
             ),
@@ -763,14 +751,14 @@ class _InputSection extends StatelessWidget {
           child: ElevatedButton(
             onPressed: onSubmit,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.secondaryColor,
-              foregroundColor: AppColors.textColor,
+              backgroundColor: AppTheme.secondary,
+              foregroundColor: AppTheme.textDark,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
-            child: StyledTextMedium(buttonText, color: AppColors.textColor),
+            child: StyledTextMedium(buttonText, color: AppTheme.textDark),
           ),
         ),
       ],
@@ -787,12 +775,12 @@ class _UserAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     return CircleAvatar(
       radius: 20,
-      backgroundColor: AppColors.secondaryColor.withOpacity(0.2),
+      backgroundColor: AppTheme.secondary.withValues(alpha: 0.2),
       foregroundImage: profilePic != null && profilePic!.isNotEmpty
           ? AssetImage('lib/assets/images/${profilePic}')
           : null,
       child: profilePic == null || profilePic!.isEmpty
-          ? Icon(Icons.person, size: 20, color: AppColors.secondaryColor)
+          ? Icon(Icons.person, size: 20, color: AppTheme.secondary)
           : null,
     );
   }
@@ -818,7 +806,7 @@ abstract class _BaseItem extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
       elevation: 2,
-      color: AppColors.primaryAccent.withOpacity(0.7),
+      color: AppTheme.backgroundLight.withValues(alpha: 0.7),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
@@ -841,12 +829,12 @@ abstract class _BaseItem extends StatelessWidget {
                         children: [
                           StyledText(
                             displayName,
-                            color: AppColors.secondaryColor,
+                            color: AppTheme.secondary,
                           ),
                           if (timestamp != null)
                             StyledTextSmall(
                               timeFormat.format(timestamp!.toDate()),
-                              color: AppColors.textColor.withOpacity(0.7),
+                              color: AppTheme.textDark.withValues(alpha: 0.7),
                             ),
                         ],
                       ),
@@ -869,7 +857,7 @@ class MessageItem extends _BaseItem {
 
   @override
   Widget buildContent() {
-    return StyledText(data['message'] ?? '', color: AppColors.textColor);
+    return StyledText(data['message'] ?? '', color: AppTheme.textDark);
   }
 }
 
@@ -881,11 +869,11 @@ class ProgressItem extends _BaseItem {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('• ', style: TextStyle(fontSize: 16, color: AppColors.textColor)),
+        Text('• ', style: TextStyle(fontSize: 16, color: AppTheme.textDark)),
         Expanded(
           child: StyledTextSmall(
             data['item'] ?? '',
-            color: AppColors.textColor,
+            color: AppTheme.textDark,
           ),
         ),
       ],
@@ -1008,7 +996,7 @@ class _FeedbackItemState extends State<FeedbackItem> {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
       elevation: 2,
-      color: AppColors.primaryAccent.withOpacity(0.7),
+      color: AppTheme.backgroundLight.withValues(alpha: 0.7),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
@@ -1031,18 +1019,18 @@ class _FeedbackItemState extends State<FeedbackItem> {
                         children: [
                           StyledText(
                             displayName,
-                            color: AppColors.secondaryColor,
+                            color: AppTheme.secondary,
                           ),
                           if (timestamp != null)
                             StyledTextSmall(
                               widget.timeFormat.format(timestamp!.toDate()),
-                              color: AppColors.textColor.withOpacity(0.7),
+                              color: AppTheme.textDark.withValues(alpha: 0.7),
                             ),
                         ],
                       ),
                       const SizedBox(height: 8),
                       StyledText(widget.data['feedback'] ?? '',
-                          color: AppColors.textColor),
+                          color: AppTheme.textDark),
                       const SizedBox(height: 8),
                       Row(
                         children: [
@@ -1051,14 +1039,14 @@ class _FeedbackItemState extends State<FeedbackItem> {
                               Icons.thumb_up,
                               size: 18,
                               color: _isLiked
-                                  ? AppColors.secondaryColor
-                                  : AppColors.textColor.withOpacity(0.7),
+                                  ? AppTheme.secondary
+                                  : AppTheme.textDark.withValues(alpha: 0.7),
                             ),
                             onPressed: _toggleLike,
-                            color: AppColors.textColor.withOpacity(0.7),
+                            color: AppTheme.textDark.withValues(alpha: 0.7),
                           ),
                           StyledText('$_likeCount',
-                              color: AppColors.textColor.withOpacity(0.7)),
+                              color: AppTheme.textDark.withValues(alpha: 0.7)),
                           const SizedBox(width: 8),
                           IconButton(
                             icon: const Icon(Icons.comment_outlined, size: 18),
@@ -1067,7 +1055,7 @@ class _FeedbackItemState extends State<FeedbackItem> {
                                 context: context,
                                 builder: (context) => AlertDialog(
                                   title: StyledText('Comments',
-                                      color: AppColors.secondaryColor),
+                                      color: AppTheme.secondary),
                                   content: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -1096,8 +1084,8 @@ class _FeedbackItemState extends State<FeedbackItem> {
                                                           StyledText(
                                                             comment['username'] ??
                                                                 'Anonymous',
-                                                            color: AppColors
-                                                                .secondaryColor,
+                                                            color: AppTheme
+                                                                .secondary,
                                                           ),
                                                           StyledTextSmall(
                                                             widget.timeFormat
@@ -1105,17 +1093,17 @@ class _FeedbackItemState extends State<FeedbackItem> {
                                                                             'timestamp']
                                                                         as Timestamp)
                                                                     .toDate()),
-                                                            color: AppColors
-                                                                .textColor
-                                                                .withOpacity(
-                                                                    0.7),
+                                                            color: AppTheme
+                                                                .textDark
+                                                                .withValues(
+                                                                    alpha: 0.7),
                                                           ),
                                                         ],
                                                       ),
                                                       StyledText(
                                                           comment['comment'],
-                                                          color: AppColors
-                                                              .textColor),
+                                                          color: AppTheme
+                                                              .textDark),
                                                     ],
                                                   ),
                                                 ),
@@ -1128,14 +1116,14 @@ class _FeedbackItemState extends State<FeedbackItem> {
                                         decoration: InputDecoration(
                                           hintText: 'Add a comment...',
                                           hintStyle: TextStyle(
-                                              color: AppColors.textColor
-                                                  .withOpacity(0.6)),
+                                              color: AppTheme.textDark
+                                                  .withValues(alpha: 0.6)),
                                           filled: true,
-                                          fillColor: AppColors.primaryAccent
-                                              .withOpacity(0.3),
+                                          fillColor: AppTheme.backgroundLight
+                                              .withValues(alpha: 0.3),
                                         ),
-                                        style: TextStyle(
-                                            color: AppColors.textColor),
+                                        style:
+                                            TextStyle(color: AppTheme.textDark),
                                       ),
                                     ],
                                   ),
@@ -1146,18 +1134,18 @@ class _FeedbackItemState extends State<FeedbackItem> {
                                         Navigator.pop(context);
                                       },
                                       child: StyledText('Submit',
-                                          color: AppColors.secondaryColor),
+                                          color: AppTheme.secondary),
                                     ),
                                     TextButton(
                                       onPressed: () => Navigator.pop(context),
                                       child: StyledText('Cancel',
-                                          color: AppColors.secondaryColor),
+                                          color: AppTheme.secondary),
                                     ),
                                   ],
                                 ),
                               );
                             },
-                            color: AppColors.textColor.withOpacity(0.7),
+                            color: AppTheme.textDark.withValues(alpha: 0.7),
                           ),
                         ],
                       ),
@@ -1188,21 +1176,20 @@ class _FeedbackItemState extends State<FeedbackItem> {
                                                   StyledText(
                                                     comment['username'] ??
                                                         'Anonymous',
-                                                    color: AppColors
-                                                        .secondaryColor,
+                                                    color: AppTheme.secondary,
                                                   ),
                                                   StyledTextSmall(
                                                     widget.timeFormat.format(
                                                         (comment['timestamp']
                                                                 as Timestamp)
                                                             .toDate()),
-                                                    color: AppColors.textColor
-                                                        .withOpacity(0.7),
+                                                    color: AppTheme.textDark
+                                                        .withValues(alpha: 0.7),
                                                   ),
                                                 ],
                                               ),
                                               StyledText(comment['comment'],
-                                                  color: AppColors.textColor),
+                                                  color: AppTheme.textDark),
                                             ],
                                           ),
                                         ),

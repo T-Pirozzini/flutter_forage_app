@@ -5,18 +5,16 @@ import 'package:flutter_forager_app/screens/forage/components/map_markers.dart';
 import 'package:flutter_forager_app/screens/forage/components/map_style.dart';
 import 'package:flutter_forager_app/data/services/map_permissions.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
-import 'package:flutter_forager_app/theme.dart';
+import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter_forager_app/screens/forage/components/map_ui.dart';
 import 'package:flutter_forager_app/screens/forage/components/map_view.dart';
+import 'package:flutter_forager_app/screens/forage/components/marker_filter_chips.dart';
+import 'package:flutter_forager_app/screens/forage/components/locations_bottom_sheet.dart';
 import 'package:flutter_forager_app/providers/map/map_controller_provider.dart';
-import 'package:flutter_forager_app/providers/map/map_state_provider.dart'
-    hide mapControllerProvider;
+import 'package:flutter_forager_app/providers/map/map_state_provider.dart';
 import 'package:flutter_forager_app/shared/gamification/gamification_helper.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 class MapPage extends ConsumerStatefulWidget {
@@ -29,14 +27,12 @@ class MapPage extends ConsumerStatefulWidget {
 
 class _MapPageState extends ConsumerState<MapPage> {
   late final MapController _mapController;
-  late final User _user;
   bool _isLoading = true;
   final dateFormat = DateFormat('MMM dd, yyyy HH:mm');
 
   @override
   void initState() {
     super.initState();
-    _user = FirebaseAuth.instance.currentUser!;
     _mapController = ref.read(mapControllerProvider);
     _initializeMap();
   }
@@ -65,145 +61,27 @@ class _MapPageState extends ConsumerState<MapPage> {
     }
   }
 
-  Future<String> _getLocationAddress(double lat, double lng) async {
-    try {
-      final placemarks = await placemarkFromCoordinates(lat, lng);
-      if (placemarks.isNotEmpty) {
-        final place = placemarks.first;
-        return '${place.locality ?? ''}${place.locality != null && place.country != null ? ', ' : ''}${place.country ?? ''}'
-            .trim();
-      }
-      return '${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}';
-    } catch (e) {
-      return '${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}';
-    }
-  }
-
   void _showLocationsBottomSheet() {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => LocationsBottomSheet(
+        onLocationSelected: (latLng, markerType) {
+          // Ensure the marker's type is visible before navigating (case-insensitive)
+          final currentVisible = ref.read(visibleMarkerTypesProvider);
+          final currentVisibleLower = currentVisible.map((t) => t.toLowerCase()).toSet();
+          final markerTypeLower = markerType.toLowerCase();
+          if (!currentVisibleLower.contains(markerTypeLower)) {
+            ref.read(visibleMarkerTypesProvider.notifier).state = {
+              ...currentVisible,
+              markerTypeLower, // Add lowercase version to match filter
+            };
+          }
+          _mapController.moveToLocation(latLng, zoom: 16);
+          ref.read(followUserProvider.notifier).state = false;
+        },
       ),
-      builder: (context) {
-        return Consumer(
-          builder: (context, ref, _) {
-            final currentPosition = ref.watch(currentPositionProvider);
-            return StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('Users')
-                  .doc(_user.email)
-                  .collection('Markers')
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                final markers = snapshot.data?.docs.map((doc) {
-                      final data = doc.data() as Map<String, dynamic>;
-                      final location = data['location'] as Map<String, dynamic>;
-                      return MarkerModel(
-                        id: doc.id,
-                        name: data['name'] ?? '',
-                        description: data['description'] ?? '',
-                        type: data['type'] ?? '',
-                        imageUrls: List<String>.from(data['images'] ?? []),
-                        markerOwner: data['markerOwner'] ?? '',
-                        timestamp: (data['timestamp'] as Timestamp).toDate(),
-                        latitude: (location['latitude'] as num).toDouble(),
-                        longitude: (location['longitude'] as num).toDouble(),
-                        status: data['status'] ?? 'active',
-                        comments: (data['comments'] as List<dynamic>?)
-                                ?.map((c) => MarkerComment.fromMap(c))
-                                .toList() ??
-                            [],
-                        currentStatus: data['currentStatus'] ?? 'active',
-                        statusHistory: (data['statusHistory'] as List<dynamic>?)
-                                ?.map((s) => MarkerStatusUpdate.fromMap(s))
-                                .toList() ??
-                            [],
-                      );
-                    }).toList() ??
-                    [];
-
-                return Column(
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Text('Locations',
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold)),
-                    ),
-                    Expanded(
-                      child: ListView(
-                        children: [
-                          if (currentPosition != null)
-                            ListTile(
-                              leading: const Icon(Icons.my_location,
-                                  color: Colors.blue),
-                              title: const Text('Current Location'),
-                              subtitle: FutureBuilder<String>(
-                                future: _getLocationAddress(
-                                    currentPosition.latitude,
-                                    currentPosition.longitude),
-                                builder: (context, snapshot) => Text(
-                                  snapshot.data ?? 'Loading...',
-                                  style: GoogleFonts.poppins(
-                                      fontSize: 12, color: Colors.grey[600]),
-                                ),
-                              ),
-                              onTap: () {
-                                _mapController.moveToLocation(
-                                  LatLng(currentPosition.latitude,
-                                      currentPosition.longitude),
-                                  zoom: 16,
-                                );
-                                ref.read(followUserProvider.notifier).state =
-                                    true;
-                                Navigator.pop(context);
-                              },
-                            ),
-                          ...markers.map((marker) {
-                            return ListTile(
-                              leading: ImageIcon(
-                                AssetImage(
-                                    'lib/assets/images/${marker.type.toLowerCase()}_marker.png'),
-                                color: _getTypeColor(marker.type),
-                              ),
-                              title: Text(marker.name.isEmpty
-                                  ? 'Unnamed'
-                                  : marker.name),
-                              subtitle: FutureBuilder<String>(
-                                future: _getLocationAddress(
-                                    marker.latitude, marker.longitude),
-                                builder: (context, snapshot) => Text(
-                                  snapshot.data ?? 'Loading...',
-                                  style: GoogleFonts.poppins(
-                                      fontSize: 12, color: Colors.grey[600]),
-                                ),
-                              ),
-                              onTap: () {
-                                _mapController.moveToLocation(
-                                  LatLng(marker.latitude, marker.longitude),
-                                  zoom: 16,
-                                );
-                                ref.read(followUserProvider.notifier).state =
-                                    false;
-                                Navigator.pop(context);
-                              },
-                            );
-                          }),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              },
-            );
-          },
-        );
-      },
     );
   }
 
@@ -222,13 +100,13 @@ class _MapPageState extends ConsumerState<MapPage> {
       case 'tree':
         return Colors.green;
       case 'fish':
-        return Colors.blue;
+        return AppTheme.primary;
       case 'plant':
         return Colors.greenAccent;
       case 'other':
         return Colors.grey;
       default:
-        return Colors.deepOrangeAccent;
+        return AppTheme.accent;
     }
   }
 
@@ -237,153 +115,262 @@ class _MapPageState extends ConsumerState<MapPage> {
     final nameController = TextEditingController();
     final descriptionController = TextEditingController();
     final formKey = GlobalKey<FormState>();
+    MarkerVisibility selectedVisibility = MarkerVisibility.private;
 
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
-            children: [
-              ImageIcon(
-                AssetImage(
-                    'lib/assets/images/${type.toLowerCase()}_marker.png'),
-                color: _getTypeColor(type),
-                size: 24,
-              ),
-              const SizedBox(width: 8),
-              Text('Add ${type[0].toUpperCase() + type.substring(1)} Marker',
-                  style: GoogleFonts.poppins(
-                      fontSize: 14, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          content: Form(
-            key: formKey,
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              TextFormField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  labelText: 'Name',
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                  filled: true,
-                  fillColor: Colors.grey[100],
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a name';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: descriptionController,
-                decoration: InputDecoration(
-                  labelText: 'Description',
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                  filled: true,
-                  fillColor: Colors.grey[100],
-                ),
-                maxLines: 3,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a description';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              Row(
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape:
+                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Row(
                 children: [
-                  Icon(Icons.camera_alt_outlined,
-                      color: Colors.deepOrangeAccent),
-                  SizedBox(width: 8),
-                  Flexible(
-                    child: StyledTextSmall(
-                        'Take photos of your find! Add them to your marker later.',
-                        color: AppColors.textColor),
+                  ImageIcon(
+                    AssetImage(
+                        'lib/assets/images/${type.toLowerCase()}_marker.png'),
+                    color: _getTypeColor(type),
+                    size: 24,
                   ),
+                  const SizedBox(width: 8),
+                  Text('Add ${type[0].toUpperCase() + type.substring(1)} Marker',
+                      style: AppTheme.title(size: 14, weight: FontWeight.bold)),
                 ],
               ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.person, color: Colors.deepOrangeAccent),
-                      SizedBox(width: 8),
-                      StyledTitleMedium('Profile', color: AppColors.textColor),
-                      SizedBox(width: 20),
-                      Icon(Icons.arrow_circle_right_outlined,
-                          color: Colors.white),
-                      SizedBox(width: 20),
-                      Icon(Icons.location_on, color: Colors.deepOrangeAccent),
-                      SizedBox(width: 8),
-                      StyledTitleMedium('Locations', color: AppColors.textColor)
-                    ],
-                  ),
+              content: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    TextFormField(
+                      controller: nameController,
+                      decoration: InputDecoration(
+                        labelText: 'Name',
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                        filled: true,
+                        fillColor: AppTheme.backgroundLight,
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter a name';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: descriptionController,
+                      decoration: InputDecoration(
+                        labelText: 'Description',
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                        filled: true,
+                        fillColor: AppTheme.backgroundLight,
+                      ),
+                      maxLines: 3,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter a description';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    // Visibility selector
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade400),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 12, top: 8),
+                            child: Text(
+                              'Visibility',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ),
+                          ...MarkerVisibility.values.map((visibility) {
+                            return RadioListTile<MarkerVisibility>(
+                              title: Text(
+                                visibility.displayName,
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                              subtitle: Text(
+                                visibility.description,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                              value: visibility,
+                              groupValue: selectedVisibility,
+                              dense: true,
+                              activeColor: AppTheme.accent,
+                              onChanged: (value) {
+                                if (value != null) {
+                                  setDialogState(() {
+                                    selectedVisibility = value;
+                                  });
+                                }
+                              },
+                            );
+                          }),
+                        ],
+                      ),
+                    ),
+                    if (selectedVisibility == MarkerVisibility.specific)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          'You can select specific friends after creating the marker.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Icon(Icons.camera_alt_outlined, color: AppTheme.accent),
+                        SizedBox(width: 8),
+                        Flexible(
+                          child: StyledTextSmall(
+                              'Take photos of your find! Add them to your marker later.',
+                              color: AppTheme.textDark),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.person, color: AppTheme.accent),
+                            SizedBox(width: 8),
+                            StyledTitleMedium('Profile', color: AppTheme.textDark),
+                            SizedBox(width: 20),
+                            Icon(Icons.arrow_circle_right_outlined,
+                                color: Colors.white),
+                            SizedBox(width: 20),
+                            Icon(Icons.location_on, color: AppTheme.accent),
+                            SizedBox(width: 8),
+                            StyledTitleMedium('Locations', color: AppTheme.textDark)
+                          ],
+                        ),
+                      ),
+                    )
+                  ]),
                 ),
-              )
-            ]),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                nameController.dispose();
-                descriptionController.dispose();
-              },
-              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepOrangeAccent,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
               ),
-              onPressed: () async {
-                if (formKey.currentState!.validate()) {
-                  final name = nameController.text.trim();
-                  final description = descriptionController.text.trim();
-                  Navigator.of(context).pop();
-                  try {
-                    final position = await MapPermissions.getCurrentPosition();
-                    final markerService =
-                        MapMarkerService(FirebaseAuth.instance.currentUser!);
-                    await markerService.saveMarker(
-                      name: name,
-                      description: description,
-                      type: type,
-                      images: [],
-                      position: position,
-                    );
-
-                    // Award points for creating marker
-                    await GamificationHelper.awardMarkerCreated(
-                      context: parentContext,
-                      ref: ref,
-                      userId: FirebaseAuth.instance.currentUser!.email!,
-                    );
-                  } catch (e) {
-                    ScaffoldMessenger.of(parentContext).showSnackBar(
-                      SnackBar(content: Text('Error saving marker: $e')),
-                    );
-                  } finally {
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
                     nameController.dispose();
                     descriptionController.dispose();
-                  }
-                }
-              },
-              child: const Text('Save'),
-            ),
-          ],
+                  },
+                  child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.accent,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () async {
+                    if (formKey.currentState!.validate()) {
+                      final name = nameController.text.trim();
+                      final description = descriptionController.text.trim();
+
+                      try {
+                        final position = await MapPermissions.getCurrentPosition();
+
+                        // Check GPS accuracy before saving
+                        if (position.accuracy > 50) {
+                          final proceed = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              title: Row(
+                                children: [
+                                  Icon(Icons.gps_off, color: AppTheme.warning),
+                                  const SizedBox(width: 8),
+                                  const Text('Low GPS Accuracy'),
+                                ],
+                              ),
+                              content: Text(
+                                'Current GPS accuracy: ${position.accuracy.toInt()}m\n\n'
+                                'The marker location may be inaccurate. '
+                                'For best results, wait for better GPS signal.',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, false),
+                                  child: const Text('Wait'),
+                                ),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppTheme.accent,
+                                  ),
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  child: const Text('Save Anyway'),
+                                ),
+                              ],
+                            ),
+                          );
+
+                          if (proceed != true) return;
+                        }
+
+                        Navigator.of(context).pop();
+
+                        final markerService =
+                            MapMarkerService(FirebaseAuth.instance.currentUser!);
+                        await markerService.saveMarker(
+                          name: name,
+                          description: description,
+                          type: type,
+                          images: [],
+                          position: position,
+                          visibility: selectedVisibility,
+                        );
+
+                        // Award points for creating marker
+                        await GamificationHelper.awardMarkerCreated(
+                          context: parentContext,
+                          ref: ref,
+                          userId: FirebaseAuth.instance.currentUser!.email!,
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(parentContext).showSnackBar(
+                          SnackBar(content: Text('Error saving marker: $e')),
+                        );
+                      } finally {
+                        nameController.dispose();
+                        descriptionController.dispose();
+                      }
+                    }
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -423,47 +410,47 @@ class _MapPageState extends ConsumerState<MapPage> {
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const StyledHeading('Forage Map'),
-        toolbarHeight: 60,
-      ),
-      body: Column(
-        children: [
-          const MapHeader(),
-          Expanded(
-            child: Stack(
-              children: [
-                // Map View
-                MapView(
-                  markers: markers,
-                  circles: circles,
-                  initialCameraPosition: CameraPosition(
-                    target: widget.initialLocation ??
-                        LatLng(currentPosition.latitude,
-                            currentPosition.longitude),
-                    zoom: 16,
-                  ),
-                  focusLocation: widget.initialLocation,
-                  onMapCreated: (controller) {
-                    _mapController.completeController(controller);
-                    controller.setMapStyle(mapstyle);
-                  },
-                ),
+    final safePadding = MediaQuery.of(context).padding;
 
-                // Floating Controls Overlay
-                MapFloatingControls(
-                  followUser: followUser,
-                  onFollowPressed: () {
-                    ref.read(followUserProvider.notifier).state = !followUser;
-                  },
-                  onAddMarkerPressed: (dialogContext, type) =>
-                      _showMarkerDetailsDialog(context, dialogContext, type),
-                  onPlaceSelected: _goToPlace,
-                  onShowLocationsPressed: _showLocationsBottomSheet,
-                ),
-              ],
+    return Scaffold(
+      body: Stack(
+        children: [
+          // Map View
+          MapView(
+            markers: markers,
+            circles: circles,
+            initialCameraPosition: CameraPosition(
+              target: widget.initialLocation ??
+                  LatLng(currentPosition.latitude, currentPosition.longitude),
+              zoom: 16,
             ),
+            focusLocation: widget.initialLocation,
+            onMapCreated: (controller) {
+              _mapController.completeController(controller);
+              controller.setMapStyle(mapstyle);
+            },
+          ),
+
+          // Filter Chips - positioned above search field
+          Positioned(
+            top: safePadding.top + 8, // Above search field
+            left: 0,
+            right: 0,
+            child: const MarkerFilterChips(),
+          ),
+
+          // Floating Controls Overlay
+          MapFloatingControls(
+            followUser: followUser,
+            onFollowPressed: () {
+              ref.read(followUserProvider.notifier).state = !followUser;
+            },
+            onAddMarkerPressed: (dialogContext, type) =>
+                _showMarkerDetailsDialog(context, dialogContext, type),
+            onPlaceSelected: _goToPlace,
+            onShowLocationsPressed: _showLocationsBottomSheet,
+            onZoomIn: () => _mapController.zoomIn(),
+            onZoomOut: () => _mapController.zoomOut(),
           ),
         ],
       ),
