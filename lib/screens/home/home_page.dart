@@ -5,6 +5,7 @@ import 'package:flutter_forager_app/data/repositories/repository_providers.dart'
 import 'package:flutter_forager_app/data/models/user.dart';
 import 'package:flutter_forager_app/screens/profile/profile_page.dart';
 import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
+import 'package:flutter_forager_app/screens/collections/collections_page.dart';
 import 'package:flutter_forager_app/screens/feed/feed_page.dart';
 import 'package:flutter_forager_app/screens/tools/tools_page.dart';
 import 'package:flutter_forager_app/screens/feedback/feedback.dart';
@@ -51,15 +52,23 @@ class _HomePageState extends ConsumerState<HomePage> {
       const FeedbackPage(), // Feedback tab (index 4)
     ];
 
-    AdMobService.loadInterstitialAd();
-
-    // Update daily streak
+    // Defer non-critical work to let map render first
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      GamificationHelper.updateStreak(
-        context: context,
-        ref: ref,
-        userId: currentUser.email!,
-      );
+      // Delay interstitial ad loading (not needed immediately)
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) AdMobService.loadInterstitialAd();
+      });
+
+      // Delay streak update (Firestore write can wait)
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted) {
+          GamificationHelper.updateStreak(
+            context: context,
+            ref: ref,
+            userId: currentUser.email!,
+          );
+        }
+      });
     });
   }
 
@@ -152,6 +161,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       drawer: CustomDrawer(
         onSignOutTap: _signOut,
         onForageLocationsTap: _goToForageLocationsPage,
+        onCollectionsTap: _goToCollectionsPage,
         onAboutTap: goToAboutPage,
         onAboutUsTap: goAboutUsPage,
         onCreditsTap: goCreditsPage,
@@ -199,27 +209,32 @@ class _HomePageState extends ConsumerState<HomePage> {
             icon: Icon(Icons.person),
             label: 'Profile',
           ),
-          // EXPLORE - Prominent center tab with amber background
+          // EXPLORE - Prominent center tab with amber background (oversized)
           BottomNavigationBarItem(
-            icon: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppTheme.secondary, // Always amber - prominent!
-                shape: BoxShape.circle,
-                boxShadow: currentIndex == 2
-                    ? [
-                        BoxShadow(
-                          color: AppTheme.secondary.withValues(alpha: 0.4),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Icon(
-                Icons.explore,
-                color: AppTheme.textWhite,
-                size: 28, // Larger icon
+            icon: Transform.translate(
+              offset: const Offset(0, -12), // Push up to lean over edge
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.secondary, // Always amber - prominent!
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppTheme.surfaceLight,
+                    width: 3,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.secondary.withValues(alpha: 0.5),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.explore,
+                  color: AppTheme.textWhite,
+                  size: 32,
+                ),
               ),
             ),
             label: 'Explore',
@@ -274,6 +289,16 @@ class _HomePageState extends ConsumerState<HomePage> {
           userName: currentUser.email!.split("@")[0],
           userLocations: true,
         ),
+      ),
+    );
+  }
+
+  void _goToCollectionsPage() {
+    Navigator.pop(context);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const CollectionsPage(),
       ),
     );
   }

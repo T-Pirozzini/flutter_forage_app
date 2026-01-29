@@ -1,8 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:flutter/material.dart';
+import 'package:flutter_forager_app/data/models/friend.dart';
 import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
 import 'package:flutter_forager_app/data/models/user.dart';
+import 'package:flutter_forager_app/data/services/migration_service.dart';
 import 'package:flutter_forager_app/screens/profile/profile_page.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,11 +21,62 @@ class _FriendsPageState extends ConsumerState<FriendsPage> {
   final TextEditingController _searchController = TextEditingController();
   List<UserModel> _searchResults = [];
   bool _isSearching = false;
+  bool _isMigrating = false;
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  /// Manually trigger migration of old friends from array to subcollection
+  Future<void> _runFriendMigration() async {
+    if (_isMigrating) return;
+
+    setState(() => _isMigrating = true);
+
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser?.email == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No user logged in')),
+          );
+        }
+        return;
+      }
+
+      final migrationService = MigrationService();
+      final result = await migrationService.migrateFriendsToSubcollection(
+        dryRun: false,
+        specificUserId: currentUser!.email!,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              result.migratedFriendships > 0
+                  ? 'Migrated ${result.migratedFriendships} friends!'
+                  : result.skippedFriendships > 0
+                      ? 'All ${result.skippedFriendships} friends already migrated'
+                      : 'No friends to migrate',
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Migration error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isMigrating = false);
+      }
+    }
   }
 
   Future<int> _getLocationCount(String userId) async {
@@ -58,28 +111,28 @@ class _FriendsPageState extends ConsumerState<FriendsPage> {
     try {
       final currentUser = FirebaseAuth.instance.currentUser!;
       final userRepo = ref.read(userRepositoryProvider);
+      final friendRepo = ref.read(friendRepositoryProvider);
 
       // Search for users using repository
       final allUsers = await userRepo.searchByUsername(query);
 
-      // Get current user data to check friend status
-      final currentUserData = await userRepo.getById(currentUser.email!);
-
-      if (currentUserData == null) {
-        setState(() {
-          _isSearching = false;
-        });
-        return;
+      // Check friend status for each user using new subcollection-based system
+      final List<UserModel> results = [];
+      for (final user in allUsers) {
+        if (user.email != currentUser.email) {
+          final isFriend =
+              await friendRepo.areFriends(currentUser.email!, user.email);
+          final hasPendingRequest = await friendRepo.hasPendingRequest(
+              currentUser.email!, user.email);
+          results.add(user.copyWith(
+            isFriend: isFriend,
+            hasPendingRequest: hasPendingRequest,
+          ));
+        }
       }
 
-      final results = allUsers.map((user) {
-        final isFriend = currentUserData.friends.contains(user.email);
-        return user.copyWith(isFriend: isFriend);
-      }).toList();
-
       setState(() {
-        _searchResults =
-            results.where((user) => user.email != currentUser.email).toList();
+        _searchResults = results;
         _isSearching = false;
       });
     } catch (e) {
@@ -92,19 +145,6 @@ class _FriendsPageState extends ConsumerState<FriendsPage> {
         );
       }
     }
-  }
-
-  void _navigateToFriendLocations(BuildContext context, UserModel friend) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ForageLocations(
-          userId: friend.email,
-          userName: friend.username,
-          userLocations: true,
-        ),
-      ),
-    );
   }
 
   void _navigateToProfilePage(BuildContext context, UserModel user) {
@@ -124,6 +164,23 @@ class _FriendsPageState extends ConsumerState<FriendsPage> {
       appBar: AppBar(
         title: StyledTitleLarge('Friends', color: Colors.white),
         backgroundColor: Colors.deepOrange.shade300,
+        actions: [
+          // Migration button for importing old friends
+          IconButton(
+            icon: _isMigrating
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.sync, color: Colors.white),
+            tooltip: 'Import old friends',
+            onPressed: _isMigrating ? null : _runFriendMigration,
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -190,10 +247,12 @@ class _FriendsPageState extends ConsumerState<FriendsPage> {
             subtitle: Text(user.email),
             trailing: user.isFriend
                 ? const Icon(Icons.check, color: Colors.green)
-                : IconButton(
-                    icon: const Icon(Icons.person_add),
-                    onPressed: () => _sendFriendRequest(user.email),
-                  ),
+                : user.hasPendingRequest
+                    ? const Icon(Icons.pending, color: Colors.orange)
+                    : IconButton(
+                        icon: const Icon(Icons.person_add),
+                        onPressed: () => _sendFriendRequest(user.email),
+                      ),
             onTap: () {
               if (user.isFriend) {
                 _navigateToProfilePage(context, user);
@@ -206,18 +265,17 @@ class _FriendsPageState extends ConsumerState<FriendsPage> {
   }
 
   Widget _buildFriendsList(String userId) {
+    final friendRepo = ref.read(friendRepositoryProvider);
     final userRepo = ref.read(userRepositoryProvider);
 
-    return StreamBuilder<UserModel?>(
-      stream: userRepo.streamById(userId),
+    return StreamBuilder<List<FriendModel>>(
+      stream: friendRepo.streamFriends(userId),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final user = snapshot.data!;
-
-        if (user.friends.isEmpty) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return const Center(
             child: Text(
               'No friends yet. Search for users to add friends!',
@@ -226,62 +284,72 @@ class _FriendsPageState extends ConsumerState<FriendsPage> {
           );
         }
 
-        return ListView.builder(
-          itemCount: user.friends.length,
-          itemBuilder: (context, index) {
-            final friendId = user.friends[index];
-            return FutureBuilder<UserModel?>(
-              future: userRepo.getById(friendId),
-              builder: (context, friendSnapshot) {
-                if (!friendSnapshot.hasData || friendSnapshot.data == null) {
-                  return const ListTile(title: Text('Loading...'));
-                }
+        final friends = snapshot.data!;
 
-                final friend = friendSnapshot.data!;
-                return FutureBuilder<int>(
-                  future: _getLocationCount(friendId),
-                  builder: (context, countSnapshot) {
-                    final locationCount = countSnapshot.data ?? 0;
-                    return Card(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 8.0, vertical: 4.0),
-                      child: ListTile(
-                        leading: FutureBuilder<String>(
-                          future: _getProfileImageUrl(friend.profilePic),
-                          builder: (context, snapshot) {
-                            if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                              return CircleAvatar(
-                                backgroundImage: NetworkImage(snapshot.data!),
-                              );
+        return ListView.builder(
+          itemCount: friends.length,
+          itemBuilder: (context, index) {
+            final friend = friends[index];
+            return FutureBuilder<int>(
+              future: _getLocationCount(friend.friendEmail),
+              builder: (context, countSnapshot) {
+                final locationCount = countSnapshot.data ?? 0;
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                      horizontal: 8.0, vertical: 4.0),
+                  child: ListTile(
+                    leading: FutureBuilder<String>(
+                      future: _getProfileImageUrl(friend.photoUrl ?? ''),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                          return CircleAvatar(
+                            backgroundImage: NetworkImage(snapshot.data!),
+                          );
+                        }
+                        return CircleAvatar(
+                          child: Text(friend.displayName.isNotEmpty
+                              ? friend.displayName[0].toUpperCase()
+                              : '?'),
+                        );
+                      },
+                    ),
+                    title: Text(friend.displayName),
+                    subtitle: Text('$locationCount locations'),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.person, color: Colors.blue),
+                          onPressed: () async {
+                            // Fetch full user data for profile page
+                            final userData =
+                                await userRepo.getById(friend.friendEmail);
+                            if (userData != null && mounted) {
+                              _navigateToProfilePage(context, userData);
                             }
-                            return CircleAvatar(
-                              child: Text(friend.username[0].toUpperCase()),
-                            );
                           },
                         ),
-                        title: Text(friend.username),
-                        subtitle: Text('$locationCount locations'),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon:
-                                  const Icon(Icons.person, color: Colors.blue),
-                              onPressed: () =>
-                                  _navigateToProfilePage(context, friend),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _showRemoveFriendDialog(
-                                  context, userId, friendId),
-                            ),
-                          ],
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () => _showRemoveFriendDialog(
+                              context, userId, friend.friendEmail),
                         ),
-                        onTap: () =>
-                            _navigateToFriendLocations(context, friend),
-                      ),
-                    );
-                  },
+                      ],
+                    ),
+                    onTap: () {
+                      // Navigate to friend's locations
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ForageLocations(
+                            userId: friend.friendEmail,
+                            userName: friend.displayName,
+                            userLocations: true,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 );
               },
             );
@@ -294,14 +362,23 @@ class _FriendsPageState extends ConsumerState<FriendsPage> {
   Future<void> _sendFriendRequest(String recipientEmail) async {
     try {
       final currentUser = FirebaseAuth.instance.currentUser!;
+      final friendRepo = ref.read(friendRepositoryProvider);
       final userRepo = ref.read(userRepositoryProvider);
 
-      await userRepo.sendFriendRequest(currentUser.email!, recipientEmail);
+      // Get current user data for display name
+      final currentUserData = await userRepo.getById(currentUser.email!);
+
+      await friendRepo.sendRequest(
+        fromEmail: currentUser.email!,
+        fromDisplayName: currentUserData?.username ?? currentUser.email!,
+        fromPhotoUrl: currentUserData?.profilePic,
+        toEmail: recipientEmail,
+      );
 
       setState(() {
         _searchResults = _searchResults.map((user) {
           if (user.email == recipientEmail) {
-            return user.copyWith(isFriend: true);
+            return user.copyWith(hasPendingRequest: true);
           }
           return user;
         }).toList();
@@ -322,7 +399,7 @@ class _FriendsPageState extends ConsumerState<FriendsPage> {
   }
 
   Future<void> _showRemoveFriendDialog(
-      BuildContext context, String userId, String friendId) async {
+      BuildContext context, String userId, String friendEmail) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -343,8 +420,8 @@ class _FriendsPageState extends ConsumerState<FriendsPage> {
 
     if (confirmed == true) {
       try {
-        final userRepo = ref.read(userRepositoryProvider);
-        await userRepo.removeFriend(userId, friendId);
+        final friendRepo = ref.read(friendRepositoryProvider);
+        await friendRepo.removeFriend(userId, friendEmail);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

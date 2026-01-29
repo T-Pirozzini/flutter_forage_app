@@ -7,6 +7,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_forager_app/data/models/marker.dart';
+import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
 import 'package:flutter_forager_app/screens/forage/map_page.dart';
 import 'package:flutter_forager_app/data/services/marker_service.dart';
 import 'package:flutter_forager_app/screens/forage_locations/components/status_history_dialog.dart';
@@ -66,6 +67,8 @@ class _ForageLocationInfoState extends ConsumerState<ForageLocationInfo> {
   String _selectedStatus = 'active';
   List<Map<String, dynamic>> _statusHistory = [];
   List<Map<String, dynamic>> _comments = [];
+  bool _isBookmarked = false;
+  bool _isBookmarkLoading = false;
 
   @override
   void initState() {
@@ -78,6 +81,83 @@ class _ForageLocationInfoState extends ConsumerState<ForageLocationInfo> {
     _statusHistory = List.from(widget.statusHistory);
     _comments = List.from(widget.comments);
     _refreshData();
+    _checkBookmarkStatus();
+  }
+
+  Future<void> _checkBookmarkStatus() async {
+    if (_isOwner) return; // Owners don't need to bookmark their own locations
+
+    try {
+      final bookmarkRepo = ref.read(bookmarkRepositoryProvider);
+      final isBookmarked = await bookmarkRepo.isBookmarked(
+        currentUser.email!,
+        widget.markerId,
+      );
+      if (mounted) {
+        setState(() {
+          _isBookmarked = isBookmarked;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error checking bookmark status: $e');
+    }
+  }
+
+  Future<void> _toggleBookmark() async {
+    if (_isBookmarkLoading) return;
+
+    setState(() {
+      _isBookmarkLoading = true;
+    });
+
+    try {
+      final bookmarkRepo = ref.read(bookmarkRepositoryProvider);
+
+      if (_isBookmarked) {
+        await bookmarkRepo.removeBookmarkByMarkerId(
+          currentUser.email!,
+          widget.markerId,
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Bookmark removed')),
+          );
+        }
+      } else {
+        await bookmarkRepo.addBookmarkFromData(
+          userId: currentUser.email!,
+          markerId: widget.markerId,
+          markerOwner: widget.markerOwner,
+          markerName: widget.name,
+          markerDescription: widget.description,
+          latitude: widget.lat,
+          longitude: widget.lng,
+          type: widget.type,
+          imageUrl: imageUrls.isNotEmpty ? imageUrls.first : null,
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Location bookmarked!')),
+          );
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _isBookmarked = !_isBookmarked;
+          _isBookmarkLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isBookmarkLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -139,39 +219,21 @@ class _ForageLocationInfoState extends ConsumerState<ForageLocationInfo> {
   }
 
   Future<void> _updateImagesInFirestore() async {
-    final markersCollection = FirebaseFirestore.instance
-        .collection('Users')
-        .doc(widget.markerOwner)
-        .collection('Markers');
-
-    await markersCollection
-        .where('name', isEqualTo: widget.name)
-        .where('type', isEqualTo: widget.type)
-        .get()
-        .then((snapshot) {
-      for (final doc in snapshot.docs) {
-        doc.reference.update({'images': imageUrls});
-      }
-    });
+    // Use the new root Markers collection with markerId
+    await FirebaseFirestore.instance
+        .collection('Markers')
+        .doc(widget.markerId)
+        .update({'images': imageUrls});
   }
 
   Future<void> _updateDescription() async {
     if (_descriptionController.text.isEmpty) return;
 
-    final markersCollection = FirebaseFirestore.instance
-        .collection('Users')
-        .doc(widget.markerOwner)
-        .collection('Markers');
-
-    await markersCollection
-        .where('name', isEqualTo: widget.name)
-        .where('type', isEqualTo: widget.type)
-        .get()
-        .then((snapshot) {
-      for (final doc in snapshot.docs) {
-        doc.reference.update({'description': _descriptionController.text});
-      }
-    });
+    // Use the new root Markers collection with markerId
+    await FirebaseFirestore.instance
+        .collection('Markers')
+        .doc(widget.markerId)
+        .update({'description': _descriptionController.text});
 
     setState(() {
       _isEditing = false;
@@ -354,21 +416,11 @@ class _ForageLocationInfoState extends ConsumerState<ForageLocationInfo> {
         }
       }
 
-      // Then delete the document
-      final markersCollection = FirebaseFirestore.instance
-          .collection('Users')
-          .doc(widget.markerOwner)
-          .collection('Markers');
-
-      await markersCollection
-          .where('name', isEqualTo: widget.name)
-          .where('type', isEqualTo: widget.type)
-          .get()
-          .then((snapshot) async {
-        for (final doc in snapshot.docs) {
-          await doc.reference.delete();
-        }
-      });
+      // Delete the document from the new root Markers collection
+      await FirebaseFirestore.instance
+          .collection('Markers')
+          .doc(widget.markerId)
+          .delete();
 
       if (mounted) {
         Navigator.of(context).pop(); // Close the dialog
@@ -443,22 +495,17 @@ class _ForageLocationInfoState extends ConsumerState<ForageLocationInfo> {
 
   Future<void> _refreshStatusHistory() async {
     try {
-      // Use the same query-based approach instead of document ID
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(widget.markerOwner)
+      // Use the new root Markers collection with markerId
+      final doc = await FirebaseFirestore.instance
           .collection('Markers')
-          .where('name', isEqualTo: widget.name)
-          .where('type', isEqualTo: widget.type)
+          .doc(widget.markerId)
           .get();
 
-      if (querySnapshot.docs.isNotEmpty) {
-        // Take the first matching document (should be unique)
-        final doc = querySnapshot.docs.first;
-        final data = doc.data();
+      if (doc.exists) {
+        final data = doc.data()!;
 
-        print('Refreshing status history from document ID: ${doc.id}');
-        print('Status history found: ${data['statusHistory']?.length ?? 0}');
+        debugPrint('Refreshing status history from document ID: ${doc.id}');
+        debugPrint('Status history found: ${data['statusHistory']?.length ?? 0}');
 
         setState(() {
           _statusHistory =
@@ -466,14 +513,14 @@ class _ForageLocationInfoState extends ConsumerState<ForageLocationInfo> {
           _selectedStatus = data['currentStatus'] ?? 'active';
         });
       } else {
-        print('No marker found for status history refresh');
+        debugPrint('No marker found for status history refresh');
         setState(() {
           _statusHistory = [];
           _selectedStatus = 'active';
         });
       }
     } catch (e) {
-      print('Error refreshing status history: $e');
+      debugPrint('Error refreshing status history: $e');
       setState(() {
         _statusHistory = [];
         _selectedStatus = 'active';
@@ -483,34 +530,29 @@ class _ForageLocationInfoState extends ConsumerState<ForageLocationInfo> {
 
   Future<void> _refreshComments() async {
     try {
-      // Use the same query-based approach instead of document ID
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(widget.markerOwner)
+      // Use the new root Markers collection with markerId
+      final doc = await FirebaseFirestore.instance
           .collection('Markers')
-          .where('name', isEqualTo: widget.name)
-          .where('type', isEqualTo: widget.type)
+          .doc(widget.markerId)
           .get();
 
-      if (querySnapshot.docs.isNotEmpty) {
-        // Take the first matching document (should be unique)
-        final doc = querySnapshot.docs.first;
-        final data = doc.data();
+      if (doc.exists) {
+        final data = doc.data()!;
 
-        print('Refreshing comments from document ID: ${doc.id}');
-        print('Comments found: ${data['comments']?.length ?? 0}');
+        debugPrint('Refreshing comments from document ID: ${doc.id}');
+        debugPrint('Comments found: ${data['comments']?.length ?? 0}');
 
         setState(() {
           _comments = List<Map<String, dynamic>>.from(data['comments'] ?? []);
         });
       } else {
-        print('No marker found for comments refresh');
+        debugPrint('No marker found for comments refresh');
         setState(() {
           _comments = [];
         });
       }
     } catch (e) {
-      print('Error refreshing comments: $e');
+      debugPrint('Error refreshing comments: $e');
       setState(() {
         _comments = [];
       });
@@ -1136,6 +1178,35 @@ class _ForageLocationInfoState extends ConsumerState<ForageLocationInfo> {
           ),
         ),
         const SizedBox(height: 8),
+        // Bookmark button for non-owners
+        if (!_isOwner)
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              icon: _isBookmarkLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(
+                      _isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                    ),
+              label: Text(_isBookmarked ? 'Bookmarked' : 'Bookmark Location'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _isBookmarked ? Colors.amber : Colors.deepOrange,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                side: BorderSide(
+                  color: _isBookmarked ? Colors.amber : Colors.deepOrange,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: _isBookmarkLoading ? null : _toggleBookmark,
+            ),
+          ),
+        if (!_isOwner) const SizedBox(height: 8),
         if (_isOwner)
           SizedBox(
             width: double.infinity,

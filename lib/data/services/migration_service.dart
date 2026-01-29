@@ -171,9 +171,286 @@ class MigrationService {
     }
     return count;
   }
+
+  /// Migrate friends from old User.friends array to new Friends subcollection
+  ///
+  /// Old architecture: User document has `friends: List<String>` array
+  /// New architecture: `/Users/{userId}/Friends/{friendEmail}` subcollection
+  ///
+  /// [dryRun] - If true, only logs what would be done without making changes
+  /// Returns a FriendMigrationResult with stats
+  Future<FriendMigrationResult> migrateFriendsToSubcollection({
+    bool dryRun = true,
+    String? specificUserId, // Optional: migrate only for specific user
+  }) async {
+    print('\n${'=' * 80}');
+    print('FIRESTORE FRIEND MIGRATION');
+    print('${'=' * 80}');
+    print('Mode: ${dryRun ? "DRY RUN (no changes)" : "LIVE MIGRATION"}');
+    if (specificUserId != null) {
+      print('Migrating for user: $specificUserId');
+    }
+    print('');
+
+    int totalFriendships = 0;
+    int migratedFriendships = 0;
+    int skippedFriendships = 0;
+    int errorCount = 0;
+    final List<String> errors = [];
+
+    try {
+      // Step 1: Get users to process
+      print('Step 1: Fetching users...');
+      QuerySnapshot usersSnapshot;
+
+      if (specificUserId != null) {
+        // Get specific user
+        final doc = await _firestore
+            .collection(FirestoreCollections.users)
+            .doc(specificUserId)
+            .get();
+        if (!doc.exists) {
+          return FriendMigrationResult(
+            totalFriendships: 0,
+            migratedFriendships: 0,
+            skippedFriendships: 0,
+            errorCount: 1,
+            errors: ['User $specificUserId not found'],
+            success: false,
+          );
+        }
+        usersSnapshot = await _firestore
+            .collection(FirestoreCollections.users)
+            .where(FieldPath.documentId, isEqualTo: specificUserId)
+            .get();
+      } else {
+        usersSnapshot = await _firestore
+            .collection(FirestoreCollections.users)
+            .get();
+      }
+
+      print('✓ Found ${usersSnapshot.docs.length} users to process\n');
+
+      // Step 2: Process each user's friends array
+      for (final userDoc in usersSnapshot.docs) {
+        final userId = userDoc.id;
+        final userData = userDoc.data() as Map<String, dynamic>;
+
+        print('Processing user: $userId');
+
+        try {
+          // Get friends array from old architecture
+          final List<String> friendsArray =
+              List<String>.from(userData['friends'] ?? []);
+
+          if (friendsArray.isEmpty) {
+            print('  No friends in array');
+            continue;
+          }
+
+          print('  Found ${friendsArray.length} friends in array');
+          totalFriendships += friendsArray.length;
+
+          // Get user's display name and photo for reciprocal entries
+          final userDisplayName = userData['username'] ?? userId;
+          final userPhotoUrl = userData['profilePic'];
+
+          // Step 3: Migrate each friend
+          for (final friendEmail in friendsArray) {
+            try {
+              // Check if friend already exists in subcollection
+              final existingFriend = await _firestore
+                  .collection(FirestoreCollections.users)
+                  .doc(userId)
+                  .collection('Friends')
+                  .doc(friendEmail)
+                  .get();
+
+              if (existingFriend.exists) {
+                print('  ⊘ Skipping $friendEmail (already in subcollection)');
+                skippedFriendships++;
+                continue;
+              }
+
+              // Get friend's user document for display name and photo
+              final friendDoc = await _firestore
+                  .collection(FirestoreCollections.users)
+                  .doc(friendEmail)
+                  .get();
+
+              final friendData = friendDoc.exists
+                  ? friendDoc.data() as Map<String, dynamic>
+                  : <String, dynamic>{};
+              final friendDisplayName = friendData['username'] ?? friendEmail;
+              final friendPhotoUrl = friendData['profilePic'];
+
+              final now = Timestamp.now();
+
+              // Create friend entry for this user
+              final friendEntryForUser = {
+                'friendEmail': friendEmail,
+                'displayName': friendDisplayName,
+                if (friendPhotoUrl != null) 'photoUrl': friendPhotoUrl,
+                'addedAt': now,
+                'closeFriend': false,
+                'migratedAt': now,
+              };
+
+              // Create reciprocal friend entry (other user's subcollection)
+              final friendEntryForOther = {
+                'friendEmail': userId,
+                'displayName': userDisplayName,
+                if (userPhotoUrl != null) 'photoUrl': userPhotoUrl,
+                'addedAt': now,
+                'closeFriend': false,
+                'migratedAt': now,
+              };
+
+              if (!dryRun) {
+                // Use batch write for atomicity
+                final batch = _firestore.batch();
+
+                // Add to current user's Friends subcollection
+                batch.set(
+                  _firestore
+                      .collection(FirestoreCollections.users)
+                      .doc(userId)
+                      .collection('Friends')
+                      .doc(friendEmail),
+                  friendEntryForUser,
+                );
+
+                // Add reciprocal entry to friend's subcollection
+                // (Check if it already exists first)
+                final reciprocalExists = await _firestore
+                    .collection(FirestoreCollections.users)
+                    .doc(friendEmail)
+                    .collection('Friends')
+                    .doc(userId)
+                    .get();
+
+                if (!reciprocalExists.exists) {
+                  batch.set(
+                    _firestore
+                        .collection(FirestoreCollections.users)
+                        .doc(friendEmail)
+                        .collection('Friends')
+                        .doc(userId),
+                    friendEntryForOther,
+                  );
+                }
+
+                // Create FriendshipIndex entry
+                final sortedEmails = [userId, friendEmail]..sort();
+                final indexId = '${sortedEmails[0]}_${sortedEmails[1]}';
+
+                final indexExists = await _firestore
+                    .collection('FriendshipIndex')
+                    .doc(indexId)
+                    .get();
+
+                if (!indexExists.exists) {
+                  batch.set(
+                    _firestore.collection('FriendshipIndex').doc(indexId),
+                    {
+                      'users': sortedEmails,
+                      'createdAt': now,
+                      'status': 'active',
+                    },
+                  );
+                }
+
+                await batch.commit();
+                print('  ✓ Migrated: $friendEmail (bidirectional)');
+              } else {
+                print('  [DRY RUN] Would migrate: $friendEmail');
+              }
+
+              migratedFriendships++;
+            } catch (e) {
+              print('  ✗ Error migrating friend $friendEmail: $e');
+              errors.add('User $userId, Friend $friendEmail: $e');
+              errorCount++;
+            }
+          }
+        } catch (e) {
+          print('  ✗ Error processing user $userId: $e');
+          errors.add('User $userId: $e');
+          errorCount++;
+        }
+      }
+
+      // Summary
+      print('\n${'=' * 80}');
+      print('FRIEND MIGRATION SUMMARY');
+      print('${'=' * 80}');
+      print('Total friendships found:  $totalFriendships');
+      print('Migrated successfully:    $migratedFriendships');
+      print('Skipped (already exist):  $skippedFriendships');
+      print('Errors:                   $errorCount');
+      print('');
+
+      if (dryRun) {
+        print('This was a DRY RUN. No changes were made.');
+        print('Run again with dryRun: false to perform actual migration.');
+      } else {
+        print('✓ Friend migration complete!');
+        print('\nNEXT STEPS:');
+        print('1. Verify friends in Firebase Console (Users/{email}/Friends subcollection)');
+        print('2. Test the app - friends should now appear in Friends page');
+        print('3. After confirming, the old friends array can be left as backup');
+      }
+
+      return FriendMigrationResult(
+        totalFriendships: totalFriendships,
+        migratedFriendships: migratedFriendships,
+        skippedFriendships: skippedFriendships,
+        errorCount: errorCount,
+        errors: errors,
+        success: errorCount == 0,
+      );
+    } catch (e) {
+      print('\n✗ Friend migration failed: $e');
+      return FriendMigrationResult(
+        totalFriendships: 0,
+        migratedFriendships: 0,
+        skippedFriendships: 0,
+        errorCount: 1,
+        errors: ['Fatal error: $e'],
+        success: false,
+      );
+    }
+  }
+
+  /// Quick check to see how many friends would be migrated
+  Future<int> countFriendsToMigrate() async {
+    int count = 0;
+    try {
+      final usersSnapshot = await _firestore
+          .collection(FirestoreCollections.users)
+          .get();
+
+      for (final userDoc in usersSnapshot.docs) {
+        final userData = userDoc.data();
+        final friendsArray = List<String>.from(userData['friends'] ?? []);
+        count += friendsArray.length;
+      }
+    } catch (e) {
+      print('Error counting friends: $e');
+    }
+    return count;
+  }
+
+  /// Migrate a single user's friends (useful for on-demand migration)
+  Future<FriendMigrationResult> migrateUserFriends(String userId) async {
+    return migrateFriendsToSubcollection(
+      dryRun: false,
+      specificUserId: userId,
+    );
+  }
 }
 
-/// Result of a migration operation
+/// Result of a marker migration operation
 class MigrationResult {
   final int totalMarkers;
   final int migratedMarkers;
@@ -198,6 +475,37 @@ MigrationResult(
   total: $totalMarkers,
   migrated: $migratedMarkers,
   skipped: $skippedMarkers,
+  errors: $errorCount,
+  success: $success
+)''';
+  }
+}
+
+/// Result of a friend migration operation
+class FriendMigrationResult {
+  final int totalFriendships;
+  final int migratedFriendships;
+  final int skippedFriendships;
+  final int errorCount;
+  final List<String> errors;
+  final bool success;
+
+  FriendMigrationResult({
+    required this.totalFriendships,
+    required this.migratedFriendships,
+    required this.skippedFriendships,
+    required this.errorCount,
+    required this.errors,
+    required this.success,
+  });
+
+  @override
+  String toString() {
+    return '''
+FriendMigrationResult(
+  total: $totalFriendships,
+  migrated: $migratedFriendships,
+  skipped: $skippedFriendships,
   errors: $errorCount,
   success: $success
 )''';

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'package:flutter_forager_app/data/models/marker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -22,6 +23,8 @@ class MapMarkerService {
     required String type,
     required List<File> images,
     required Position position,
+    MarkerVisibility visibility = MarkerVisibility.private,
+    List<String> allowedViewers = const [],
   }) async {
     try {
       final imageUrls = await _uploadImages(images);
@@ -56,6 +59,8 @@ class MapMarkerService {
             'notes': 'Marker created',
           }
         ],
+        'visibility': visibility.name,
+        'allowedViewers': allowedViewers,
       });
     } catch (e) {
       throw Exception('Failed to save marker: $e');

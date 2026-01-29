@@ -44,11 +44,34 @@ class MapController {
 
   Future<void> _setupPositionListener() async {
     try {
-      final initialPosition = await getCurrentPosition();
-      _ref.read(currentPositionProvider.notifier).updatePosition(initialPosition);
+      // 1. Try instant cached position first (non-blocking)
+      final lastKnown = await Geolocator.getLastKnownPosition();
+      if (lastKnown != null) {
+        _ref.read(currentPositionProvider.notifier).updatePosition(lastKnown);
+        debugPrint('Using cached position: ${lastKnown.latitude}, ${lastKnown.longitude}');
+      }
 
+      // 2. Get accurate position in background (don't block map loading)
+      Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high)
+          .then((accuratePosition) {
+        if (_isDisposed) return;
+        _ref.read(currentPositionProvider.notifier).updatePosition(accuratePosition);
+        debugPrint('Got accurate position: ${accuratePosition.latitude}, ${accuratePosition.longitude}');
+
+        // Animate to accurate position if still following user
+        if (_ref.read(followUserProvider)) {
+          _moveCameraToPosition(accuratePosition);
+        }
+      }).catchError((e) {
+        debugPrint('Failed to get accurate position: $e');
+      });
+
+      // 3. Start continuous position stream
       _positionStream = positionStream.listen(
         (position) {
+          if (_isDisposed) return;
+          _ref.read(currentPositionProvider.notifier).updatePosition(position);
+
           final followUser = _ref.read(followUserProvider);
           final lastManualMove = _ref.read(lastManualMoveProvider);
 
@@ -115,11 +138,40 @@ class MapController {
     );
   }
 
+  /// Zoom in one level
+  Future<void> zoomIn() async {
+    if (_isDisposed || _controller == null) {
+      debugPrint('ZoomIn: controller not ready (disposed: $_isDisposed, controller: $_controller)');
+      return;
+    }
+
+    try {
+      await _controller!.animateCamera(CameraUpdate.zoomIn());
+    } catch (e) {
+      debugPrint('ZoomIn error: $e');
+    }
+  }
+
+  /// Zoom out one level
+  Future<void> zoomOut() async {
+    if (_isDisposed || _controller == null) {
+      debugPrint('ZoomOut: controller not ready (disposed: $_isDisposed, controller: $_controller)');
+      return;
+    }
+
+    try {
+      await _controller!.animateCamera(CameraUpdate.zoomOut());
+    } catch (e) {
+      debugPrint('ZoomOut error: $e');
+    }
+  }
+
   void completeController(GoogleMapController controller) {
+    _controller = controller; // Always set the controller
     if (!_mapCompleter.isCompleted && !_isDisposed) {
-      _controller = controller;
       _mapCompleter.complete(controller);
     }
+    debugPrint('MapController: completeController called, controller set');
   }
 
   void dispose() {
