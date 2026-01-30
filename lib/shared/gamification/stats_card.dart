@@ -3,7 +3,7 @@ import 'package:flutter_forager_app/data/models/gamification_constants.dart';
 import 'package:flutter_forager_app/data/models/user.dart';
 import 'package:flutter_forager_app/theme/app_theme.dart';
 
-/// Display user's gamification stats with modern design
+/// Display user's gamification stats with compact design
 class StatsCard extends StatelessWidget {
   final UserModel user;
   final VoidCallback? onTap;
@@ -32,18 +32,18 @@ class StatsCard extends StatelessWidget {
               AppTheme.primaryLight,
             ],
           ),
-          borderRadius: AppTheme.borderRadiusLarge,
+          borderRadius: AppTheme.borderRadiusMedium,
           boxShadow: AppTheme.shadowMedium,
         ),
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: AppTheme.borderRadiusLarge,
+            borderRadius: AppTheme.borderRadiusMedium,
             border: Border.all(
               color: Colors.white.withOpacity(0.2),
-              width: 1.5,
+              width: 1,
             ),
           ),
-          padding: const EdgeInsets.all(AppTheme.space24),
+          padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -58,14 +58,14 @@ class StatsCard extends StatelessWidget {
                         Text(
                           'Level ${user.level}',
                           style: AppTheme.display(
-                            size: 32,
+                            size: 22,
                             color: AppTheme.textWhite,
                           ),
                         ),
-                        const SizedBox(height: 4),
                         Text(
                           levelTitle,
                           style: AppTheme.caption(
+                            size: 11,
                             color: AppTheme.textWhite.withOpacity(0.8),
                           ),
                         ),
@@ -73,20 +73,20 @@ class StatsCard extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.all(AppTheme.space12),
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.2),
-                      borderRadius: AppTheme.borderRadiusMedium,
+                      borderRadius: AppTheme.borderRadiusSmall,
                     ),
                     child: const Icon(
                       Icons.emoji_events,
-                      size: 40,
+                      size: 24,
                       color: AppTheme.xp,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: AppTheme.space24),
+              const SizedBox(height: 10),
 
               // Progress bar
               Column(
@@ -98,6 +98,7 @@ class StatsCard extends StatelessWidget {
                       Text(
                         '${user.points} XP',
                         style: AppTheme.caption(
+                          size: 11,
                           color: AppTheme.textWhite,
                           weight: FontWeight.w600,
                         ),
@@ -105,19 +106,19 @@ class StatsCard extends StatelessWidget {
                       Text(
                         '$pointsNeeded XP to next level',
                         style: AppTheme.caption(
-                          size: 12,
+                          size: 10,
                           color: AppTheme.textWhite.withOpacity(0.7),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: AppTheme.space8),
+                  const SizedBox(height: 4),
                   ClipRRect(
                     borderRadius: AppTheme.borderRadiusSmall,
                     child: Stack(
                       children: [
                         Container(
-                          height: 8,
+                          height: 6,
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.2),
                             borderRadius: AppTheme.borderRadiusSmall,
@@ -126,7 +127,7 @@ class StatsCard extends StatelessWidget {
                         FractionallySizedBox(
                           widthFactor: progress,
                           child: Container(
-                            height: 8,
+                            height: 6,
                             decoration: BoxDecoration(
                               gradient: AppTheme.xpGradient,
                               borderRadius: AppTheme.borderRadiusSmall,
@@ -138,14 +139,14 @@ class StatsCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: AppTheme.space24),
+              const SizedBox(height: 10),
 
               // Stats row
               Container(
-                padding: const EdgeInsets.all(AppTheme.space16),
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.1),
-                  borderRadius: AppTheme.borderRadiusMedium,
+                  borderRadius: AppTheme.borderRadiusSmall,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -158,7 +159,7 @@ class StatsCard extends StatelessWidget {
                     ),
                     Container(
                       width: 1,
-                      height: 40,
+                      height: 28,
                       color: Colors.white.withOpacity(0.2),
                     ),
                     _StatItem(
@@ -169,7 +170,7 @@ class StatsCard extends StatelessWidget {
                     ),
                     Container(
                       width: 1,
-                      height: 40,
+                      height: 28,
                       color: Colors.white.withOpacity(0.2),
                     ),
                     _StatItem(
@@ -184,7 +185,7 @@ class StatsCard extends StatelessWidget {
 
               // Tap hint
               if (onTap != null) ...[
-                const SizedBox(height: AppTheme.space16),
+                const SizedBox(height: 6),
                 Center(
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -192,14 +193,14 @@ class StatsCard extends StatelessWidget {
                       Text(
                         'Tap to view achievements',
                         style: AppTheme.caption(
-                          size: 12,
+                          size: 10,
                           color: AppTheme.textWhite.withOpacity(0.6),
                         ),
                       ),
                       const SizedBox(width: 4),
                       Icon(
                         Icons.arrow_forward_ios,
-                        size: 12,
+                        size: 10,
                         color: AppTheme.textWhite.withOpacity(0.6),
                       ),
                     ],
@@ -231,19 +232,19 @@ class _StatItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(icon, color: iconColor, size: 28),
-        const SizedBox(height: 4),
+        Icon(icon, color: iconColor, size: 18),
+        const SizedBox(height: 2),
         Text(
           value,
           style: AppTheme.stats(
-            size: 20,
+            size: 14,
             color: AppTheme.textWhite,
           ),
         ),
         Text(
           label,
           style: AppTheme.caption(
-            size: 11,
+            size: 9,
             color: AppTheme.textWhite.withOpacity(0.7),
           ),
         ),

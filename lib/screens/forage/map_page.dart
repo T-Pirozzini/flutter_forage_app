@@ -19,7 +19,13 @@ import 'package:intl/intl.dart';
 
 class MapPage extends ConsumerStatefulWidget {
   final LatLng? initialLocation;
-  const MapPage({this.initialLocation, super.key});
+  final bool isFullScreen;
+
+  const MapPage({
+    this.initialLocation,
+    this.isFullScreen = false,
+    super.key,
+  });
 
   @override
   ConsumerState<MapPage> createState() => _MapPageState();
@@ -412,6 +418,10 @@ class _MapPageState extends ConsumerState<MapPage> {
 
     final safePadding = MediaQuery.of(context).padding;
 
+    // Determine if we should show the back button
+    // Show it when opened standalone (with initialLocation) or explicitly in fullscreen mode
+    final showBackButton = widget.initialLocation != null || widget.isFullScreen;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -442,6 +452,7 @@ class _MapPageState extends ConsumerState<MapPage> {
           // Floating Controls Overlay
           MapFloatingControls(
             followUser: followUser,
+            isFullScreen: showBackButton,
             onFollowPressed: () {
               ref.read(followUserProvider.notifier).state = !followUser;
             },
@@ -451,7 +462,34 @@ class _MapPageState extends ConsumerState<MapPage> {
             onShowLocationsPressed: _showLocationsBottomSheet,
             onZoomIn: () => _mapController.zoomIn(),
             onZoomOut: () => _mapController.zoomOut(),
+            onFullScreenPressed: showBackButton
+                ? null // Already in full screen, no button needed
+                : () {
+                    // Open map in full screen mode
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const MapPage(isFullScreen: true),
+                      ),
+                    );
+                  },
           ),
+
+          // Back button when in full screen mode
+          if (showBackButton)
+            Positioned(
+              top: safePadding.top + 12,
+              left: 12,
+              child: FloatingActionButton(
+                heroTag: 'backButton',
+                mini: true,
+                backgroundColor: AppTheme.primary,
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Icon(
+                  Icons.arrow_back,
+                  color: Colors.white,
+                ),
+              ),
+            ),
         ],
       ),
     );

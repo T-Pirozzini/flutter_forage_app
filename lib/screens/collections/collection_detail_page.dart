@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/data/models/location_collection.dart';
 import 'package:flutter_forager_app/data/models/marker.dart';
 import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
-import 'package:flutter_forager_app/screens/forage_locations/forage_location_info_page.dart';
+import 'package:flutter_forager_app/screens/forage_locations/location_detail_screen.dart';
 import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -292,20 +292,7 @@ class _CollectionDetailPageState extends ConsumerState<CollectionDetailPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ForageLocationInfo(
-          name: marker.name,
-          description: marker.description,
-          lat: marker.latitude,
-          lng: marker.longitude,
-          imageUrls: marker.imageUrls,
-          timestamp: marker.timestamp.toString(),
-          type: marker.type,
-          markerOwner: marker.markerOwner,
-          markerId: marker.id,
-          status: marker.currentStatus,
-          comments: marker.comments.map((c) => c.toMap()).toList(),
-          statusHistory: marker.statusHistory.map((s) => s.toMap()).toList(),
-        ),
+        builder: (context) => LocationDetailScreen(marker: marker),
       ),
     );
   }

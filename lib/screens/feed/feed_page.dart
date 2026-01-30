@@ -35,20 +35,15 @@ class _FeedPageState extends State<FeedPage>
           color: AppTheme.primary,
           child: TabBar(
             controller: _tabController,
-            indicatorColor: AppTheme.secondary, // Warm amber
+            indicatorColor: AppTheme.secondary,
             indicatorWeight: 3,
             labelColor: AppTheme.textWhite,
             unselectedLabelColor: AppTheme.textWhite.withValues(alpha: 0.6),
-            labelStyle: AppTheme.title(size: 16, color: AppTheme.textWhite),
+            labelStyle: AppTheme.caption(size: 13, weight: FontWeight.w600),
+            unselectedLabelStyle: AppTheme.caption(size: 13),
             tabs: const [
-              Tab(
-                icon: Icon(Icons.people),
-                text: 'Community',
-              ),
-              Tab(
-                icon: Icon(Icons.menu_book),
-                text: 'Recipes',
-              ),
+              Tab(text: 'Community'),
+              Tab(text: 'Recipes'),
             ],
           ),
         ),

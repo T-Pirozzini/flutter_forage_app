@@ -35,10 +35,8 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
   final TextEditingController _bioController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  // Loading state
   bool _isLoading = false;
 
-  // Validation constants
   static const int minUsernameLength = 3;
   static const int maxUsernameLength = 20;
   static const int maxBioLength = 200;
@@ -62,39 +60,33 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
     super.dispose();
   }
 
-  // Validation methods
   String? _validateUsername(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'Username is required';
     }
     if (value.trim().length < minUsernameLength) {
-      return 'Username must be at least $minUsernameLength characters';
+      return 'Min $minUsernameLength characters';
     }
     if (value.trim().length > maxUsernameLength) {
-      return 'Username must be at most $maxUsernameLength characters';
+      return 'Max $maxUsernameLength characters';
     }
     if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(value.trim())) {
-      return 'Only letters, numbers, and underscores allowed';
+      return 'Letters, numbers, underscores only';
     }
     return null;
   }
 
   String? _validateBio(String? value) {
     if (value != null && value.length > maxBioLength) {
-      return 'Bio must be at most $maxBioLength characters';
+      return 'Max $maxBioLength characters';
     }
     return null;
   }
 
-  // Save with loading and error handling
   Future<void> _saveProfile() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
       await widget.onSave(
@@ -109,9 +101,9 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
           SnackBar(
             content: Row(
               children: [
-                Icon(Icons.check_circle, color: AppTheme.textWhite),
+                Icon(Icons.check_circle, color: AppTheme.textWhite, size: 16),
                 const SizedBox(width: 8),
-                const Text('Profile updated successfully!'),
+                const Text('Profile updated!', style: TextStyle(fontSize: 13)),
               ],
             ),
             backgroundColor: AppTheme.success,
@@ -122,16 +114,14 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
-                Icon(Icons.error, color: AppTheme.textWhite),
+                Icon(Icons.error, color: AppTheme.textWhite, size: 16),
                 const SizedBox(width: 8),
-                Expanded(child: Text('Failed to update profile: $e')),
+                Expanded(child: Text('Failed: $e', style: const TextStyle(fontSize: 13))),
               ],
             ),
             backgroundColor: AppTheme.error,
@@ -146,13 +136,13 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: AppTheme.surfaceDark,
-      insetPadding: const EdgeInsets.all(16),
+      insetPadding: const EdgeInsets.all(12),
       shape: RoundedRectangleBorder(
-        borderRadius: AppTheme.borderRadiusLarge,
+        borderRadius: AppTheme.borderRadiusMedium,
       ),
       child: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(14.0),
           child: Form(
             key: _formKey,
             child: Column(
@@ -163,134 +153,71 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                 Center(
                   child: Text(
                     'Edit Profile',
-                    style: AppTheme.heading(
-                      size: 22,
-                      color: AppTheme.textWhite,
-                    ),
+                    style: AppTheme.heading(size: 18, color: AppTheme.textWhite),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 14),
 
-                // Section: Account Details
-                _buildSectionHeader('Account Details'),
-                const SizedBox(height: 12),
-
-                // Username field with validation and counter
+                // Username field
+                _buildSectionHeader('Account'),
+                const SizedBox(height: 8),
                 TextFormField(
                   controller: _usernameController,
                   autofocus: true,
                   enabled: !_isLoading,
-                  style: AppTheme.body(color: AppTheme.textWhite),
+                  style: AppTheme.body(size: 13, color: AppTheme.textWhite),
                   maxLength: maxUsernameLength,
-                  decoration: InputDecoration(
-                    labelText: 'Username',
-                    labelStyle: AppTheme.caption(color: AppTheme.textLight),
-                    hintText: 'Enter your username',
-                    hintStyle: AppTheme.caption(color: AppTheme.textLight),
-                    counterStyle: AppTheme.caption(
-                      size: 12,
-                      color: AppTheme.textLight,
-                    ),
-                    filled: true,
-                    fillColor: AppTheme.backgroundDark,
-                    border: OutlineInputBorder(
-                      borderRadius: AppTheme.borderRadiusMedium,
-                      borderSide: BorderSide(color: AppTheme.textLight.withValues(alpha: 0.3)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: AppTheme.borderRadiusMedium,
-                      borderSide: BorderSide(color: AppTheme.textLight.withValues(alpha: 0.3)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: AppTheme.borderRadiusMedium,
-                      borderSide: BorderSide(color: AppTheme.secondary, width: 2),
-                    ),
-                    errorBorder: OutlineInputBorder(
-                      borderRadius: AppTheme.borderRadiusMedium,
-                      borderSide: BorderSide(color: AppTheme.error),
-                    ),
-                    focusedErrorBorder: OutlineInputBorder(
-                      borderRadius: AppTheme.borderRadiusMedium,
-                      borderSide: BorderSide(color: AppTheme.error, width: 2),
-                    ),
-                    prefixIcon: Icon(Icons.person, color: AppTheme.textLight),
-                    errorStyle: TextStyle(color: AppTheme.error),
+                  decoration: _inputDecoration(
+                    label: 'Username',
+                    hint: 'Enter username',
+                    icon: Icons.person,
                   ),
                   validator: _validateUsername,
                   onChanged: (value) => newUsername = value,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
 
-                // Bio field with validation and counter
+                // Bio field
                 TextFormField(
                   controller: _bioController,
                   enabled: !_isLoading,
-                  style: AppTheme.body(color: AppTheme.textWhite),
+                  style: AppTheme.body(size: 13, color: AppTheme.textWhite),
                   maxLength: maxBioLength,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    labelText: 'Bio',
-                    labelStyle: AppTheme.caption(color: AppTheme.textLight),
-                    hintText: 'Tell us about yourself',
-                    hintStyle: AppTheme.caption(color: AppTheme.textLight),
-                    counterStyle: AppTheme.caption(
-                      size: 12,
-                      color: AppTheme.textLight,
-                    ),
-                    filled: true,
-                    fillColor: AppTheme.backgroundDark,
-                    border: OutlineInputBorder(
-                      borderRadius: AppTheme.borderRadiusMedium,
-                      borderSide: BorderSide(color: AppTheme.textLight.withValues(alpha: 0.3)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: AppTheme.borderRadiusMedium,
-                      borderSide: BorderSide(color: AppTheme.textLight.withValues(alpha: 0.3)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: AppTheme.borderRadiusMedium,
-                      borderSide: BorderSide(color: AppTheme.secondary, width: 2),
-                    ),
-                    errorBorder: OutlineInputBorder(
-                      borderRadius: AppTheme.borderRadiusMedium,
-                      borderSide: BorderSide(color: AppTheme.error),
-                    ),
-                    focusedErrorBorder: OutlineInputBorder(
-                      borderRadius: AppTheme.borderRadiusMedium,
-                      borderSide: BorderSide(color: AppTheme.error, width: 2),
-                    ),
-                    prefixIcon: Padding(
-                      padding: const EdgeInsets.only(bottom: 48),
-                      child: Icon(Icons.description, color: AppTheme.textLight),
-                    ),
-                    errorStyle: TextStyle(color: AppTheme.error),
+                  maxLines: 2,
+                  decoration: _inputDecoration(
+                    label: 'Bio',
+                    hint: 'Tell us about yourself',
+                    icon: Icons.description,
+                    alignTop: true,
                   ),
                   validator: _validateBio,
                   onChanged: (value) => newBio = value,
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 14),
 
-                // Section: Profile Image
+                // Profile Image
                 _buildSectionHeader('Profile Image'),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 _buildImageGrid(
                   options: widget.imageProfileOptions,
                   selectedOption: newProfileImage,
                   onSelect: _isLoading ? null : (option) => setState(() => newProfileImage = option),
-                  crossAxisCount: 4,
+                  crossAxisCount: 5,
+                  height: 120,
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 14),
 
-                // Section: Background Image
-                _buildSectionHeader('Background Image'),
-                const SizedBox(height: 12),
+                // Background Image
+                _buildSectionHeader('Background'),
+                const SizedBox(height: 8),
                 _buildImageGrid(
                   options: widget.imageBackgroundOptions,
                   selectedOption: newBackgroundImage,
                   onSelect: _isLoading ? null : (option) => setState(() => newBackgroundImage = option),
                   crossAxisCount: 3,
+                  height: 100,
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 14),
 
                 // Action buttons
                 Row(
@@ -300,42 +227,32 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                       onPressed: _isLoading ? null : () => Navigator.pop(context),
                       style: TextButton.styleFrom(
                         foregroundColor: AppTheme.textLight,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       ),
-                      child: Text(
-                        'Cancel',
-                        style: AppTheme.button(color: AppTheme.textLight),
-                      ),
+                      child: Text('Cancel', style: AppTheme.caption(size: 13, color: AppTheme.textLight)),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     ElevatedButton(
                       onPressed: _isLoading ? null : _saveProfile,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.secondary,
                         foregroundColor: AppTheme.textWhite,
                         disabledBackgroundColor: AppTheme.secondary.withValues(alpha: 0.5),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                         shape: RoundedRectangleBorder(
-                          borderRadius: AppTheme.borderRadiusMedium,
+                          borderRadius: AppTheme.borderRadiusSmall,
                         ),
                       ),
                       child: _isLoading
                           ? SizedBox(
-                              width: 20,
-                              height: 20,
+                              width: 16,
+                              height: 16,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  AppTheme.textWhite,
-                                ),
+                                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.textWhite),
                               ),
                             )
-                          : Text(
-                              'Save',
-                              style: AppTheme.button(color: AppTheme.textWhite),
-                            ),
+                          : Text('Save', style: AppTheme.caption(size: 13, color: AppTheme.textWhite, weight: FontWeight.w600)),
                     ),
                   ],
                 ),
@@ -347,22 +264,68 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
     );
   }
 
+  InputDecoration _inputDecoration({
+    required String label,
+    required String hint,
+    required IconData icon,
+    bool alignTop = false,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: AppTheme.caption(size: 12, color: AppTheme.textLight),
+      hintText: hint,
+      hintStyle: AppTheme.caption(size: 12, color: AppTheme.textLight),
+      counterStyle: AppTheme.caption(size: 10, color: AppTheme.textLight),
+      filled: true,
+      fillColor: AppTheme.backgroundDark,
+      isDense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      border: OutlineInputBorder(
+        borderRadius: AppTheme.borderRadiusSmall,
+        borderSide: BorderSide(color: AppTheme.textLight.withValues(alpha: 0.3)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: AppTheme.borderRadiusSmall,
+        borderSide: BorderSide(color: AppTheme.textLight.withValues(alpha: 0.3)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: AppTheme.borderRadiusSmall,
+        borderSide: BorderSide(color: AppTheme.secondary, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: AppTheme.borderRadiusSmall,
+        borderSide: BorderSide(color: AppTheme.error),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: AppTheme.borderRadiusSmall,
+        borderSide: BorderSide(color: AppTheme.error, width: 1.5),
+      ),
+      prefixIcon: alignTop
+          ? Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: Icon(icon, color: AppTheme.textLight, size: 18),
+            )
+          : Icon(icon, color: AppTheme.textLight, size: 18),
+      errorStyle: TextStyle(color: AppTheme.error, fontSize: 10),
+    );
+  }
+
   Widget _buildSectionHeader(String title) {
     return Row(
       children: [
         Container(
-          width: 4,
-          height: 20,
+          width: 3,
+          height: 14,
           decoration: BoxDecoration(
             color: AppTheme.secondary,
             borderRadius: BorderRadius.circular(2),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 6),
         Text(
           title,
-          style: AppTheme.title(
-            size: 16,
+          style: AppTheme.caption(
+            size: 12,
             color: AppTheme.textWhite,
             weight: FontWeight.w600,
           ),
@@ -376,72 +339,57 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
     required String selectedOption,
     required Function(String)? onSelect,
     required int crossAxisCount,
+    required double height,
   }) {
     return Container(
-      height: 180,
+      height: height,
       decoration: BoxDecoration(
-        borderRadius: AppTheme.borderRadiusMedium,
+        borderRadius: AppTheme.borderRadiusSmall,
         border: Border.all(color: AppTheme.textLight.withValues(alpha: 0.3)),
         color: AppTheme.backgroundDark,
       ),
-      child: Scrollbar(
-        child: GridView.builder(
-          padding: const EdgeInsets.all(8),
-          itemCount: options.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            childAspectRatio: 1.0,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-          ),
-          itemBuilder: (context, index) {
-            final option = options[index];
-            final isSelected = selectedOption == option;
-            return GestureDetector(
-              onTap: onSelect != null ? () => onSelect(option) : null,
-              child: AnimatedContainer(
-                duration: AppTheme.animationFast,
-                decoration: BoxDecoration(
-                  borderRadius: AppTheme.borderRadiusSmall,
-                  image: DecorationImage(
-                    image: AssetImage('lib/assets/images/$option'),
-                    fit: BoxFit.cover,
-                  ),
-                  border: isSelected
-                      ? Border.all(color: AppTheme.secondary, width: 3)
-                      : Border.all(color: Colors.transparent, width: 3),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: AppTheme.secondary.withValues(alpha: 0.4),
-                            blurRadius: 8,
-                            spreadRadius: 1,
-                          ),
-                        ]
-                      : null,
-                ),
-                child: isSelected
-                    ? Align(
-                        alignment: Alignment.bottomRight,
-                        child: Container(
-                          margin: const EdgeInsets.all(4),
-                          padding: const EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            color: AppTheme.secondary,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.check,
-                            size: 14,
-                            color: AppTheme.textWhite,
-                          ),
-                        ),
-                      )
-                    : null,
-              ),
-            );
-          },
+      child: GridView.builder(
+        padding: const EdgeInsets.all(6),
+        scrollDirection: Axis.horizontal,
+        itemCount: options.length,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 1,
+          mainAxisSpacing: 6,
         ),
+        itemBuilder: (context, index) {
+          final option = options[index];
+          final isSelected = selectedOption == option;
+          return GestureDetector(
+            onTap: onSelect != null ? () => onSelect(option) : null,
+            child: AnimatedContainer(
+              duration: AppTheme.animationFast,
+              decoration: BoxDecoration(
+                borderRadius: AppTheme.borderRadiusSmall,
+                image: DecorationImage(
+                  image: AssetImage('lib/assets/images/$option'),
+                  fit: BoxFit.cover,
+                ),
+                border: isSelected
+                    ? Border.all(color: AppTheme.secondary, width: 2)
+                    : Border.all(color: Colors.transparent, width: 2),
+              ),
+              child: isSelected
+                  ? Align(
+                      alignment: Alignment.bottomRight,
+                      child: Container(
+                        margin: const EdgeInsets.all(2),
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: AppTheme.secondary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.check, size: 10, color: AppTheme.textWhite),
+                      ),
+                    )
+                  : null,
+            ),
+          );
+        },
       ),
     );
   }

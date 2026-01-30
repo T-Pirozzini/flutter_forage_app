@@ -148,6 +148,58 @@ class Achievements {
       requirement: {'statKey': ActivityStats.locationsShared, 'threshold': 25},
     ),
 
+    // === COMMUNITY ACHIEVEMENTS ===
+    Achievement(
+      id: 'first_share',
+      title: 'First Share',
+      description: 'Share your first find with the community',
+      icon: 'campaign',
+      pointsReward: 50,
+      category: AchievementCategory.social,
+      tier: AchievementTier.bronze,
+      requirement: {'statKey': ActivityStats.postsCreated, 'threshold': 1},
+    ),
+    Achievement(
+      id: 'community_contributor',
+      title: 'Community Contributor',
+      description: 'Create 5 community posts',
+      icon: 'forum',
+      pointsReward: 75,
+      category: AchievementCategory.social,
+      tier: AchievementTier.silver,
+      requirement: {'statKey': ActivityStats.postsCreated, 'threshold': 5},
+    ),
+    Achievement(
+      id: 'community_leader',
+      title: 'Community Leader',
+      description: 'Create 15 community posts',
+      icon: 'star',
+      pointsReward: 200,
+      category: AchievementCategory.social,
+      tier: AchievementTier.gold,
+      requirement: {'statKey': ActivityStats.postsCreated, 'threshold': 15},
+    ),
+    Achievement(
+      id: 'supporter',
+      title: 'Supporter',
+      description: 'Like 20 community posts',
+      icon: 'favorite',
+      pointsReward: 50,
+      category: AchievementCategory.social,
+      tier: AchievementTier.bronze,
+      requirement: {'statKey': ActivityStats.postsLiked, 'threshold': 20},
+    ),
+    Achievement(
+      id: 'super_supporter',
+      title: 'Super Supporter',
+      description: 'Like 100 community posts',
+      icon: 'favorite',
+      pointsReward: 150,
+      category: AchievementCategory.social,
+      tier: AchievementTier.gold,
+      requirement: {'statKey': ActivityStats.postsLiked, 'threshold': 100},
+    ),
+
     // === RECIPE ACHIEVEMENTS ===
     Achievement(
       id: 'home_chef',

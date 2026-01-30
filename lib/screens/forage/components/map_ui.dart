@@ -11,22 +11,26 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class MapFloatingControls extends ConsumerWidget {
   final bool followUser;
+  final bool isFullScreen;
   final VoidCallback onFollowPressed;
   final void Function(BuildContext, String) onAddMarkerPressed;
   final Function(Map<String, dynamic>) onPlaceSelected;
   final VoidCallback onShowLocationsPressed;
   final VoidCallback onZoomIn;
   final VoidCallback onZoomOut;
+  final VoidCallback? onFullScreenPressed;
 
   const MapFloatingControls({
     super.key,
     required this.followUser,
+    this.isFullScreen = false,
     required this.onFollowPressed,
     required this.onAddMarkerPressed,
     required this.onPlaceSelected,
     required this.onShowLocationsPressed,
     required this.onZoomIn,
     required this.onZoomOut,
+    this.onFullScreenPressed,
   });
 
   void _showExploreInfoDialog(BuildContext context) {
@@ -270,6 +274,24 @@ class MapFloatingControls extends ConsumerWidget {
               // Draggable test location target
               _DraggableSpoofTarget(),
               const SizedBox(height: 10),
+              // Fullscreen Button - only show when not already in fullscreen
+              if (onFullScreenPressed != null) ...[
+                Tooltip(
+                  message: 'Full screen mode',
+                  child: FloatingActionButton(
+                    heroTag: 'fullscreenButton',
+                    onPressed: onFullScreenPressed,
+                    mini: true,
+                    backgroundColor: AppTheme.primary,
+                    child: const Icon(
+                      Icons.fullscreen,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
               // Info Button - at bottom of controls
               Tooltip(
                 message: 'About exploring',
@@ -332,7 +354,7 @@ class MapFloatingControls extends ConsumerWidget {
           ),
         ),
 
-        // Full-width Locations Bar - Extends to bottom for grace across devices
+        // Full-width Locations Bar
         Positioned(
           bottom: 0,
           left: 0,
@@ -340,48 +362,48 @@ class MapFloatingControls extends ConsumerWidget {
           child: GestureDetector(
             onTap: onShowLocationsPressed,
             child: Container(
-              // Height extends from tap area down through nav bar area
-              height: navBarHeight + 36,
-              padding: EdgeInsets.only(bottom: navBarHeight),
-              decoration: BoxDecoration(
-                color: AppTheme.primary,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primary.withValues(alpha: 0.3),
-                    blurRadius: 4,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.expand_less_rounded,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'My Locations',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.3,
+              // Height extends from tap area down through nav bar area (or safe area in fullscreen)
+              height: isFullScreen ? safePadding.bottom + 36 : navBarHeight + 36,
+              padding: EdgeInsets.only(bottom: isFullScreen ? safePadding.bottom : navBarHeight),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primary.withValues(alpha: 0.3),
+                      blurRadius: 4,
+                      offset: const Offset(0, -2),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Icon(
-                    Icons.expand_less_rounded,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ],
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.expand_less_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'My Locations',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(
+                      Icons.expand_less_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
       ],
     );
   }

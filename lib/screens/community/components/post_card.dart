@@ -3,8 +3,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/data/models/post.dart';
+import 'package:flutter_forager_app/data/models/post_comment.dart';
+import 'package:flutter_forager_app/data/repositories/following_repository.dart';
+import 'package:flutter_forager_app/data/repositories/post_repository.dart';
+import 'package:flutter_forager_app/data/services/firebase/firestore_service.dart';
 import 'package:flutter_forager_app/screens/community/community_page.dart';
 import 'package:flutter_forager_app/screens/community/components/comment_tile.dart';
+import 'package:flutter_forager_app/screens/community/post_detail_screen.dart';
 import 'package:flutter_forager_app/data/services/marker_service.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_forager_app/theme/app_theme.dart';
@@ -23,9 +28,6 @@ class PostCard extends StatefulWidget {
   final Function(String, String?) onUpdateStatus;
   final String currentUserEmail;
   final String? username;
-  final String status;
-  final List<Map<String, dynamic>> comments;
-  final List<Map<String, dynamic>> statusHistory;
 
   const PostCard({
     super.key,
@@ -40,9 +42,6 @@ class PostCard extends StatefulWidget {
     required this.onAddComment,
     required this.onUpdateStatus,
     required this.currentUserEmail,
-    this.status = 'active',
-    this.comments = const [],
-    this.statusHistory = const [],
     this.username,
   });
 
@@ -55,37 +54,103 @@ class _PostCardState extends State<PostCard> {
   final PageController _pageController = PageController();
   int _currentImageIndex = 0;
   List<Map<String, dynamic>> _statusHistory = [];
-  List<Map<String, dynamic>> _comments = [];
   String? _markerId;
+  bool _isFollowing = false;
+  bool _isLoadingFollow = true;
+  late final FollowingRepository _followingRepo;
 
   @override
   void initState() {
     super.initState();
     _selectedStatus = widget.post.currentStatus;
-    _statusHistory = List.from(widget.statusHistory);
-    _comments = List.from(widget.comments);
+    _statusHistory = List.from(widget.post.statusHistory);
+    _followingRepo = FollowingRepository(firestoreService: FirestoreService());
     _fetchMarkerIdAndRefreshData();
+    _checkFollowingStatus();
+  }
+
+  Future<void> _checkFollowingStatus() async {
+    // Don't check if it's the user's own post
+    if (widget.post.userEmail == widget.currentUserEmail) {
+      setState(() => _isLoadingFollow = false);
+      return;
+    }
+
+    try {
+      final isFollowing = await _followingRepo.isFollowing(
+        widget.currentUserEmail,
+        widget.post.userEmail,
+      );
+      if (mounted) {
+        setState(() {
+          _isFollowing = isFollowing;
+          _isLoadingFollow = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error checking follow status: $e');
+      if (mounted) {
+        setState(() => _isLoadingFollow = false);
+      }
+    }
+  }
+
+  Future<void> _toggleFollow() async {
+    if (_isLoadingFollow) return;
+
+    setState(() => _isLoadingFollow = true);
+
+    try {
+      final newFollowState = await _followingRepo.toggleFollow(
+        userId: widget.currentUserEmail,
+        targetEmail: widget.post.userEmail,
+        targetDisplayName: widget.post.userEmail.split('@')[0],
+      );
+
+      if (mounted) {
+        setState(() {
+          _isFollowing = newFollowState;
+          _isLoadingFollow = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              newFollowState
+                  ? 'Now following @${widget.post.userEmail.split('@')[0]}'
+                  : 'Unfollowed @${widget.post.userEmail.split('@')[0]}',
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error toggling follow: $e');
+      if (mounted) {
+        setState(() => _isLoadingFollow = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update follow status: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _fetchMarkerIdAndRefreshData() async {
     await _fetchMarkerId();
     if (_markerId != null) {
-      await _refreshData();
+      await _refreshStatusHistory();
     }
   }
 
   Future<void> _fetchMarkerId() async {
     try {
-      final markersCollection = FirebaseFirestore.instance
-          .collection('Users')
-          .doc(widget.post.originalMarkerOwner)
-          .collection('Markers');
+      // Use root Markers collection (new architecture)
+      final markersCollection = FirebaseFirestore.instance.collection('Markers');
 
       final snapshot = await markersCollection
           .where('name', isEqualTo: widget.post.name)
           .where('type', isEqualTo: widget.post.type)
-          .where('location.latitude', isEqualTo: widget.post.latitude)
-          .where('location.longitude', isEqualTo: widget.post.longitude)
+          .where('markerOwner', isEqualTo: widget.post.originalMarkerOwner)
           .limit(1)
           .get();
 
@@ -96,86 +161,151 @@ class _PostCardState extends State<PostCard> {
           });
         }
       } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Associated marker not found')),
-          );
-        }
+        // Marker may have been deleted - that's okay, just don't show error
+        debugPrint('Associated marker not found for post: ${widget.post.name}');
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error fetching marker: $e')),
-        );
-      }
+      debugPrint('Error fetching marker: $e');
     }
   }
 
   void _showCommentDialog() {
+    // Create repository instance for streaming comments
+    final postRepo = PostRepository(firestoreService: FirestoreService());
+
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            title: StyledText('Comments', color: AppTheme.secondary),
-            content: SizedBox(
-              width: double.maxFinite,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (widget.post.comments.isNotEmpty)
-                    Flexible(
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        physics: const ClampingScrollPhysics(),
-                        itemCount: widget.post.comments.length,
-                        itemBuilder: (context, index) {
-                          final comment = widget.post.comments[index];
-                          return CommentTile(comment: comment);
-                        },
-                      ),
-                    )
-                  else
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16.0),
-                      child: Text('No comments yet'),
-                    ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: widget.commentController,
-                    decoration: InputDecoration(
-                      hintText: 'Add a comment...',
-                      hintStyle: TextStyle(
-                          color: AppTheme.textDark.withValues(alpha: 0.6)),
-                      filled: true,
-                      fillColor: AppTheme.primary.withValues(alpha: 0.1),
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.send),
-                        onPressed: () async {
-                          final newComment = widget.commentController.text;
-                          if (newComment.isNotEmpty) {
-                            await widget.onAddComment(newComment);
-                            widget.commentController.clear();
-                            if (mounted) {
-                              setState(() {});
-                            }
-                          }
-                        },
-                      ),
-                    ),
-                    style: TextStyle(color: AppTheme.textDark),
-                  ),
-                ],
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: AppTheme.borderRadiusMedium),
+        title: Row(
+          children: [
+            Icon(Icons.chat_bubble_outline, color: AppTheme.primary, size: 22),
+            const SizedBox(width: 8),
+            StyledText('Comments', color: AppTheme.primary),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 400,
+          child: Column(
+            children: [
+              // Streaming comments from subcollection
+              Expanded(
+                child: StreamBuilder<List<PostCommentModel>>(
+                  stream: postRepo.streamComments(widget.post.id),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppTheme.primary,
+                        ),
+                      );
+                    }
+
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Text(
+                          'Error loading comments',
+                          style: AppTheme.body(color: AppTheme.error),
+                        ),
+                      );
+                    }
+
+                    final comments = snapshot.data ?? [];
+
+                    if (comments.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.chat_bubble_outline,
+                              size: 48,
+                              color: AppTheme.textLight,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'No comments yet',
+                              style: AppTheme.body(color: AppTheme.textMedium),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Be the first to comment!',
+                              style: AppTheme.caption(color: AppTheme.textLight),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      itemCount: comments.length,
+                      itemBuilder: (context, index) {
+                        final comment = comments[index];
+                        return CommentTile.fromModel(comment: comment);
+                      },
+                    );
+                  },
+                ),
               ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: StyledText('Close', color: AppTheme.secondary),
+              const SizedBox(height: 12),
+              // Comment input field
+              Container(
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceLight,
+                  borderRadius: AppTheme.borderRadiusSmall,
+                  border: Border.all(
+                    color: AppTheme.primary.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: widget.commentController,
+                        decoration: InputDecoration(
+                          hintText: 'Add a comment...',
+                          hintStyle: TextStyle(
+                            color: AppTheme.textLight,
+                            fontSize: 14,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                        ),
+                        style: AppTheme.body(size: 14, color: AppTheme.textDark),
+                        maxLines: 2,
+                        minLines: 1,
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.send_rounded, color: AppTheme.primary),
+                      onPressed: () async {
+                        final newComment = widget.commentController.text.trim();
+                        if (newComment.isNotEmpty) {
+                          await widget.onAddComment(newComment);
+                          widget.commentController.clear();
+                        }
+                      },
+                    ),
+                  ],
+                ),
               ),
             ],
-          );
-        },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Close',
+              style: AppTheme.body(color: AppTheme.textMedium),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -262,17 +392,11 @@ class _PostCardState extends State<PostCard> {
     );
   }
 
-  Future<void> _refreshData() async {
-    await _refreshStatusHistory();
-    await _refreshComments();
-  }
-
   Future<void> _refreshStatusHistory() async {
     if (_markerId == null) return;
 
+    // Use root Markers collection
     final doc = await FirebaseFirestore.instance
-        .collection('Users')
-        .doc(widget.post.originalMarkerOwner)
         .collection('Markers')
         .doc(_markerId)
         .get();
@@ -284,26 +408,6 @@ class _PostCardState extends State<PostCard> {
           _statusHistory =
               List<Map<String, dynamic>>.from(data['statusHistory'] ?? []);
           _selectedStatus = data['currentStatus'] ?? 'active';
-        });
-      }
-    }
-  }
-
-  Future<void> _refreshComments() async {
-    if (_markerId == null) return;
-
-    final doc = await FirebaseFirestore.instance
-        .collection('Users')
-        .doc(widget.post.originalMarkerOwner)
-        .collection('Markers')
-        .doc(_markerId)
-        .get();
-
-    if (doc.exists) {
-      final data = doc.data() as Map<String, dynamic>;
-      if (mounted) {
-        setState(() {
-          _comments = List<Map<String, dynamic>>.from(data['comments'] ?? []);
         });
       }
     }
@@ -366,87 +470,111 @@ class _PostCardState extends State<PostCard> {
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('MMM d, yyyy');
-    final sortedStatusHistory =
-        List<Map<String, dynamic>>.from(widget.post.statusHistory)
-          ..sort((a, b) {
-            final aTimestamp = a['timestamp'] is Timestamp
-                ? (a['timestamp'] as Timestamp).toDate()
-                : DateTime(0);
-            final bTimestamp = b['timestamp'] is Timestamp
-                ? (b['timestamp'] as Timestamp).toDate()
-                : DateTime(0);
-            return bTimestamp.compareTo(aTimestamp);
-          });
-    final statusUpdate =
-        sortedStatusHistory.isNotEmpty ? sortedStatusHistory.first : null;
 
     return Padding(
-      padding: const EdgeInsets.all(10.0),
-      child: Card(
-        shape: RoundedRectangleBorder(
-          borderRadius: AppTheme.borderRadiusMedium,
-          side: BorderSide(
-            color: AppTheme.accent.withValues(alpha: 0.5),
-            width: 1.0,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PostDetailScreen(
+                post: widget.post,
+                isFavorite: widget.isFavorite,
+                isBookmarked: widget.isBookmarked,
+                onToggleFavorite: widget.onToggleFavorite,
+                onToggleBookmark: widget.onToggleBookmark,
+                onDelete: widget.onDelete,
+                username: widget.username,
+              ),
+            ),
+          );
+        },
+        borderRadius: AppTheme.borderRadiusMedium,
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppTheme.backgroundLight,
+            borderRadius: AppTheme.borderRadiusMedium,
+            border: Border.all(
+              color: AppTheme.textLight.withValues(alpha: 0.15),
+              width: 1.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ),
-        child: Column(
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (widget.post.imageUrls.isNotEmpty)
-              _buildImageCarousel(widget.post.imageUrls),
+            // Image carousel with map preview
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Image carousel
+                Expanded(
+                  child: widget.post.imageUrls.isNotEmpty
+                      ? _buildImageCarousel(widget.post.imageUrls)
+                      : Container(
+                          height: 100,
+                          decoration: BoxDecoration(
+                            color: AppTheme.surfaceLight,
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(12),
+                            ),
+                          ),
+                          child: Center(
+                            child: Icon(
+                              Icons.image_outlined,
+                              size: 48,
+                              color: AppTheme.textLight,
+                            ),
+                          ),
+                        ),
+                ),
+                // Map preview
+                _buildMapPreview(),
+              ],
+            ),
             ListTile(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               title: Row(
                 children: [
                   Image.asset(
-                    "lib/assets/images/${widget.post.type.toLowerCase()}.png",
-                    width: 20,
-                    height: 20,
+                    "lib/assets/images/${widget.post.type.toLowerCase()}_marker.png",
+                    width: 24,
+                    height: 24,
+                    errorBuilder: (context, error, stackTrace) => Icon(
+                      Icons.location_on,
+                      size: 24,
+                      color: AppTheme.primary,
+                    ),
                   ),
-                  const SizedBox(width: 5),
+                  const SizedBox(width: 8),
                   Flexible(
                     child: Text(
                       widget.post.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: AppTheme.heading(size: 16, color: AppTheme.textDark),
                     ),
                   ),
                 ],
               ),
-              subtitle: Text(widget.post.description),
-              trailing: GestureDetector(
-                onTap: _showStatusUpdateDialog,
-                child: _buildStatusChip(widget.post.currentStatus),
+              subtitle: Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  widget.post.description,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTheme.body(size: 13, color: AppTheme.textMedium),
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(4.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (statusUpdate != null) ...[
-                    Text(
-                      '${statusUpdate['username']?.toString().toUpperCase() ?? 'Unknown user'}: ',
-                      maxLines: 1,
-                    ),
-                    Flexible(
-                      child: StyledTextSmall(
-                        statusUpdate['notes']?.toString() ?? 'No notes',
-                      ),
-                    ),
-                    const SizedBox(width: 20),
-                    StyledTextSmall(
-                      statusUpdate['timestamp'] is Timestamp
-                          ? dateFormat.format(
-                              (statusUpdate['timestamp'] as Timestamp).toDate())
-                          : 'No date',
-                    ),
-                  ],
-                ],
-              ),
+              trailing: _buildCompactStatusBadge(),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -458,7 +586,7 @@ class _PostCardState extends State<PostCard> {
                       IconButton(
                         icon: Icon(
                           Icons.favorite,
-                          size: 18,
+                          size: 16,
                           color: widget.isFavorite
                               ? AppTheme.accent
                               : AppTheme.textMedium,
@@ -472,7 +600,7 @@ class _PostCardState extends State<PostCard> {
                       IconButton(
                         icon: Icon(
                           Icons.bookmark_add,
-                          size: 18,
+                          size: 16,
                           color: widget.isBookmarked
                               ? AppTheme.secondary
                               : AppTheme.textMedium,
@@ -484,7 +612,7 @@ class _PostCardState extends State<PostCard> {
                           color: AppTheme.textMedium),
                       const SizedBox(width: 8),
                       IconButton(
-                        icon: const Icon(Icons.comment_outlined, size: 18),
+                        icon: const Icon(Icons.comment_outlined, size: 16),
                         onPressed: _showCommentDialog,
                         color: AppTheme.textMedium,
                       ),
@@ -501,43 +629,115 @@ class _PostCardState extends State<PostCard> {
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceLight,
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(12),
+                  bottomRight: Radius.circular(12),
+                ),
+              ),
+              child: FutureBuilder<String?>(
+                future: getLocationWithFlag(
+                    widget.post.latitude, widget.post.longitude),
+                builder: (context, snapshot) {
+                  final location = snapshot.data ?? '';
+                  return Row(
                     children: [
-                      const Icon(Icons.person, size: 16),
-                      const SizedBox(width: 5),
-                      Text(widget.post.userEmail.split('@')[0]),
+                      Expanded(
+                        child: Text(
+                          '@${widget.post.userEmail.split('@')[0]}  •  $location  •  ${dateFormat.format(widget.post.postTimestamp)}',
+                          style: AppTheme.caption(size: 11, color: AppTheme.textMedium),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      // Follow button (only show for other users' posts)
+                      if (widget.post.userEmail != widget.currentUserEmail)
+                        _buildFollowButton(),
                     ],
-                  ),
-                  FutureBuilder<String?>(
-                    future: getLocationWithFlag(
-                        widget.post.latitude, widget.post.longitude),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasData) {
-                        return Text(snapshot.data ?? 'Unknown location');
-                      } else if (snapshot.hasError) {
-                        return const SizedBox.shrink();
-                      } else {
-                        return const SizedBox.shrink();
-                      }
-                    },
-                  ),
-                  Text(
-                    dateFormat.format(widget.post.postTimestamp),
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: AppTheme.accent,
-                    ),
-                  ),
-                ],
+                  );
+                },
               ),
             ),
           ],
         ),
+      ),
+      ),
+    );
+  }
+
+  Widget _buildMapPreview() {
+    return Container(
+      width: 90,
+      height: 100,
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceDark,
+        borderRadius: const BorderRadius.only(
+          topRight: Radius.circular(12),
+        ),
+        border: Border(
+          left: BorderSide(
+            color: AppTheme.primary.withValues(alpha: 0.2),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Stack(
+        children: [
+          // Background gradient - dark blue theme
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.only(
+                topRight: Radius.circular(12),
+              ),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppTheme.surfaceDark,
+                  AppTheme.backgroundDark.withValues(alpha: 0.9),
+                  AppTheme.info.withValues(alpha: 0.3),
+                ],
+              ),
+            ),
+          ),
+          // Map icon and coordinates
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.map_outlined,
+                  size: 32,
+                  color: Colors.white.withValues(alpha: 0.7),
+                ),
+                const SizedBox(height: 4),
+                Icon(
+                  Icons.location_on,
+                  size: 20,
+                  color: AppTheme.accent,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${widget.post.latitude.toStringAsFixed(2)}°',
+                  style: AppTheme.caption(
+                    size: 9,
+                    color: Colors.white70,
+                  ),
+                ),
+                Text(
+                  '${widget.post.longitude.toStringAsFixed(2)}°',
+                  style: AppTheme.caption(
+                    size: 9,
+                    color: Colors.white70,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -546,7 +746,7 @@ class _PostCardState extends State<PostCard> {
     return Stack(
       children: [
         SizedBox(
-          height: 200,
+          height: 100,
           child: PageView.builder(
             controller: _pageController,
             itemCount: imageUrls.length,
@@ -559,19 +759,25 @@ class _PostCardState extends State<PostCard> {
               return ClipRRect(
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(12.0),
-                  topRight: Radius.circular(12.0),
                 ),
                 child: CachedNetworkImage(
                   imageUrl: imageUrls[index],
                   fit: BoxFit.cover,
                   width: double.infinity,
+                  memCacheHeight: 600,
                   placeholder: (context, url) => Container(
-                    color: Colors.grey.shade200,
-                    child: const Center(child: CircularProgressIndicator()),
+                    color: AppTheme.surfaceLight,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppTheme.primary,
+                      ),
+                    ),
                   ),
                   errorWidget: (context, url, error) => Container(
-                    color: Colors.grey.shade300,
-                    child: const Icon(Icons.error),
+                    color: AppTheme.surfaceLight,
+                    child: Icon(Icons.image_not_supported,
+                        color: AppTheme.textLight),
                   ),
                 ),
               );
@@ -586,7 +792,7 @@ class _PostCardState extends State<PostCard> {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: Colors.black54,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 '${_currentImageIndex + 1}/${imageUrls.length}',
@@ -601,38 +807,151 @@ class _PostCardState extends State<PostCard> {
     );
   }
 
-  Widget _buildStatusChip(String status) {
-    Color chipColor;
-    switch (status.toLowerCase()) {
-      case 'active':
-        chipColor = AppTheme.primary;
-        break;
-      case 'abundant':
-        chipColor = AppTheme.success;
-        break;
-      case 'sparse':
-        chipColor = AppTheme.secondary;
-        break;
-      case 'out_of_season':
-        chipColor = AppTheme.textMedium;
-        break;
-      case 'no_longer_available':
-        chipColor = AppTheme.error;
-        break;
-      default:
-        chipColor = AppTheme.textMedium;
+  /// Build a compact status badge showing last update info
+  Widget _buildCompactStatusBadge() {
+    final lastUpdate = _statusHistory.isNotEmpty ? _statusHistory.last : null;
+    final status = lastUpdate?['status'] ?? widget.post.currentStatus;
+    final username = lastUpdate?['username'] ?? '';
+    final timestamp = lastUpdate?['timestamp'];
+
+    String dateStr = '';
+    if (timestamp != null) {
+      DateTime date;
+      if (timestamp is Timestamp) {
+        date = timestamp.toDate();
+      } else if (timestamp is DateTime) {
+        date = timestamp;
+      } else {
+        date = DateTime.now();
+      }
+      dateStr = DateFormat('MMM d').format(date);
     }
 
-    return Chip(
-      label: Text(
-        status.replaceAll('_', ' ').toUpperCase(),
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 8,
+    return GestureDetector(
+      onTap: _showStatusUpdateDialog,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+        decoration: BoxDecoration(
+          color: _getStatusColor(status).withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: _getStatusColor(status).withValues(alpha: 0.25),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              _getStatusIcon(status),
+              size: 10,
+              color: _getStatusColor(status),
+            ),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                username.isNotEmpty && dateStr.isNotEmpty
+                    ? '${status.replaceAll('_', ' ')} • $username $dateStr'
+                    : status.replaceAll('_', ' '),
+                style: AppTheme.caption(
+                  size: 9,
+                  color: _getStatusColor(status),
+                  weight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
       ),
-      backgroundColor: chipColor,
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return AppTheme.primary;
+      case 'abundant':
+        return AppTheme.success;
+      case 'sparse':
+        return AppTheme.secondary;
+      case 'out_of_season':
+        return AppTheme.textMedium;
+      case 'no_longer_available':
+        return AppTheme.error;
+      default:
+        return AppTheme.textMedium;
+    }
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return Icons.check_circle_outline;
+      case 'abundant':
+        return Icons.eco;
+      case 'sparse':
+        return Icons.remove_circle_outline;
+      case 'out_of_season':
+        return Icons.schedule;
+      case 'no_longer_available':
+        return Icons.cancel_outlined;
+      default:
+        return Icons.help_outline;
+    }
+  }
+
+  Widget _buildFollowButton() {
+    if (_isLoadingFollow) {
+      return Padding(
+        padding: const EdgeInsets.only(left: 8),
+        child: SizedBox(
+          width: 14,
+          height: 14,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: AppTheme.primary,
+          ),
+        ),
+      );
+    }
+
+    return GestureDetector(
+      onTap: _toggleFollow,
+      child: Container(
+        margin: const EdgeInsets.only(left: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: _isFollowing
+              ? AppTheme.primary.withValues(alpha: 0.1)
+              : AppTheme.primary,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppTheme.primary,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              _isFollowing ? Icons.check : Icons.person_add_outlined,
+              size: 12,
+              color: _isFollowing ? AppTheme.primary : Colors.white,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              _isFollowing ? 'Following' : 'Follow',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: _isFollowing ? AppTheme.primary : Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
