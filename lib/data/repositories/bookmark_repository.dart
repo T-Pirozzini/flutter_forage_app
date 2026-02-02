@@ -117,7 +117,9 @@ class BookmarkRepository {
   }
 
   /// Add a bookmark from raw marker data (for community feed)
-  Future<String> addBookmarkFromData({
+  ///
+  /// Returns the bookmark ID if created, or null if already exists.
+  Future<String?> addBookmarkFromData({
     required String userId,
     required String markerId,
     required String markerOwner,
@@ -129,9 +131,19 @@ class BookmarkRepository {
     String? imageUrl,
     String? notes,
   }) async {
-    // Check if already bookmarked
-    if (await isBookmarked(userId, markerId)) {
-      throw Exception('Marker already bookmarked');
+    // Check if already bookmarked by location (more reliable for community posts)
+    final existingByLocation = await firestoreService
+        .collection('Users')
+        .doc(userId)
+        .collection('Bookmarks')
+        .where('latitude', isEqualTo: latitude)
+        .where('longitude', isEqualTo: longitude)
+        .limit(1)
+        .get();
+
+    if (existingByLocation.docs.isNotEmpty) {
+      debugPrint('Bookmark already exists for location: $latitude, $longitude');
+      return null; // Already bookmarked, skip silently
     }
 
     final bookmark = BookmarkModel(
@@ -184,6 +196,26 @@ class BookmarkRepository {
     }
 
     debugPrint('Bookmark removed for marker: $markerId');
+  }
+
+  /// Remove a bookmark by location coordinates
+  ///
+  /// Used when removing a bookmark from community feed where we don't have the exact markerId
+  Future<void> removeBookmarkByLocation(
+      String userId, double latitude, double longitude) async {
+    final snapshot = await firestoreService
+        .collection('Users')
+        .doc(userId)
+        .collection('Bookmarks')
+        .where('latitude', isEqualTo: latitude)
+        .where('longitude', isEqualTo: longitude)
+        .get();
+
+    for (final doc in snapshot.docs) {
+      await doc.reference.delete();
+    }
+
+    debugPrint('Bookmark removed for location: $latitude, $longitude');
   }
 
   /// Update bookmark notes

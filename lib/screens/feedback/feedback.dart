@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_forager_app/data/services/ad_mob_service.dart';
 import 'package:flutter_forager_app/shared/screen_heading.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_forager_app/theme/app_theme.dart';
@@ -224,12 +223,13 @@ class _IntroSectionState extends State<_IntroSection> {
     }
   }
 
-  Future<void> _watchInterstitialAd() async {
-    if (mounted) {
-      await Future.delayed(const Duration(seconds: 1));
-      AdMobService.showInterstitialAd();
-    }
-  }
+  // TODO: Add video ad here later
+  // Future<void> _watchInterstitialAd() async {
+  //   if (mounted) {
+  //     await Future.delayed(const Duration(seconds: 1));
+  //     AdMobService.showInterstitialAd();
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -389,27 +389,28 @@ class _IntroSectionState extends State<_IntroSection> {
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  FittedBox(
-                                    child: FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      child: ElevatedButton.icon(
-                                        onPressed: _watchInterstitialAd,
-                                        label:
-                                            StyledTextMedium('Watch an Ad 📺'),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: AppTheme.textDark
-                                              .withValues(alpha: 0.9),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                          ),
-                                          padding: EdgeInsets.symmetric(
-                                              horizontal: 16, vertical: 10),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
+                                  // TODO: Add video ad button here later
+                                  // const SizedBox(width: 8),
+                                  // FittedBox(
+                                  //   child: FittedBox(
+                                  //     fit: BoxFit.scaleDown,
+                                  //     child: ElevatedButton.icon(
+                                  //       onPressed: _watchInterstitialAd,
+                                  //       label:
+                                  //           StyledTextMedium('Watch an Ad 📺'),
+                                  //       style: ElevatedButton.styleFrom(
+                                  //         backgroundColor: AppTheme.textDark
+                                  //             .withValues(alpha: 0.9),
+                                  //         shape: RoundedRectangleBorder(
+                                  //           borderRadius:
+                                  //               BorderRadius.circular(12),
+                                  //         ),
+                                  //         padding: EdgeInsets.symmetric(
+                                  //             horizontal: 16, vertical: 10),
+                                  //       ),
+                                  //     ),
+                                  //   ),
+                                  // ),
                                 ],
                               ),
                             ],

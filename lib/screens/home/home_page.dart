@@ -5,7 +5,6 @@ import 'package:flutter_forager_app/data/repositories/repository_providers.dart'
 import 'package:flutter_forager_app/data/models/user.dart';
 import 'package:flutter_forager_app/screens/profile/profile_page.dart';
 import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
-import 'package:flutter_forager_app/screens/collections/collections_page.dart';
 import 'package:flutter_forager_app/screens/feed/feed_page.dart';
 import 'package:flutter_forager_app/screens/tools/tools_page.dart';
 import 'package:flutter_forager_app/screens/feedback/feedback.dart';
@@ -54,11 +53,6 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     // Defer non-critical work to let map render first
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Delay interstitial ad loading (not needed immediately)
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) AdMobService.loadInterstitialAd();
-      });
-
       // Delay streak update (Firestore write can wait)
       Future.delayed(const Duration(seconds: 1), () {
         if (mounted) {
@@ -107,61 +101,92 @@ class _HomePageState extends ConsumerState<HomePage> {
       appBar: AppBar(
         toolbarHeight: 70,
         backgroundColor: AppTheme.primary,
-        // User avatar on LEFT - opens drawer
+        // User avatar + username on LEFT - opens drawer
+        leadingWidth: 140,
         leading: Builder(
           builder: (context) => Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: const EdgeInsets.only(left: 8.0),
             child: GestureDetector(
               onTap: () => Scaffold.of(context).openDrawer(),
               child: StreamBuilder<UserModel?>(
-                stream: ref.read(userRepositoryProvider).streamById(currentUser.email!),
+                stream: ref
+                    .read(userRepositoryProvider)
+                    .streamById(currentUser.email!),
                 builder: (context, snapshot) {
-                  final profilePic = snapshot.data?.profilePic ?? 'profileImage1.jpg';
-                  return Container(
-                    width: 46,
-                    height: 46,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppTheme.textWhite, width: 2),
-                      image: DecorationImage(
-                        image: AssetImage('lib/assets/images/$profilePic'),
-                        fit: BoxFit.cover,
-                        onError: (exception, stackTrace) {},
+                  final profilePic =
+                      snapshot.data?.profilePic ?? 'profileImage1.jpg';
+                  final username = snapshot.data?.username ??
+                      currentUser.email!.split('@')[0];
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border:
+                              Border.all(color: AppTheme.textWhite, width: 2),
+                          image: DecorationImage(
+                            image: AssetImage('lib/assets/images/$profilePic'),
+                            fit: BoxFit.cover,
+                            onError: (exception, stackTrace) {},
+                          ),
+                        ),
+                        child: snapshot.data?.profilePic == null
+                            ? Icon(Icons.person,
+                                color: AppTheme.textWhite, size: 24)
+                            : null,
                       ),
-                    ),
-                    child: snapshot.data?.profilePic == null
-                        ? Icon(Icons.person, color: AppTheme.textWhite, size: 24)
-                        : null,
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          username,
+                          style: TextStyle(
+                            color: AppTheme.textWhite.withValues(alpha: 0.9),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   );
                 },
               ),
             ),
           ),
         ),
-        // Forager logo CENTERED - no border, takes ~half the height
+        // Forager logo CENTERED
         centerTitle: true,
-        title: Image.asset(
-          'assets/images/forager_logo_2.png',
-          height: 55,
-          fit: BoxFit.contain,
+        title: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Image.asset(
+            'assets/images/forager_logo_3.png',
+            height: 54,
+            fit: BoxFit.contain,
+          ),
         ),
         // Notifications bell on RIGHT
         actions: [
-          IconButton(
-            icon: Icon(Icons.notifications_outlined, color: AppTheme.textWhite),
-            onPressed: () {
-              // TODO: Navigate to notifications page
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Notifications coming soon!')),
-              );
-            },
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: IconButton(
+              icon: Icon(Icons.notifications_outlined,
+                  color: AppTheme.textWhite, size: 32),
+              onPressed: () {
+                // TODO: Navigate to notifications page
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Notifications coming soon!')),
+                );
+              },
+            ),
           ),
         ],
       ),
       drawer: CustomDrawer(
         onSignOutTap: _signOut,
         onForageLocationsTap: _goToForageLocationsPage,
-        onCollectionsTap: _goToCollectionsPage,
         onAboutTap: goToAboutPage,
         onAboutUsTap: goAboutUsPage,
         onCreditsTap: goCreditsPage,
@@ -289,16 +314,6 @@ class _HomePageState extends ConsumerState<HomePage> {
           userName: currentUser.email!.split("@")[0],
           userLocations: true,
         ),
-      ),
-    );
-  }
-
-  void _goToCollectionsPage() {
-    Navigator.pop(context);
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const CollectionsPage(),
       ),
     );
   }

@@ -15,6 +15,11 @@ class FirestoreService {
     return _firestore.collection(path);
   }
 
+  /// Get a collection group reference (queries across all subcollections with the same name)
+  Query collectionGroup(String collectionId) {
+    return _firestore.collectionGroup(collectionId);
+  }
+
   /// Get a document reference
   DocumentReference doc(String path) {
     return _firestore.doc(path);

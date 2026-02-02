@@ -5,17 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
 import 'package:flutter_forager_app/data/models/user.dart';
 import 'package:flutter_forager_app/providers/markers/marker_data.dart';
-import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
 import 'package:flutter_forager_app/screens/friends/friends_controller.dart';
+import 'package:flutter_forager_app/screens/my_foraging/my_foraging_page.dart';
 import 'package:flutter_forager_app/screens/onboarding/onboarding_screen.dart';
-import 'package:flutter_forager_app/screens/profile/components/about_me.dart';
+import 'package:flutter_forager_app/screens/recipes/saved_recipes_page.dart';
+import 'package:flutter_forager_app/screens/recipes/user_recipes_page.dart';
 import 'package:flutter_forager_app/screens/profile/components/edit_profile_dialog.dart';
 import 'package:flutter_forager_app/screens/profile/components/user_heading.dart';
-import 'package:flutter_forager_app/screens/recipes/recipes_page.dart';
 import 'package:flutter_forager_app/screens/achievements/achievements_page.dart';
 import 'package:flutter_forager_app/screens/leaderboard/leaderboard_page.dart';
 import 'package:flutter_forager_app/shared/gamification/stats_card.dart';
-import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -187,350 +186,252 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               )
             : null,
         floatingActionButtonLocation: FloatingActionButtonLocation.miniEndTop,
-        body: Column(
-          children: [
-            // Removed ScreenHeading - user already knows they're on their profile
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final screenWidth = constraints.maxWidth;
-                final adjustedCoverHeight = screenWidth < 400 ? 150.0 : 200.0;
-                final adjustedProfileHeight = screenWidth < 400 ? 80.0 : 100.0;
-                return UserHeading(
-                  username: username,
-                  selectedBackgroundOption: selectedBackgroundOption,
-                  selectedProfileOption: selectedProfileOption,
-                  createdAt: createdAt,
-                  lastActive: lastActive,
-                  coverHeight: adjustedCoverHeight,
-                  profileHeight: adjustedProfileHeight,
-                );
-              },
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: StreamBuilder<UserModel?>(
-                stream:
-                    ref.read(userRepositoryProvider).streamById(_profileUserId),
-                builder: (context, snapshot) {
-                  if (snapshot.hasData && snapshot.data != null) {
-                    final userData = snapshot.data!;
-                    selectedBackgroundOption =
-                        userData.profileBackground.isNotEmpty
-                            ? userData.profileBackground
-                            : selectedBackgroundOption;
-                    selectedProfileOption = userData.profilePic.isNotEmpty
-                        ? userData.profilePic
-                        : selectedProfileOption;
-                    username = userData.username;
-                    bio = userData.bio;
+        body: StreamBuilder<UserModel?>(
+          stream: ref.read(userRepositoryProvider).streamById(_profileUserId),
+          builder: (context, snapshot) {
+            if (snapshot.hasData && snapshot.data != null) {
+              final userData = snapshot.data!;
+              // Update local variables for UI
+              final currentBackground = userData.profileBackground.isNotEmpty
+                  ? userData.profileBackground
+                  : 'backgroundProfileImage1.jpg';
+              final currentProfile = userData.profilePic.isNotEmpty
+                  ? userData.profilePic
+                  : 'profileImage1.jpg';
+              final currentUsername = userData.username;
+              final currentBio = userData.bio;
 
-                    return Center(
-                      child: ListView(
-                        children: [
-                          AboutMe(bio: bio, username: username),
-                          // Gamification Stats Card
-                          if (_isCurrentUser)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 8),
-                              child: StatsCard(
-                                user: userData,
-                                onTap: () {
-                                  Navigator.push(
+              // Also update class-level state for edit dialog
+              selectedBackgroundOption = currentBackground;
+              selectedProfileOption = currentProfile;
+              username = currentUsername;
+              bio = currentBio;
+
+              return Column(
+                children: [
+                  // Compact header
+                  UserHeading(
+                    username: currentUsername,
+                    selectedBackgroundOption: currentBackground,
+                    selectedProfileOption: currentProfile,
+                    createdAt: userData.createdAt,
+                    lastActive: userData.lastActive,
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      children: [
+                        // 1. STAT BUTTONS - Most important, right at top
+                        FutureBuilder<int>(
+                          future: ref
+                              .read(recipeRepositoryProvider)
+                              .getRecipeCountByUser(_profileUserId),
+                          builder: (context, recipeSnapshot) {
+                            String recipeCount = '0';
+                            if (recipeSnapshot.connectionState ==
+                                ConnectionState.done) {
+                              if (recipeSnapshot.hasData) {
+                                recipeCount = recipeSnapshot.data.toString();
+                              }
+                            }
+                            // Calculate combined count for My Foraging
+                            final locationsCount =
+                                userMarkers.value?.length ?? 0;
+                            final bookmarksCount =
+                                communityMarkers.value?.length ?? 0;
+                            final totalForaging =
+                                locationsCount + bookmarksCount;
+
+                            return GridView.count(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              crossAxisCount: 3,
+                              childAspectRatio: 0.95,
+                              mainAxisSpacing: 6,
+                              crossAxisSpacing: 6,
+                              padding: EdgeInsets.zero,
+                              children: [
+                                _buildStatCard(
+                                  context,
+                                  icon: Icons.forest,
+                                  title: 'My Foraging',
+                                  value: totalForaging.toString(),
+                                  onTap: () => Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) =>
-                                          const AchievementsPage(),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          // Progress Section - Achievements & Leaderboard
-                          if (_isCurrentUser)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 8),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: _buildProgressButton(
-                                      icon: Icons.workspace_premium,
-                                      label: 'Achievements',
-                                      color: AppTheme.xp,
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                const AchievementsPage(),
-                                          ),
-                                        );
-                                      },
+                                          const MyForagingPage(),
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: _buildProgressButton(
-                                      icon: Icons.leaderboard,
-                                      label: 'Leaderboard',
-                                      color: AppTheme.secondary,
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                const LeaderboardPage(),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Padding(
-                                padding:
-                                    const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                                child: Center(
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: StyledText(
-                                      _isCurrentUser
-                                          ? 'View saved locations, bookmarks, recipes or friends.'
-                                          : 'View ${widget.user.username}\'s locations, recipes and friends.',
-                                    ),
-                                  ),
+                                  enabled: _isCurrentUser,
                                 ),
-                              ),
-                              // Stats Grid
-                              FutureBuilder<int>(
-                                future: ref
-                                    .read(recipeRepositoryProvider)
-                                    .getRecipeCountByUser(_profileUserId),
-                                builder: (context, recipeSnapshot) {
-                                  String recipeCount = '0';
-                                  if (recipeSnapshot.connectionState ==
-                                      ConnectionState.done) {
-                                    if (recipeSnapshot.hasData) {
-                                      recipeCount =
-                                          recipeSnapshot.data.toString();
-                                    } else if (recipeSnapshot.hasError) {
-                                      recipeCount = 'Err';
-                                    }
-                                  }
-                                  return GridView.count(
-                                    shrinkWrap: true,
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    crossAxisCount: 4,
-                                    childAspectRatio: 1,
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 4),
-                                    mainAxisSpacing: 4,
-                                    crossAxisSpacing: 4,
-                                    children: [
-                                      _buildStatCard(
-                                        context,
-                                        icon: Icons.location_on,
-                                        title: 'Locations',
-                                        value: userMarkers.value?.length
-                                                .toString() ??
-                                            '0',
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  ForageLocations(
-                                                userId: _profileUserId,
-                                                userName: username,
-                                                userLocations: true,
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                        enabled: true,
-                                      ),
-                                      _buildStatCard(
-                                        context,
-                                        icon: Icons.bookmark,
-                                        title: 'Bookmarked',
-                                        value: communityMarkers.value?.length
-                                                .toString() ??
-                                            '0',
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  ForageLocations(
-                                                userId: _profileUserId,
-                                                userName:
-                                                    "Bookmarked Locations",
-                                                userLocations: false,
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                        enabled:
-                                            _isCurrentUser, // Only allow current user to view bookmarks
-                                      ),
-                                      _buildStatCard(
-                                        context,
-                                        icon: Icons.menu_book,
-                                        title: 'Recipes',
-                                        value: recipeCount,
-                                        onTap: () {
-                                          // Navigate to recipes page for this user
-                                          // You'll need to implement this navigation
-                                        },
-                                        enabled: _isCurrentUser ||
-                                            _isFriend ||
-                                            recipeCount != '0',
-                                      ),
-                                      _buildStatCard(
-                                        context,
-                                        icon: Icons.people,
-                                        title: 'Friends',
-                                        value: widget.user.friends.length
-                                            .toString(),
-                                        onTap: () {
-                                          if (_isCurrentUser) {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    const FriendsController(
-                                                        currentTab: 0),
-                                              ),
-                                            );
-                                          }
-                                          // For friends, you might want to show a limited friends list
-                                        },
-                                        enabled:
-                                            _isCurrentUser, // Only allow current user to navigate to friends
-                                      ),
-                                    ],
-                                  );
-                                },
-                              ),
-                              const SizedBox(height: 60),
-
-                              // Friend Requests Button (only for current user)
-                              if (_isCurrentUser &&
-                                  widget.user.friendRequests.isNotEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: AppTheme.space16,
-                                      vertical: AppTheme.space8),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      gradient: AppTheme.accentGradient,
-                                      borderRadius: AppTheme.borderRadiusMedium,
-                                      boxShadow: AppTheme.shadowMedium,
-                                    ),
-                                    child: Material(
-                                      color: Colors.transparent,
-                                      child: InkWell(
-                                        borderRadius:
-                                            AppTheme.borderRadiusMedium,
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  const FriendsController(
-                                                      currentTab: 1),
-                                            ),
-                                          );
-                                        },
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: AppTheme.space16),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Icon(Icons.person_add,
-                                                  size: 20,
-                                                  color: AppTheme.textWhite),
-                                              const SizedBox(
-                                                  width: AppTheme.space8),
-                                              Text(
-                                                'Friend Requests (${widget.user.friendRequests.length})',
-                                                style: AppTheme.title(
-                                                  size: 14,
-                                                  color: AppTheme.textWhite,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
+                                _buildStatCard(
+                                  context,
+                                  icon: Icons.menu_book,
+                                  title: 'Recipes',
+                                  value: recipeCount,
+                                  onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const UserRecipesPage(),
                                     ),
                                   ),
+                                  enabled: _isCurrentUser ||
+                                      _isFriend ||
+                                      recipeCount != '0',
                                 ),
-
-                              // Tutorial/Help Button (only for current user)
-                              if (_isCurrentUser)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: AppTheme.space16,
-                                      vertical: AppTheme.space8),
-                                  child: OutlinedButton.icon(
-                                    icon: const Icon(Icons.help_outline,
-                                        size: 20),
-                                    label: Text(
-                                      'App Tutorial',
-                                      style: AppTheme.title(
-                                          size: 14, color: AppTheme.secondary),
-                                    ),
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: AppTheme.secondary,
-                                      side: BorderSide(
-                                          color: AppTheme.secondary, width: 2),
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: AppTheme.space16),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            AppTheme.borderRadiusMedium,
-                                      ),
-                                    ),
-                                    onPressed: () {
+                                _buildStatCard(
+                                  context,
+                                  icon: Icons.people,
+                                  title: 'Friends',
+                                  value: widget.user.friends.length.toString(),
+                                  onTap: () {
+                                    if (_isCurrentUser) {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
                                           builder: (context) =>
-                                              const OnboardingScreen(
-                                                  isTutorial: true),
+                                              const FriendsController(
+                                                  currentTab: 0),
                                         ),
                                       );
-                                    },
+                                    }
+                                  },
+                                  enabled: _isCurrentUser,
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                        // 2. ABOUT ME - Compact card
+                        if (currentBio.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: _buildCompactAboutMe(currentBio),
+                          ),
+
+                        // 3. GAMIFICATION STATS - Level, XP, Streak
+                        if (_isCurrentUser)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: StatsCard(
+                              user: userData,
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const AchievementsPage(),
+                                ),
+                              ),
+                            ),
+                          ),
+
+                        // 4. SAVED RECIPES BUTTON
+                        if (_isCurrentUser)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: _buildCompactButton(
+                              icon: Icons.bookmark,
+                              label: 'Saved Recipes',
+                              color: AppTheme.accent,
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const SavedRecipesPage(),
+                                ),
+                              ),
+                            ),
+                          ),
+
+                        // 5. ACHIEVEMENTS & LEADERBOARD BUTTONS
+                        if (_isCurrentUser)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: _buildCompactButton(
+                                    icon: Icons.workspace_premium,
+                                    label: 'Achievements',
+                                    color: AppTheme.xp,
+                                    onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const AchievementsPage(),
+                                      ),
+                                    ),
                                   ),
                                 ),
-                            ],
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: _buildCompactButton(
+                                    icon: Icons.leaderboard,
+                                    label: 'Leaderboard',
+                                    color: AppTheme.secondary,
+                                    onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const LeaderboardPage(),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ],
-                      ),
-                    );
-                  } else if (snapshot.hasError) {
-                    return Center(
-                      child: Text(
-                        'Error loading profile data',
-                        style: TextStyle(color: Colors.red),
-                      ),
-                    );
-                  } else {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                },
-              ),
-            ),
-          ],
+
+                        // 6. FRIEND REQUESTS (if any)
+                        if (_isCurrentUser &&
+                            widget.user.friendRequests.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: _buildFriendRequestsButton(),
+                          ),
+
+                        // 7. TUTORIAL BUTTON - Small, at bottom
+                        if (_isCurrentUser)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: TextButton.icon(
+                              icon: Icon(Icons.help_outline,
+                                  size: 16, color: AppTheme.textMedium),
+                              label: Text(
+                                'App Tutorial',
+                                style: AppTheme.caption(
+                                    size: 12, color: AppTheme.textMedium),
+                              ),
+                              onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const OnboardingScreen(isTutorial: true),
+                                ),
+                              ),
+                            ),
+                          ),
+                        const SizedBox(
+                            height: 80), // Bottom padding for nav bar
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            } else if (snapshot.hasError) {
+              return Center(
+                child: Text(
+                  'Error loading profile data',
+                  style: TextStyle(color: Colors.red),
+                ),
+              );
+            } else {
+              return const Center(child: CircularProgressIndicator());
+            }
+          },
         ),
       ),
     );
@@ -603,43 +504,109 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     );
   }
 
-  Widget _buildProgressButton({
+  Widget _buildCompactAboutMe(String bio) {
+    return Card(
+      elevation: 1,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppTheme.borderRadiusSmall,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Transform.rotate(
+              angle: 3.14159, // Opening quote (flipped)
+              child: Icon(Icons.format_quote,
+                  size: 12, color: AppTheme.primary.withValues(alpha: 0.4)),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                bio,
+                style: AppTheme.body(size: 12, color: AppTheme.textDark),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Icon(Icons.format_quote,
+                size: 12, color: AppTheme.primary.withValues(alpha: 0.4)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactButton({
     required IconData icon,
     required String label,
     required Color color,
     required VoidCallback onTap,
   }) {
     return Card(
-      elevation: 2,
+      elevation: 1,
+      margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
-        borderRadius: AppTheme.borderRadiusMedium,
+        borderRadius: AppTheme.borderRadiusSmall,
       ),
       child: InkWell(
-        borderRadius: AppTheme.borderRadiusMedium,
+        borderRadius: AppTheme.borderRadiusSmall,
         onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          decoration: BoxDecoration(
-            borderRadius: AppTheme.borderRadiusMedium,
-            border: Border.all(
-              color: color.withValues(alpha: 0.3),
-              width: 1,
-            ),
-          ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 20, color: color),
-              const SizedBox(width: 8),
+              Icon(icon, size: 18, color: color),
+              const SizedBox(width: 6),
               Text(
                 label,
-                style: AppTheme.title(
-                  size: 14,
+                style: AppTheme.caption(
+                  size: 12,
                   color: color,
                   weight: FontWeight.w600,
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFriendRequestsButton() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: AppTheme.accentGradient,
+        borderRadius: AppTheme.borderRadiusSmall,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: AppTheme.borderRadiusSmall,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const FriendsController(currentTab: 1),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.person_add, size: 18, color: AppTheme.textWhite),
+                const SizedBox(width: 8),
+                Text(
+                  'Friend Requests (${widget.user.friendRequests.length})',
+                  style: AppTheme.caption(
+                    size: 13,
+                    color: AppTheme.textWhite,
+                    weight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -41,6 +41,7 @@ dependencies:
   url_launcher:
   font_awesome_flutter:
   google_mobile_ads: ^6.0.0
+  shared_preferences: ^2.5.4
 
   # google maps deps
   google_maps_flutter: ^2.12.3

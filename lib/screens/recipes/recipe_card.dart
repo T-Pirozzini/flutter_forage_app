@@ -36,11 +36,25 @@ class _RecipeCardState extends State<RecipeCard> {
     _checkOwnership();
   }
 
+  @override
+  void didUpdateWidget(RecipeCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Re-check ownership if recipe changes
+    if (oldWidget.recipe.id != widget.recipe.id ||
+        oldWidget.recipe.userEmail != widget.recipe.userEmail) {
+      _checkOwnership();
+    }
+  }
+
   void _checkOwnership() {
     final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser != null) {
+    // Default to false if not logged in
+    final isOwner = currentUser != null &&
+        currentUser.email != null &&
+        widget.recipe.userEmail == currentUser.email;
+    if (mounted) {
       setState(() {
-        _isOwner = widget.recipe.userEmail == currentUser.email;
+        _isOwner = isOwner;
       });
     }
   }
@@ -67,6 +81,15 @@ class _RecipeCardState extends State<RecipeCard> {
 
     if (confirmed == true) {
       try {
+        // Double-check ownership before deleting
+        final currentUser = FirebaseAuth.instance.currentUser;
+        if (currentUser == null || currentUser.email != widget.recipe.userEmail) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('You can only delete your own recipes')),
+          );
+          return;
+        }
+
         // Delete recipe document
         await FirebaseFirestore.instance
             .collection('Recipes')
@@ -112,6 +135,15 @@ class _RecipeCardState extends State<RecipeCard> {
   }
 
   void _navigateToEditPage() {
+    // Double-check ownership before editing
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null || currentUser.email != widget.recipe.userEmail) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You can only edit your own recipes')),
+      );
+      return;
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(

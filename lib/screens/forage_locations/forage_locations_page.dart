@@ -5,7 +5,7 @@ import 'package:flutter_forager_app/data/repositories/repository_providers.dart'
 import 'package:flutter_forager_app/data/models/marker.dart';
 import 'package:flutter_forager_app/screens/forage_locations/components/bookmark_section.dart';
 import 'package:flutter_forager_app/screens/forage_locations/components/subscribed_collections_section.dart';
-import 'package:flutter_forager_app/screens/forage_locations/forage_location_info_page.dart';
+import 'package:flutter_forager_app/screens/forage_locations/location_detail_screen.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_forager_app/theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -104,18 +104,9 @@ class _ForageLocationsState extends ConsumerState<ForageLocations> {
   }
 
   void _showMarkerDetails(MarkerModel marker) {
-    showDialog(
-      context: context,
-      builder: (context) => ForageLocationInfo(
-        name: marker.name,
-        description: marker.description,
-        type: marker.type,
-        lat: marker.latitude,
-        lng: marker.longitude,
-        timestamp: dateFormat.format(marker.timestamp),
-        imageUrls: marker.imageUrls,
-        markerOwner: marker.markerOwner,
-        markerId: marker.id,
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => LocationDetailScreen(marker: marker),
       ),
     );
   }

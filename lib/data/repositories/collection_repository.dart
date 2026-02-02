@@ -168,6 +168,22 @@ class CollectionRepository {
 
   // ============== PUBLIC COLLECTIONS (DISCOVERY) ==============
 
+  /// Stream ALL public collections from ALL users (for global discovery)
+  /// Uses Firestore collection group query to search across all users' Collections subcollections
+  Stream<List<LocationCollectionModel>> streamAllPublicCollections() {
+    return firestoreService
+        .collectionGroup('Collections')
+        .where('isPublic', isEqualTo: true)
+        .orderBy('createdAt', descending: true)
+        .limit(100) // Limit for performance
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => LocationCollectionModel.fromFirestore(doc))
+          .toList();
+    });
+  }
+
   /// Stream public collections from a specific user (for friend discovery)
   Stream<List<LocationCollectionModel>> streamPublicCollections(
       String ownerEmail) {

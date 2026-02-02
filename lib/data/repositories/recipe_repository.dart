@@ -1,15 +1,22 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_forager_app/core/constants/firestore_collections.dart';
 import 'package:flutter_forager_app/data/repositories/base_repository.dart';
 import 'package:flutter_forager_app/data/services/firebase/firestore_service.dart';
 import 'package:flutter_forager_app/data/models/recipe.dart';
+import 'package:flutter_forager_app/data/models/recipe_like.dart';
 
 /// Repository for managing Recipe data
+///
+/// Architecture:
+/// - /Recipes/{recipeId} - Main recipe document with denormalized counts
+/// - /Recipes/{recipeId}/Likes/{userEmail} - Individual likes (scalable)
+/// - /Recipes/{recipeId}/Comments/{commentId} - Individual comments (existing)
 ///
 /// Handles all CRUD operations for recipes including:
 /// - Creating, reading, updating, and deleting recipes
 /// - Querying recipes by user
-/// - Managing likes
+/// - Managing likes via subcollection
 class RecipeRepository extends BaseRepository<Recipe> {
   RecipeRepository({required super.firestoreService})
       : super(collectionPath: FirestoreCollections.recipes);
@@ -74,38 +81,95 @@ class RecipeRepository extends BaseRepository<Recipe> {
     }
   }
 
-  /// Toggle like on a recipe
-  Future<void> toggleLike({
+  // ============== LIKES (SUBCOLLECTION) ==============
+
+  /// Toggle like on a recipe using subcollection
+  ///
+  /// Returns true if liked, false if unliked.
+  Future<bool> toggleLike({
     required String recipeId,
     required String userEmail,
+    required bool isCurrentlyLiked,
   }) async {
-    try {
-      final doc = await firestoreService
-          .collection(collectionPath)
-          .doc(recipeId)
-          .get();
+    final likesRef = firestoreService
+        .collection(collectionPath)
+        .doc(recipeId)
+        .collection('Likes');
 
-      if (!doc.exists) {
-        throw Exception('Recipe not found');
+    if (isCurrentlyLiked) {
+      // Remove like
+      final likeDoc = await likesRef.doc(userEmail).get();
+      if (likeDoc.exists) {
+        await likeDoc.reference.delete();
       }
-
-      final recipe = fromFirestore(doc);
-      final isLiked = recipe.likes.contains(userEmail);
-
-      if (isLiked) {
-        // Unlike
-        await update(recipeId, {
-          'likes': FieldValue.arrayRemove([userEmail]),
-        });
-      } else {
-        // Like
-        await update(recipeId, {
-          'likes': FieldValue.arrayUnion([userEmail]),
-        });
-      }
-    } catch (e) {
-      rethrow;
+      // Update count and legacy array
+      await update(recipeId, {
+        'likeCount': FieldValue.increment(-1),
+        'likes': FieldValue.arrayRemove([userEmail]),
+      });
+      debugPrint('Recipe $recipeId unliked by $userEmail');
+      return false;
+    } else {
+      // Add like
+      await likesRef.doc(userEmail).set({
+        'userEmail': userEmail,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      // Update count and legacy array
+      await update(recipeId, {
+        'likeCount': FieldValue.increment(1),
+        'likes': FieldValue.arrayUnion([userEmail]),
+      });
+      debugPrint('Recipe $recipeId liked by $userEmail');
+      return true;
     }
+  }
+
+  /// Check if user has liked a recipe
+  Future<bool> hasUserLiked(String recipeId, String userEmail) async {
+    final likeDoc = await firestoreService
+        .collection(collectionPath)
+        .doc(recipeId)
+        .collection('Likes')
+        .doc(userEmail)
+        .get();
+    return likeDoc.exists;
+  }
+
+  /// Stream like status for a user on a recipe
+  Stream<bool> streamUserLikeStatus(String recipeId, String userEmail) {
+    return firestoreService
+        .collection(collectionPath)
+        .doc(recipeId)
+        .collection('Likes')
+        .doc(userEmail)
+        .snapshots()
+        .map((doc) => doc.exists);
+  }
+
+  /// Get all users who liked a recipe (with pagination)
+  Future<List<RecipeLikeModel>> getLikes(String recipeId, {int limit = 50}) async {
+    final snapshot = await firestoreService
+        .collection(collectionPath)
+        .doc(recipeId)
+        .collection('Likes')
+        .orderBy('createdAt', descending: true)
+        .limit(limit)
+        .get();
+
+    return snapshot.docs.map((doc) => RecipeLikeModel.fromFirestore(doc)).toList();
+  }
+
+  /// Get like count for a recipe
+  Future<int> getLikeCount(String recipeId) async {
+    final snapshot = await firestoreService
+        .collection(collectionPath)
+        .doc(recipeId)
+        .collection('Likes')
+        .count()
+        .get();
+
+    return snapshot.count ?? 0;
   }
 
   /// Delete a recipe (with owner check)
@@ -148,5 +212,50 @@ class RecipeRepository extends BaseRepository<Recipe> {
     } catch (e) {
       rethrow;
     }
+  }
+
+  // ============== MIGRATION ==============
+
+  /// Migrate a single recipe from array-based likes to subcollection-based
+  Future<void> migrateRecipeToSubcollections(String recipeId) async {
+    final recipeDoc = await firestoreService.collection(collectionPath).doc(recipeId).get();
+    if (!recipeDoc.exists) return;
+
+    final data = recipeDoc.data() as Map<String, dynamic>;
+
+    // Migrate likes array to subcollection
+    final likes = List<String>.from(data['likes'] ?? []);
+    for (final userEmail in likes) {
+      await firestoreService
+          .collection(collectionPath)
+          .doc(recipeId)
+          .collection('Likes')
+          .doc(userEmail)
+          .set({
+        'userEmail': userEmail,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+
+    // Ensure likeCount is set correctly
+    await update(recipeId, {
+      'likeCount': likes.length,
+    });
+
+    debugPrint('Migrated recipe $recipeId: ${likes.length} likes');
+  }
+
+  /// Migrate all recipes (run once)
+  Future<int> migrateAllRecipes() async {
+    final snapshot = await firestoreService.collection(collectionPath).get();
+    int migrated = 0;
+
+    for (final doc in snapshot.docs) {
+      await migrateRecipeToSubcollections(doc.id);
+      migrated++;
+    }
+
+    debugPrint('Recipe migration complete: $migrated recipes migrated');
+    return migrated;
   }
 }

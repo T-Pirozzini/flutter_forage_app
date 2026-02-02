@@ -1,19 +1,19 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_forager_app/shared/styled_text.dart';
-import 'package:flutter_forager_app/theme.dart';
+import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:intl/intl.dart';
 
 class UserHeading extends StatelessWidget {
-  const UserHeading(
-      {required this.username,
-      required this.selectedBackgroundOption,
-      required this.selectedProfileOption,
-      required this.createdAt,
-      required this.lastActive,
-      this.coverHeight = 200,
-      this.profileHeight = 100,
-      super.key});
+  const UserHeading({
+    required this.username,
+    required this.selectedBackgroundOption,
+    required this.selectedProfileOption,
+    required this.createdAt,
+    required this.lastActive,
+    this.coverHeight = 120,
+    this.profileHeight = 50,
+    super.key,
+  });
 
   final String username;
   final String selectedBackgroundOption;
@@ -25,98 +25,112 @@ class UserHeading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final top = coverHeight - profileHeight / 2 - 25;
+    return SizedBox(
+      height: coverHeight,
+      child: Stack(
+        children: [
+          // Full background image
+          _buildCoverImage(),
 
+          // Profile card in top left with opacity
+          Positioned(
+            top: 10,
+            left: 10,
+            child: _buildProfileCard(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCoverImage() {
     return Stack(
-      clipBehavior: Clip.none,
-      alignment: Alignment.center,
       children: [
-        buildCoverImage(),
-        Positioned(
-          top: top - 80,
-          child: buildProfileImage(),
+        Image.asset(
+          'lib/assets/images/$selectedBackgroundOption',
+          width: double.infinity,
+          height: coverHeight,
+          fit: BoxFit.cover,
         ),
-        Positioned(
-          top: 20,
-          left: 20,
-          child: Container(
-              color: AppColors.primaryAccent.withValues(alpha: .8),
-              child: Column(
-                children: [
-                  StyledTextSmall("Member Since", color: AppColors.textColor),
-                  StyledTextSmall(
-                      DateFormat('MMM yyyy').format(createdAt.toDate()),
-                      color: AppColors.textColor),
-                ],
-              )),
+        // Subtle gradient for depth
+        Container(
+          width: double.infinity,
+          height: coverHeight,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.black.withValues(alpha: 0.2),
+                Colors.transparent,
+                AppTheme.primary.withValues(alpha: 0.15),
+              ],
+              stops: const [0.0, 0.5, 1.0],
+            ),
+          ),
         ),
-        // Positioned(
-        //   top: 20,
-        //   right: 20,
-        //   child: Container(
-        //       color: AppColors.primaryAccent.withValues(alpha: .8),
-        //       child: Column(
-        //         children: [
-        //           StyledTextSmall("Last Active", color: AppColors.textColor),
-        //           StyledTextSmall(
-        //               DateFormat('MMM yyyy').format(lastActive.toDate()),
-        //               color: AppColors.textColor),
-        //         ],
-        //       )),
-        // ),
       ],
     );
   }
 
-  Widget buildCoverImage() => ClipPath(
-        clipper: _BottomCurveClipper(),
-        child: Container(
-          color: Colors.white,
-          child: Image.asset(
-            'lib/assets/images/$selectedBackgroundOption',
-            width: double.infinity,
-            height: coverHeight - 60,
-            fit: BoxFit.cover,
+  Widget _buildProfileCard() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-        ),
-      );
-
-  Widget buildProfileImage() => Container(
-        padding: const EdgeInsets.all(8.0),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: Colors.white,
-            width: 4.0,
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Profile image
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: AppTheme.secondary, width: 2),
+            ),
+            child: ClipOval(
+              child: Image.asset(
+                'lib/assets/images/$selectedProfileOption',
+                width: profileHeight,
+                height: profileHeight,
+                fit: BoxFit.cover,
+              ),
+            ),
           ),
-        ),
-        child: ClipOval(
-          child: Image.asset(
-            'lib/assets/images/$selectedProfileOption',
-            width: profileHeight,
-            height: profileHeight,
-            fit: BoxFit.cover,
+          const SizedBox(width: 10),
+          // Username and member since
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                username.isNotEmpty ? username : 'Forager',
+                style: AppTheme.heading(
+                  size: 14,
+                  color: AppTheme.textDark,
+                  weight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Since ${DateFormat('MMM yyyy').format(createdAt.toDate())}',
+                style: AppTheme.caption(
+                  size: 10,
+                  color: AppTheme.textMedium,
+                ),
+              ),
+            ],
           ),
-        ),
-      );
-}
-
-class _BottomCurveClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    path.lineTo(0, size.height - 80);
-    path.quadraticBezierTo(
-      size.width / 2,
-      size.height * 1.3,
-      size.width,
-      size.height - 80,
+        ],
+      ),
     );
-    path.lineTo(size.width, 0);
-    path.close();
-    return path;
   }
-
-  @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
