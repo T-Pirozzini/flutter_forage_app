@@ -3,7 +3,10 @@
     "allow": [
       "Bash(flutter analyze:*)",
       "Bash(cmd /c \"cd /d c:\\\\Users\\\\tpiro\\\\Documents\\\\programming\\\\personal\\\\flutter_forager_app && flutter analyze 2>&1\")",
-      "Bash(cmd /c \"flutter --version\")"
+      "Bash(cmd /c \"flutter --version\")",
+      "Bash(git checkout:*)",
+      "Bash(git merge:*)",
+      "Bash(git push:*)"
     ]
   }
 }
