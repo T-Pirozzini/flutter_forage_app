@@ -101,9 +101,18 @@ class _MapViewState extends ConsumerState<MapView> {
               myLocationEnabled: true,
               myLocationButtonEnabled: false,
               zoomControlsEnabled: false, // Hide default zoom controls (using custom)
-              padding: const EdgeInsets.only(bottom: 60, left: 10),
+              compassEnabled: true, // Show compass when map is rotated
+              padding: const EdgeInsets.only(bottom: 60, left: 10, top: 140),
               onCameraMoveStarted: () {
-                ref.read(followUserProvider.notifier).state = false;
+                // Only disable follow if this is a manual user gesture, not programmatic
+                final isProgrammaticMove = ref.read(isProgrammaticMoveProvider);
+                if (!isProgrammaticMove) {
+                  ref.read(followUserProvider.notifier).state = false;
+                }
+              },
+              onCameraMove: (position) {
+                // Update bearing for compass display
+                ref.read(mapBearingProvider.notifier).state = position.bearing;
               },
             ),
             // Show drop indicator when dragging over

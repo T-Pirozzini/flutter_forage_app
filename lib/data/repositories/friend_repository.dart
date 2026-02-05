@@ -159,6 +159,47 @@ class FriendRepository {
         .update({'closeFriend': isCloseFriend});
   }
 
+  /// Update friend's emergency contact status
+  ///
+  /// Emergency contacts receive safety notifications when the user
+  /// plans to forage with someone new.
+  Future<void> setEmergencyContact(
+      String userId, String friendEmail, bool isEmergencyContact) async {
+    await firestoreService
+        .collection('Users')
+        .doc(userId)
+        .collection('Friends')
+        .doc(friendEmail)
+        .update({'isEmergencyContact': isEmergencyContact});
+  }
+
+  /// Get emergency contacts only
+  Stream<List<FriendModel>> streamEmergencyContacts(String userId) {
+    return firestoreService
+        .collection('Users')
+        .doc(userId)
+        .collection('Friends')
+        .where('isEmergencyContact', isEqualTo: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => FriendModel.fromFirestore(doc))
+          .toList();
+    });
+  }
+
+  /// Get emergency contacts (one-time fetch)
+  Future<List<FriendModel>> getEmergencyContacts(String userId) async {
+    final snapshot = await firestoreService
+        .collection('Users')
+        .doc(userId)
+        .collection('Friends')
+        .where('isEmergencyContact', isEqualTo: true)
+        .get();
+
+    return snapshot.docs.map((doc) => FriendModel.fromFirestore(doc)).toList();
+  }
+
   /// Get close friends only
   Stream<List<FriendModel>> streamCloseFriends(String userId) {
     return firestoreService
@@ -213,12 +254,14 @@ class FriendRepository {
   /// Send a friend request
   ///
   /// Creates a request in the recipient's FriendRequests subcollection.
+  /// Optionally includes a short intro message (150 char max).
   Future<void> sendRequest({
     required String fromEmail,
     required String fromDisplayName,
     String? fromPhotoUrl,
     required String toEmail,
     String toDisplayName = '',
+    String? message,
   }) async {
     // Check if already friends
     if (await areFriends(fromEmail, toEmail)) {
@@ -238,6 +281,11 @@ class FriendRepository {
       throw Exception('Friend request already pending');
     }
 
+    // Validate message length
+    if (message != null && message.length > 150) {
+      throw Exception('Message must be 150 characters or less');
+    }
+
     final request = FriendRequestModel(
       id: '',
       fromEmail: fromEmail,
@@ -245,6 +293,7 @@ class FriendRepository {
       fromPhotoUrl: fromPhotoUrl,
       toEmail: toEmail,
       toDisplayName: toDisplayName,
+      message: message,
       status: FriendRequestStatus.pending,
       createdAt: DateTime.now(),
     );

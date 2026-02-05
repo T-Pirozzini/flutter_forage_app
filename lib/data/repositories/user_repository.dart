@@ -60,6 +60,23 @@ class UserRepository extends BaseRepository<UserModel> {
     }
   }
 
+  /// Get all users who are open to foraging together
+  ///
+  /// Returns users where openToForage = true, sorted by lastActive descending.
+  Future<List<UserModel>> getUsersOpenToForage() async {
+    try {
+      final snapshot = await firestoreService
+          .collection(collectionPath)
+          .where('openToForage', isEqualTo: true)
+          .orderBy('lastActive', descending: true)
+          .get();
+
+      return snapshot.docs.map((doc) => fromFirestore(doc)).toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   /// Update user's last active timestamp
   Future<void> updateLastActive(String userId) async {
     await update(userId, {

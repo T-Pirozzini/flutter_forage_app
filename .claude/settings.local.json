@@ -6,7 +6,9 @@
       "Bash(cmd /c \"flutter --version\")",
       "Bash(git checkout:*)",
       "Bash(git merge:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(C:Userstpiroflutterbinflutter.bat analyze lib/screens/community/post_detail_screen.dart)",
+      "Bash(dart analyze:*)"
     ]
   }
 }

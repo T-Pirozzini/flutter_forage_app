@@ -48,6 +48,13 @@ class UserModel {
   // NOTIFICATIONS - New fields
   final NotificationPreferences notificationPreferences;
 
+  // SOCIAL/FORAGING TOGETHER - New fields
+  /// Whether the user is open to foraging with others
+  final bool openToForage;
+
+  /// User's foraging preferences/availability (e.g., "Weekends, mushrooms, beginner-friendly")
+  final String? foragePreferences;
+
   UserModel({
     required this.uid,
     required this.email,
@@ -80,6 +87,9 @@ class UserModel {
     this.hasCompletedOnboarding = false,
     // Notification fields
     this.notificationPreferences = const NotificationPreferences(),
+    // Social/Foraging together fields
+    this.openToForage = false,
+    this.foragePreferences,
   });
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
@@ -161,6 +171,9 @@ class UserModel {
     notificationPreferences: NotificationPreferences.fromMap(
       data['notificationPreferences'] as Map<String, dynamic>?,
     ),
+    // Social/Foraging together fields (backwards compatible)
+    openToForage: data['openToForage'] as bool? ?? false,
+    foragePreferences: data['foragePreferences'] as String?,
   );
 }
 
@@ -199,6 +212,9 @@ class UserModel {
       'hasCompletedOnboarding': hasCompletedOnboarding,
       // Notification preferences
       'notificationPreferences': notificationPreferences.toMap(),
+      // Social/Foraging together fields
+      'openToForage': openToForage,
+      if (foragePreferences != null) 'foragePreferences': foragePreferences,
     };
   }
 
@@ -282,6 +298,9 @@ class UserModel {
     bool? hasCompletedOnboarding,
     // Notification fields
     NotificationPreferences? notificationPreferences,
+    // Social/Foraging together fields
+    bool? openToForage,
+    String? foragePreferences,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -315,6 +334,9 @@ class UserModel {
       hasCompletedOnboarding: hasCompletedOnboarding ?? this.hasCompletedOnboarding,
       // Notifications
       notificationPreferences: notificationPreferences ?? this.notificationPreferences,
+      // Social/Foraging together
+      openToForage: openToForage ?? this.openToForage,
+      foragePreferences: foragePreferences ?? this.foragePreferences,
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_forager_app/core/constants/firestore_collections.dart';
+import 'package:flutter_forager_app/core/utils/location_obfuscation.dart';
 import 'package:flutter_forager_app/data/repositories/base_repository.dart';
 import 'package:flutter_forager_app/data/services/firebase/firestore_service.dart';
 import 'package:flutter_forager_app/data/models/marker.dart';
@@ -275,5 +276,94 @@ class MarkerRepository extends BaseRepository<MarkerModel> {
     } catch (e) {
       rethrow;
     }
+  }
+
+  // ============ LOCATION OBFUSCATION ============
+
+  /// Stream markers visible to a user with location obfuscation applied.
+  ///
+  /// Regular friends see obfuscated locations (~500m radius).
+  /// Close friends see precise locations.
+  /// User's own markers always show precise locations.
+  ///
+  /// [viewerEmail] - Email of the user viewing markers
+  /// [friendEmails] - List of all friend emails
+  /// [closeFriendEmails] - Set of close friend emails (see precise locations)
+  Stream<List<MarkerModel>> streamVisibleMarkersWithObfuscation({
+    required String viewerEmail,
+    required List<String> friendEmails,
+    required Set<String> closeFriendEmails,
+    int limit = 100,
+  }) {
+    return streamVisibleMarkers(
+      viewerEmail: viewerEmail,
+      friendEmails: friendEmails,
+      limit: limit,
+    ).map((markers) {
+      return LocationObfuscation.obfuscateMarkersForViewer(
+        markers: markers,
+        viewerEmail: viewerEmail,
+        closeFriendEmails: closeFriendEmails,
+      );
+    });
+  }
+
+  /// Get visible markers with location obfuscation applied (one-time fetch).
+  ///
+  /// Regular friends see obfuscated locations (~500m radius).
+  /// Close friends see precise locations.
+  Future<List<MarkerModel>> getVisibleMarkersWithObfuscation({
+    required String viewerEmail,
+    required List<String> friendEmails,
+    required Set<String> closeFriendEmails,
+  }) async {
+    final markers = await getVisibleMarkers(
+      viewerEmail: viewerEmail,
+      friendEmails: friendEmails,
+    );
+
+    return LocationObfuscation.obfuscateMarkersForViewer(
+      markers: markers,
+      viewerEmail: viewerEmail,
+      closeFriendEmails: closeFriendEmails,
+    );
+  }
+
+  /// Stream a specific user's markers with obfuscation based on viewer relationship.
+  ///
+  /// Used when viewing a friend's locations list.
+  /// Close friends see precise locations, regular friends see obfuscated.
+  Stream<List<MarkerModel>> streamUserMarkersWithObfuscation({
+    required String ownerEmail,
+    required String viewerEmail,
+    required bool isCloseFriend,
+  }) {
+    return streamByUserId(ownerEmail).map((markers) {
+      if (ownerEmail == viewerEmail || isCloseFriend) {
+        // Owner or close friend - show precise locations
+        return markers;
+      }
+      // Regular friend - obfuscate locations
+      return markers.map((marker) {
+        return LocationObfuscation.obfuscateMarker(marker);
+      }).toList();
+    });
+  }
+
+  /// Get a specific user's markers with obfuscation (one-time fetch).
+  Future<List<MarkerModel>> getUserMarkersWithObfuscation({
+    required String ownerEmail,
+    required String viewerEmail,
+    required bool isCloseFriend,
+  }) async {
+    final markers = await getByUserId(ownerEmail);
+
+    if (ownerEmail == viewerEmail || isCloseFriend) {
+      return markers;
+    }
+
+    return markers.map((marker) {
+      return LocationObfuscation.obfuscateMarker(marker);
+    }).toList();
   }
 }

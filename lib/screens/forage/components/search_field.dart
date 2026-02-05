@@ -4,8 +4,13 @@ import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'dart:async';
 
 class SearchField extends StatefulWidget {
-  const SearchField({super.key, required this.onPlaceSelected});
+  const SearchField({
+    super.key,
+    required this.onPlaceSelected,
+    this.onFocusChanged,
+  });
   final Function(Map<String, dynamic> place) onPlaceSelected;
+  final Function(bool isFocused)? onFocusChanged;
 
   @override
   State<SearchField> createState() => _SearchFieldState();
@@ -13,10 +18,26 @@ class SearchField extends StatefulWidget {
 
 class _SearchFieldState extends State<SearchField> {
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
   List<Map<String, dynamic>> _suggestions = [];
   Timer? _debounce;
   bool _isLoading = false;
   bool _isFocused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  void _onFocusChange() {
+    setState(() => _isFocused = _focusNode.hasFocus);
+    widget.onFocusChanged?.call(_focusNode.hasFocus);
+  }
+
+  void _dismissKeyboard() {
+    _focusNode.unfocus();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,10 +66,9 @@ class _SearchFieldState extends State<SearchField> {
               ),
             ],
           ),
-          child: Focus(
-            onFocusChange: (focused) => setState(() => _isFocused = focused),
-            child: TextFormField(
+          child: TextFormField(
               controller: _searchController,
+              focusNode: _focusNode,
               textCapitalization: TextCapitalization.words,
               style: TextStyle(
                 color: AppTheme.textDark,
@@ -152,10 +172,9 @@ class _SearchFieldState extends State<SearchField> {
               },
               onFieldSubmitted: (_) => _performSearch(),
             ),
-          ),
         ),
 
-        // Suggestions Dropdown
+        // Suggestions Dropdown - larger when focused for better visibility
         if (_suggestions.isNotEmpty)
           Container(
             margin: const EdgeInsets.only(top: 4),
@@ -170,7 +189,7 @@ class _SearchFieldState extends State<SearchField> {
                 ),
               ],
             ),
-            constraints: const BoxConstraints(maxHeight: 200),
+            constraints: const BoxConstraints(maxHeight: 280),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: ListView.separated(
@@ -229,6 +248,7 @@ class _SearchFieldState extends State<SearchField> {
       setState(() => _isLoading = false);
 
       if (place.isNotEmpty) {
+        _dismissKeyboard();
         widget.onPlaceSelected.call(place);
         setState(() => _suggestions = []);
       } else {
@@ -247,6 +267,9 @@ class _SearchFieldState extends State<SearchField> {
   }
 
   Future<void> _selectSuggestion(Map<String, dynamic> suggestion) async {
+    // Dismiss keyboard immediately when tapping a suggestion
+    _dismissKeyboard();
+
     try {
       setState(() => _isLoading = true);
       final description = suggestion['description'] ?? '';
@@ -280,6 +303,8 @@ class _SearchFieldState extends State<SearchField> {
   @override
   void dispose() {
     _debounce?.cancel();
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
     _searchController.dispose();
     super.dispose();
   }

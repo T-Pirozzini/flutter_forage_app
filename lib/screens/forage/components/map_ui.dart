@@ -117,11 +117,12 @@ class MapFloatingControls extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               // Test Location
-              _buildInfoRow(
+              _buildInfoRowWithBold(
                 Icons.location_searching,
                 AppTheme.warning,
                 'Test Location',
-                'Drag the target icon onto the map to see distances from that point instead of your GPS',
+                'Drag the target icon',
+                ' onto the map to see distances from that point instead of your GPS',
               ),
               const SizedBox(height: 12),
               // GPS Accuracy
@@ -165,6 +166,42 @@ class MapFloatingControls extends ConsumerWidget {
               Text(
                 description,
                 style: AppTheme.caption(size: 11, color: AppTheme.textMedium),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoRowWithBold(IconData icon, Color color, String title, String boldPart, String normalPart) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: color, size: 20),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: AppTheme.body(size: 13, color: AppTheme.textDark, weight: FontWeight.w600),
+              ),
+              const SizedBox(height: 2),
+              RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: boldPart,
+                      style: AppTheme.caption(size: 11, color: AppTheme.textDark, weight: FontWeight.w600),
+                    ),
+                    TextSpan(
+                      text: normalPart,
+                      style: AppTheme.caption(size: 11, color: AppTheme.textMedium),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -218,6 +255,9 @@ class MapFloatingControls extends ConsumerWidget {
     // Nav bar is ~56px tall and sits above the safe area bottom padding
     final navBarHeight = 56.0 + safePadding.bottom - 48;
 
+    // Check if search is focused to hide controls
+    final isSearchFocused = ref.watch(isSearchFocusedProvider);
+
     return Stack(
       children: [
         // Search Field - Below filter chips
@@ -227,95 +267,122 @@ class MapFloatingControls extends ConsumerWidget {
           right: 16,
           child: SearchField(
             onPlaceSelected: onPlaceSelected,
+            onFocusChanged: (isFocused) {
+              ref.read(isSearchFocusedProvider.notifier).state = isFocused;
+            },
           ),
         ),
 
-        // Right Side Controls Column
-        Positioned(
-          right: 12,
-          top: safePadding.top + 140, // Below search bar
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Map Type Toggle Button
-              _MapTypeToggleButton(),
-              const SizedBox(height: 10),
-              // Follow Location Button
-              Tooltip(
-                message: followUser
-                    ? 'Following your location'
-                    : 'Tap to follow your location',
-                child: FloatingActionButton(
-                  heroTag: 'locationButton',
-                  onPressed: () {
-                    onFollowPressed();
-                    if (followUser) {
-                      ref.read(lastManualMoveProvider.notifier).state = null;
-                    }
-                  },
-                  mini: true,
-                  backgroundColor: AppTheme.primary,
-                  child: Icon(
-                    Icons.my_location,
-                    color: followUser ? AppTheme.accent : Colors.white,
-                  ),
-                ),
+        // Tap-to-dismiss overlay - covers map area outside search field when focused
+        // Tapping anywhere on the map dismisses the keyboard and shows controls again
+        if (isSearchFocused)
+          Positioned(
+            top: safePadding.top + 130, // Just below the search field (72 + ~58 for field height)
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: GestureDetector(
+              onTap: () {
+                FocusScope.of(context).unfocus();
+              },
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                color: Colors.transparent,
               ),
-              const SizedBox(height: 6),
-              // GPS Accuracy Indicator
-              _GpsAccuracyBadge(),
-              const SizedBox(height: 10),
-              // Zoom Controls
-              _ZoomControls(
-                onZoomIn: onZoomIn,
-                onZoomOut: onZoomOut,
-              ),
-              const SizedBox(height: 10),
-              // Draggable test location target
-              _DraggableSpoofTarget(),
-              const SizedBox(height: 10),
-              // Fullscreen Button - only show when not already in fullscreen
-              if (onFullScreenPressed != null) ...[
+            ),
+          ),
+
+        // Right Side Controls Column - hide when search is focused
+        if (!isSearchFocused)
+          Positioned(
+            right: 12,
+            top: safePadding.top + 140, // Below search bar
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Compass Widget
+                _CompassWidget(),
+                const SizedBox(height: 10),
+                // Map Type Toggle Button
+                _MapTypeToggleButton(),
+                const SizedBox(height: 10),
+                // Follow Location Button
                 Tooltip(
-                  message: 'Full screen mode',
+                  message: followUser
+                      ? 'Following your location'
+                      : 'Tap to follow your location',
                   child: FloatingActionButton(
-                    heroTag: 'fullscreenButton',
-                    onPressed: onFullScreenPressed,
+                    heroTag: 'locationButton',
+                    onPressed: () {
+                      onFollowPressed();
+                      if (followUser) {
+                        ref.read(lastManualMoveProvider.notifier).state = null;
+                      }
+                    },
                     mini: true,
                     backgroundColor: AppTheme.primary,
-                    child: const Icon(
-                      Icons.fullscreen,
-                      color: Colors.white,
-                      size: 22,
+                    child: Icon(
+                      Icons.my_location,
+                      color: followUser ? AppTheme.accent : Colors.white,
                     ),
                   ),
                 ),
+                const SizedBox(height: 6),
+                // GPS Accuracy Indicator
+                _GpsAccuracyBadge(),
                 const SizedBox(height: 10),
-              ],
-              // Info Button - at bottom of controls
-              Tooltip(
-                message: 'About exploring',
-                child: FloatingActionButton(
-                  heroTag: 'infoButton',
-                  onPressed: () => _showExploreInfoDialog(context),
-                  mini: true,
-                  backgroundColor: AppTheme.secondary,
-                  child: const Icon(
-                    Icons.info_outline,
-                    color: Colors.white,
-                    size: 20,
+                // Zoom Controls
+                _ZoomControls(
+                  onZoomIn: onZoomIn,
+                  onZoomOut: onZoomOut,
+                ),
+                const SizedBox(height: 10),
+                // Draggable test location target
+                _DraggableSpoofTarget(),
+                const SizedBox(height: 10),
+                // Fullscreen Button - only show when not already in fullscreen
+                if (onFullScreenPressed != null) ...[
+                  Tooltip(
+                    message: 'Full screen mode',
+                    child: FloatingActionButton(
+                      heroTag: 'fullscreenButton',
+                      onPressed: onFullScreenPressed,
+                      mini: true,
+                      backgroundColor: AppTheme.primary,
+                      child: const Icon(
+                        Icons.fullscreen,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
+                // Info Button - at bottom of controls
+                Tooltip(
+                  message: 'About exploring',
+                  child: FloatingActionButton(
+                    heroTag: 'infoButton',
+                    onPressed: () => _showExploreInfoDialog(context),
+                    mini: true,
+                    backgroundColor: AppTheme.secondary,
+                    child: const Icon(
+                      Icons.info_outline,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
 
-        // Add Marker SpeedDial - Bottom Left corner
-        Positioned(
-          bottom: navBarHeight + 44, // Above the locations bar
-          left: 12,
-          child: Container(
+        // Add Marker SpeedDial - Bottom Left corner - hide when search is focused
+        if (!isSearchFocused)
+          Positioned(
+            bottom: navBarHeight + 44, // Above the locations bar
+            left: 12,
+            child: Container(
             padding: const EdgeInsets.all(8.0),
             decoration: BoxDecoration(
               color: AppTheme.surfaceLight,
@@ -354,12 +421,13 @@ class MapFloatingControls extends ConsumerWidget {
           ),
         ),
 
-        // Full-width Locations Bar
-        Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          child: GestureDetector(
+        // Full-width Locations Bar - hide when search is focused
+        if (!isSearchFocused)
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: GestureDetector(
             onTap: onShowLocationsPressed,
             child: Container(
               // Height extends from tap area down through nav bar area (or safe area in fullscreen)
@@ -929,6 +997,124 @@ class _AddMarkerSpeedDial extends ConsumerWidget {
       overlayOpacity: 0.3,
       direction: SpeedDialDirection.up,
       switchLabelPosition: true, // Labels on right side of icons
+    );
+  }
+}
+
+/// Compass widget showing current map bearing
+/// Tap to reset map to north
+class _CompassWidget extends ConsumerWidget {
+  const _CompassWidget();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bearing = ref.watch(mapBearingProvider);
+
+    return Tooltip(
+      message: bearing.abs() < 1 ? 'Facing North' : 'Tap to face North',
+      child: GestureDetector(
+        onTap: () async {
+          // Reset bearing to north
+          final completer = ref.read(mapCompleterProvider);
+          if (completer.isCompleted) {
+            final controller = await completer.future;
+            final currentPosition = await controller.getVisibleRegion();
+            final center = LatLng(
+              (currentPosition.northeast.latitude + currentPosition.southwest.latitude) / 2,
+              (currentPosition.northeast.longitude + currentPosition.southwest.longitude) / 2,
+            );
+
+            // Set flag to prevent disabling follow
+            ref.read(isProgrammaticMoveProvider.notifier).state = true;
+            await controller.animateCamera(
+              CameraUpdate.newCameraPosition(
+                CameraPosition(
+                  target: center,
+                  zoom: await controller.getZoomLevel(),
+                  bearing: 0, // North
+                ),
+              ),
+            );
+            Future.delayed(const Duration(milliseconds: 500), () {
+              ref.read(isProgrammaticMoveProvider.notifier).state = false;
+            });
+          }
+        },
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceLight,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.15),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Rotating compass
+              Transform.rotate(
+                angle: -bearing * (3.14159265359 / 180), // Convert degrees to radians
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // North indicator (red)
+                    Container(
+                      width: 3,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: AppTheme.error,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    // South indicator (white/grey)
+                    Container(
+                      width: 3,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: AppTheme.textLight,
+                        borderRadius: const BorderRadius.vertical(
+                          bottom: Radius.circular(2),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Center dot
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: AppTheme.primary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              // N label at top when facing north
+              if (bearing.abs() < 10)
+                Positioned(
+                  top: 4,
+                  child: Text(
+                    'N',
+                    style: TextStyle(
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.error,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

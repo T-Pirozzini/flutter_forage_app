@@ -44,6 +44,8 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   final dateFormat = DateFormat('MMM d, yyyy');
   final _commentController = TextEditingController();
   final PageController _pageController = PageController();
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _commentsKey = GlobalKey();
 
   int _currentImageIndex = 0;
   String _selectedStatus = 'active';
@@ -51,6 +53,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   String? _markerId;
   bool _isFavorite = false;
   bool _isBookmarked = false;
+  bool _isVerificationLogExpanded = false;
 
   @override
   void initState() {
@@ -66,6 +69,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   void dispose() {
     _commentController.dispose();
     _pageController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -423,37 +427,32 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         ],
       ),
       body: SingleChildScrollView(
+        controller: _scrollController,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image Carousel
+            // 1. Image Carousel (Pictures at top)
             if (widget.post.imageUrls.isNotEmpty) _buildImageCarousel(),
 
-            // Type badge only - status is in Verification Log
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: _buildTypeBadge(),
-            ),
+            // 2. Combined header (name, date, type badge, likes, bookmarks, following)
+            _buildCombinedHeader(),
 
-            // Map Section
-            _buildMapSection(),
-
-            // Poster info
-            _buildPosterInfo(),
-
-            // Description
+            // 3. Description
             _buildDescriptionCard(),
 
-            // Status Log Timeline (inline)
-            _buildStatusLogSection(),
+            // 4. Map Section
+            _buildMapSection(),
 
-            // Action buttons
-            _buildActionButtons(),
+            // 5. Verification Log (collapsed by default)
+            _buildCollapsibleVerificationLog(),
 
-            // Comments Section
-            _buildCommentsSection(),
+            // 6. Comments Section (last)
+            Container(
+              key: _commentsKey,
+              child: _buildCommentsSection(),
+            ),
 
-            const SizedBox(height: 100), // Bottom padding for FAB
+            const SizedBox(height: 100), // Bottom padding
           ],
         ),
       ),
@@ -514,44 +513,305 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     );
   }
 
-  Widget _buildTypeBadge() {
+  Widget _buildCombinedHeader() {
+    final username = widget.post.userEmail.split('@')[0];
+    final postedDate = dateFormat.format(widget.post.postTimestamp);
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppTheme.primary.withValues(alpha: 0.1),
-        borderRadius: AppTheme.borderRadiusSmall,
-        border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      padding: const EdgeInsets.all(16),
+      color: AppTheme.surfaceLight,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Image.asset(
-            "lib/assets/images/${widget.post.type.toLowerCase()}_marker.png",
-            width: 20,
-            height: 20,
-            errorBuilder: (context, error, stackTrace) => Icon(
-              Icons.location_on,
-              size: 20,
-              color: AppTheme.primary,
-            ),
+          // Row 1: Avatar, Name, Date
+          Row(
+            children: [
+              // User avatar with initial
+              _buildUserAvatar(username),
+              const SizedBox(width: 12),
+              // Name and date
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.post.name,
+                      style: AppTheme.heading(size: 18, color: AppTheme.textDark),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Text(
+                          '@$username',
+                          style: AppTheme.caption(size: 13, color: AppTheme.textMedium),
+                        ),
+                        Text(
+                          ' · $postedDate',
+                          style: AppTheme.caption(size: 13, color: AppTheme.textLight),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 6),
-          Text(
-            widget.post.type,
-            style: AppTheme.caption(
-              size: 13,
-              color: AppTheme.primary,
-              weight: FontWeight.w500,
-            ),
+          const SizedBox(height: 12),
+          // Row 2: Type badge, likes, bookmarks, follow button
+          Row(
+            children: [
+              // Type badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withValues(alpha: 0.1),
+                  borderRadius: AppTheme.borderRadiusSmall,
+                  border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.asset(
+                      "lib/assets/images/${widget.post.type.toLowerCase()}_marker.png",
+                      width: 18,
+                      height: 18,
+                      errorBuilder: (context, error, stackTrace) => Icon(
+                        Icons.location_on,
+                        size: 18,
+                        color: AppTheme.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      widget.post.type,
+                      style: AppTheme.caption(
+                        size: 12,
+                        color: AppTheme.primary,
+                        weight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Comments (tap to scroll to comments section)
+              GestureDetector(
+                onTap: _scrollToComments,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.chat_bubble_outline,
+                      size: 20,
+                      color: AppTheme.textMedium,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${widget.post.commentCount}',
+                      style: AppTheme.caption(
+                        size: 13,
+                        color: AppTheme.textMedium,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Likes
+              GestureDetector(
+                onTap: () {
+                  setState(() => _isFavorite = !_isFavorite);
+                  widget.onToggleFavorite();
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _isFavorite ? Icons.favorite : Icons.favorite_border,
+                      size: 20,
+                      color: _isFavorite ? AppTheme.accent : AppTheme.textMedium,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${widget.post.likeCount}',
+                      style: AppTheme.caption(
+                        size: 13,
+                        color: _isFavorite ? AppTheme.accent : AppTheme.textMedium,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Bookmarks
+              GestureDetector(
+                onTap: () {
+                  setState(() => _isBookmarked = !_isBookmarked);
+                  widget.onToggleBookmark();
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                      size: 20,
+                      color: _isBookmarked ? AppTheme.secondary : AppTheme.textMedium,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${widget.post.bookmarkCount}',
+                      style: AppTheme.caption(
+                        size: 13,
+                        color: _isBookmarked ? AppTheme.secondary : AppTheme.textMedium,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              // Follow button (if not owner)
+              if (widget.post.userEmail != currentUser.email)
+                _buildFollowButton(),
+            ],
           ),
         ],
       ),
     );
   }
 
+  Widget _buildUserAvatar(String username) {
+    final initial = username.isNotEmpty ? username[0].toUpperCase() : '?';
+
+    return FutureBuilder<String?>(
+      future: _getUserProfilePic(),
+      builder: (context, snapshot) {
+        final profilePic = snapshot.data;
+
+        return SizedBox(
+          width: 44,
+          height: 44,
+          child: Stack(
+            children: [
+              // Profile image or gradient background
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: profilePic == null
+                      ? LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppTheme.primary,
+                            AppTheme.primary.withValues(alpha: 0.7),
+                          ],
+                        )
+                      : null,
+                  image: profilePic != null
+                      ? DecorationImage(
+                          image: CachedNetworkImageProvider(profilePic),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
+                ),
+                child: profilePic == null
+                    ? Center(
+                        child: Text(
+                          initial,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      )
+                    : null,
+              ),
+              // Initial badge overlay (bottom right)
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: AppTheme.accent,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 1.5),
+                  ),
+                  child: Center(
+                    child: Text(
+                      initial,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<String?> _getUserProfilePic() async {
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(widget.post.userEmail)
+          .get();
+
+      if (userDoc.exists) {
+        final data = userDoc.data();
+        return data?['photoUrl'] as String?;
+      }
+    } catch (e) {
+      debugPrint('Error fetching user profile pic: $e');
+    }
+    return null;
+  }
+
+  Widget _buildFollowButton() {
+    // TODO: Implement actual follow state check
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppTheme.primary,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        'Follow',
+        style: AppTheme.caption(
+          size: 12,
+          color: Colors.white,
+          weight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  void _scrollToComments() {
+    // Scroll to the comments section
+    final context = _commentsKey.currentContext;
+    if (context != null) {
+      Scrollable.ensureVisible(
+        context,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
   Widget _buildMapSection() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       decoration: BoxDecoration(
         borderRadius: AppTheme.borderRadiusMedium,
         border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
@@ -630,39 +890,223 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     );
   }
 
-  Widget _buildPosterInfo() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
+  Widget _buildCollapsibleVerificationLog() {
+    // Sort status history by timestamp (newest first)
+    final sortedHistory = List<Map<String, dynamic>>.from(_statusHistory)
+      ..sort((a, b) {
+        final aTimestamp = a['timestamp'] is Timestamp
+            ? (a['timestamp'] as Timestamp).toDate()
+            : (a['timestamp'] is DateTime ? a['timestamp'] as DateTime : DateTime(0));
+        final bTimestamp = b['timestamp'] is Timestamp
+            ? (b['timestamp'] as Timestamp).toDate()
+            : (b['timestamp'] is DateTime ? b['timestamp'] as DateTime : DateTime(0));
+        return bTimestamp.compareTo(aTimestamp);
+      });
+
+    // Get current status info
+    final latestUpdate = sortedHistory.isNotEmpty ? sortedHistory.first : null;
+    final currentStatusDate = latestUpdate != null
+        ? (latestUpdate['timestamp'] is Timestamp
+            ? (latestUpdate['timestamp'] as Timestamp).toDate()
+            : (latestUpdate['timestamp'] is DateTime
+                ? latestUpdate['timestamp'] as DateTime
+                : null))
+        : null;
+    final lastUpdatedBy = latestUpdate?['username'] ?? '';
+
+    return Container(
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceLight,
+        borderRadius: AppTheme.borderRadiusMedium,
+        border: Border.all(color: AppTheme.primary.withValues(alpha: 0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: AppTheme.primary.withValues(alpha: 0.2),
-            child: Text(
-              widget.post.userEmail[0].toUpperCase(),
-              style: AppTheme.heading(size: 16, color: AppTheme.primary),
+          // Header row - always visible
+          InkWell(
+            onTap: () {
+              setState(() {
+                _isVerificationLogExpanded = !_isVerificationLogExpanded;
+              });
+            },
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(12),
+              topRight: Radius.circular(12),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+              child: Row(
+                children: [
+                  Icon(Icons.verified_user_outlined, color: AppTheme.primary, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Verification Log',
+                    style: AppTheme.heading(size: 15, color: AppTheme.textDark),
+                  ),
+                  const Spacer(),
+                  // Update count badge
+                  if (sortedHistory.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.textLight.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '${sortedHistory.length}',
+                        style: AppTheme.caption(size: 11, color: AppTheme.textMedium),
+                      ),
+                    ),
+                  Icon(
+                    _isVerificationLogExpanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    color: AppTheme.textMedium,
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          const Divider(height: 1),
+
+          // Current Status - always visible
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            child: Row(
               children: [
                 Text(
-                  '@${widget.post.userEmail.split('@')[0]}',
+                  'Current Status:',
                   style: AppTheme.body(
-                    size: 14,
-                    color: AppTheme.textDark,
+                    size: 13,
+                    color: AppTheme.textMedium,
                     weight: FontWeight.w500,
                   ),
                 ),
-                Text(
-                  'Posted ${dateFormat.format(widget.post.postTimestamp)}',
-                  style: AppTheme.caption(size: 12, color: AppTheme.textMedium),
+                const SizedBox(width: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(_selectedStatus),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    _selectedStatus.replaceAll('_', ' ').toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                // Add Update button
+                GestureDetector(
+                  onTap: _showStatusUpdateDialog,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.add, size: 14, color: AppTheme.primary),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Update',
+                          style: AppTheme.caption(
+                            size: 11,
+                            color: AppTheme.primary,
+                            weight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
+
+          // Last updated info - always visible
+          if (currentStatusDate != null || lastUpdatedBy.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Text(
+                'Last updated${lastUpdatedBy.isNotEmpty ? ' by @$lastUpdatedBy' : ''}${currentStatusDate != null ? ' on ${DateFormat('MMM d, yyyy').format(currentStatusDate)}' : ''}',
+                style: AppTheme.caption(size: 11, color: AppTheme.textLight),
+              ),
+            ),
+
+          // Expandable history section
+          if (_isVerificationLogExpanded) ...[
+            const Divider(height: 1),
+            if (sortedHistory.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Icon(Icons.history, size: 36, color: AppTheme.textLight),
+                      const SizedBox(height: 8),
+                      Text(
+                        'No verification updates yet',
+                        style: AppTheme.body(size: 13, color: AppTheme.textMedium),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Help the community by adding a status update!',
+                        style: AppTheme.caption(size: 11, color: AppTheme.textLight),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Text(
+                  'Update History',
+                  style: AppTheme.caption(
+                    size: 12,
+                    color: AppTheme.textMedium,
+                    weight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              // Show only first 5 entries in collapsed view
+              ...sortedHistory.take(5).toList().asMap().entries.map((entry) {
+                final index = entry.key;
+                final historyItem = entry.value;
+                final displayList = sortedHistory.take(5).toList();
+                final isLast = index == displayList.length - 1;
+                return _buildStatusLogEntry(historyItem, isLast);
+              }),
+              // "View all" button if there are more entries
+              if (sortedHistory.length > 5)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Center(
+                    child: TextButton(
+                      onPressed: _showStatusHistoryDialog,
+                      child: Text(
+                        'View all ${sortedHistory.length} updates',
+                        style: AppTheme.caption(
+                          size: 12,
+                          color: AppTheme.primary,
+                          weight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ],
         ],
       ),
     );
@@ -673,7 +1117,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     final hasDescription = widget.post.description.trim().isNotEmpty;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppTheme.surfaceLight,
@@ -817,171 +1261,6 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         );
       }
     }
-  }
-
-  Widget _buildStatusLogSection() {
-    // Sort status history by timestamp (newest first)
-    final sortedHistory = List<Map<String, dynamic>>.from(_statusHistory)
-      ..sort((a, b) {
-        final aTimestamp = a['timestamp'] is Timestamp
-            ? (a['timestamp'] as Timestamp).toDate()
-            : (a['timestamp'] is DateTime ? a['timestamp'] as DateTime : DateTime(0));
-        final bTimestamp = b['timestamp'] is Timestamp
-            ? (b['timestamp'] as Timestamp).toDate()
-            : (b['timestamp'] is DateTime ? b['timestamp'] as DateTime : DateTime(0));
-        return bTimestamp.compareTo(aTimestamp);
-      });
-
-    // Take only the most recent 5 entries for inline display
-    final displayHistory = sortedHistory.take(5).toList();
-
-    // Get current status info
-    final latestUpdate = sortedHistory.isNotEmpty ? sortedHistory.first : null;
-    final currentStatusDate = latestUpdate != null
-        ? (latestUpdate['timestamp'] is Timestamp
-            ? (latestUpdate['timestamp'] as Timestamp).toDate()
-            : (latestUpdate['timestamp'] is DateTime
-                ? latestUpdate['timestamp'] as DateTime
-                : null))
-        : null;
-
-    return Container(
-      margin: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceLight,
-        borderRadius: AppTheme.borderRadiusMedium,
-        border: Border.all(color: AppTheme.primary.withValues(alpha: 0.15)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header with title and add button
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
-            child: Row(
-              children: [
-                Icon(Icons.verified_user_outlined, color: AppTheme.primary, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  'Verification Log',
-                  style: AppTheme.heading(size: 15, color: AppTheme.textDark),
-                ),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: _showStatusUpdateDialog,
-                  icon: Icon(Icons.add, size: 16, color: AppTheme.primary),
-                  label: Text(
-                    'Add Update',
-                    style: AppTheme.caption(
-                      size: 12,
-                      color: AppTheme.primary,
-                      weight: FontWeight.w600,
-                    ),
-                  ),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-
-          // Current Status header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-            child: Row(
-              children: [
-                Text(
-                  'Current Status:',
-                  style: AppTheme.body(
-                    size: 13,
-                    color: AppTheme.textMedium,
-                    weight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _getStatusColor(_selectedStatus),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    _selectedStatus.replaceAll('_', ' ').toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                if (currentStatusDate != null) ...[
-                  const SizedBox(width: 10),
-                  Text(
-                    DateFormat('MMM d, yyyy').format(currentStatusDate),
-                    style: AppTheme.caption(size: 12, color: AppTheme.textLight),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-
-          // Status entries as timeline
-          if (displayHistory.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Center(
-                child: Column(
-                  children: [
-                    Icon(Icons.history, size: 36, color: AppTheme.textLight),
-                    const SizedBox(height: 8),
-                    Text(
-                      'No verification updates yet',
-                      style: AppTheme.body(size: 13, color: AppTheme.textMedium),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Help the community by adding a status update!',
-                      style: AppTheme.caption(size: 11, color: AppTheme.textLight),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else ...[
-            const SizedBox(height: 12),
-            ...displayHistory.asMap().entries.map((entry) {
-              final index = entry.key;
-              final historyItem = entry.value;
-              final isLast = index == displayHistory.length - 1;
-              return _buildStatusLogEntry(historyItem, isLast);
-            }),
-          ],
-
-          // "View all" button if there are more entries
-          if (sortedHistory.length > 5)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Center(
-                child: TextButton(
-                  onPressed: _showStatusHistoryDialog,
-                  child: Text(
-                    'View all ${sortedHistory.length} updates',
-                    style: AppTheme.caption(
-                      size: 12,
-                      color: AppTheme.primary,
-                      weight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
   }
 
   Widget _buildStatusLogEntry(Map<String, dynamic> entry, bool isLast) {
@@ -1202,91 +1481,6 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
       default:
         return AppTheme.primary;
     }
-  }
-
-  Widget _buildActionButtons() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildActionButton(
-            icon: Icons.favorite,
-            label: '${widget.post.likeCount}',
-            isActive: _isFavorite,
-            activeColor: AppTheme.accent,
-            onTap: () {
-              setState(() => _isFavorite = !_isFavorite);
-              widget.onToggleFavorite();
-            },
-          ),
-          _buildActionButton(
-            icon: Icons.bookmark,
-            label: '${widget.post.bookmarkCount}',
-            isActive: _isBookmarked,
-            activeColor: AppTheme.secondary,
-            onTap: () {
-              setState(() => _isBookmarked = !_isBookmarked);
-              widget.onToggleBookmark();
-            },
-          ),
-          _buildActionButton(
-            icon: Icons.comment,
-            label: '${widget.post.commentCount}',
-            isActive: false,
-            activeColor: AppTheme.primary,
-            onTap: () {
-              // Scroll to comments or focus on input
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required bool isActive,
-    required Color activeColor,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: AppTheme.borderRadiusMedium,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        decoration: BoxDecoration(
-          color: isActive
-              ? activeColor.withValues(alpha: 0.1)
-              : AppTheme.surfaceLight,
-          borderRadius: AppTheme.borderRadiusMedium,
-          border: Border.all(
-            color: isActive
-                ? activeColor.withValues(alpha: 0.3)
-                : AppTheme.textLight.withValues(alpha: 0.3),
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: isActive ? activeColor : AppTheme.textMedium,
-              size: 22,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: AppTheme.body(
-                size: 14,
-                color: isActive ? activeColor : AppTheme.textMedium,
-                weight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   Widget _buildCommentsSection() {

@@ -4,6 +4,8 @@ import 'package:flutter_forager_app/data/repositories/bookmark_repository.dart';
 import 'package:flutter_forager_app/data/repositories/collection_repository.dart';
 import 'package:flutter_forager_app/data/repositories/custom_marker_type_repository.dart';
 import 'package:flutter_forager_app/data/repositories/following_repository.dart';
+import 'package:flutter_forager_app/data/repositories/emergency_notification_repository.dart';
+import 'package:flutter_forager_app/data/repositories/forage_request_repository.dart';
 import 'package:flutter_forager_app/data/repositories/friend_repository.dart';
 import 'package:flutter_forager_app/data/repositories/marker_repository.dart';
 import 'package:flutter_forager_app/data/repositories/post_repository.dart';
@@ -59,6 +61,25 @@ final customMarkerTypeRepositoryProvider = Provider<CustomMarkerTypeRepository>(
 final friendRepositoryProvider = Provider<FriendRepository>((ref) {
   final firestoreService = ref.watch(firestoreServiceProvider);
   return FriendRepository(firestoreService: firestoreService);
+});
+
+/// ForageRequestRepository provider
+///
+/// Manages "Let's Forage Together" requests between users.
+/// Handles the simplified connection flow with off-platform messaging.
+final forageRequestRepositoryProvider = Provider<ForageRequestRepository>((ref) {
+  final firestoreService = ref.watch(firestoreServiceProvider);
+  return ForageRequestRepository(firestoreService: firestoreService);
+});
+
+/// EmergencyNotificationRepository provider
+///
+/// Manages emergency notifications sent to designated contacts
+/// when a user plans to forage with someone new.
+final emergencyNotificationRepositoryProvider =
+    Provider<EmergencyNotificationRepository>((ref) {
+  final firestoreService = ref.watch(firestoreServiceProvider);
+  return EmergencyNotificationRepository(firestoreService: firestoreService);
 });
 
 /// FollowingRepository provider

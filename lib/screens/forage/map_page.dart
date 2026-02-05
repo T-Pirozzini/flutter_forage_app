@@ -453,8 +453,23 @@ class _MapPageState extends ConsumerState<MapPage> {
           MapFloatingControls(
             followUser: followUser,
             isFullScreen: showBackButton,
-            onFollowPressed: () {
-              ref.read(followUserProvider.notifier).state = !followUser;
+            onFollowPressed: () async {
+              final newFollowState = !followUser;
+              ref.read(followUserProvider.notifier).state = newFollowState;
+
+              // Immediately center on user when toggling ON
+              if (newFollowState) {
+                // Set flag to prevent onCameraMoveStarted from disabling follow
+                ref.read(isProgrammaticMoveProvider.notifier).state = true;
+                await _mapController.moveToLocation(
+                  LatLng(currentPosition.latitude, currentPosition.longitude),
+                  zoom: 16,
+                );
+                // Reset flag after a short delay (camera animation takes time)
+                Future.delayed(const Duration(milliseconds: 500), () {
+                  ref.read(isProgrammaticMoveProvider.notifier).state = false;
+                });
+              }
             },
             onAddMarkerPressed: (dialogContext, type) =>
                 _showMarkerDetailsDialog(context, dialogContext, type),

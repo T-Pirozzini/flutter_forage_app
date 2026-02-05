@@ -505,7 +505,8 @@ class _ForageLocationInfoState extends ConsumerState<ForageLocationInfo> {
         final data = doc.data()!;
 
         debugPrint('Refreshing status history from document ID: ${doc.id}');
-        debugPrint('Status history found: ${data['statusHistory']?.length ?? 0}');
+        debugPrint(
+            'Status history found: ${data['statusHistory']?.length ?? 0}');
 
         setState(() {
           _statusHistory =
@@ -1194,7 +1195,8 @@ class _ForageLocationInfoState extends ConsumerState<ForageLocationInfo> {
                     ),
               label: Text(_isBookmarked ? 'Bookmarked' : 'Bookmark Location'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: _isBookmarked ? Colors.amber : Colors.deepOrange,
+                foregroundColor:
+                    _isBookmarked ? Colors.amber : Colors.deepOrange,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 side: BorderSide(
                   color: _isBookmarked ? Colors.amber : Colors.deepOrange,

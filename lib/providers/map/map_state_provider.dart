@@ -17,6 +17,15 @@ final mapCompleterProvider =
 final followUserProvider = StateProvider.autoDispose<bool>((ref) => true);
 final lastManualMoveProvider = StateProvider.autoDispose<DateTime?>((ref) => null);
 
+// Flag to track programmatic camera moves (prevents disabling follow on our own moves)
+final isProgrammaticMoveProvider = StateProvider.autoDispose<bool>((ref) => false);
+
+// Map bearing/rotation for compass display (0 = north, 90 = east, etc.)
+final mapBearingProvider = StateProvider.autoDispose<double>((ref) => 0.0);
+
+// Search mode - when true, hide most controls to give more space for suggestions
+final isSearchFocusedProvider = StateProvider.autoDispose<bool>((ref) => false);
+
 // Map type state (terrain, satellite, hybrid)
 final mapTypeProvider = StateProvider.autoDispose<MapType>((ref) => MapType.terrain);
 

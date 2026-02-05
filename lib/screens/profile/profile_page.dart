@@ -328,6 +328,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                             ),
                           ),
 
+                        // 3.5. OPEN TO FORAGING TOGETHER TOGGLE
+                        if (_isCurrentUser)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: _buildOpenToForagingCard(userData),
+                          ),
+
                         // 4. SAVED RECIPES BUTTON
                         if (_isCurrentUser)
                           Padding(
@@ -609,6 +616,225 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildOpenToForagingCard(UserModel userData) {
+    return Card(
+      elevation: 2,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppTheme.borderRadiusMedium,
+        side: userData.openToForage
+            ? BorderSide(color: AppTheme.success, width: 2)
+            : BorderSide.none,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with toggle
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: userData.openToForage
+                        ? AppTheme.success.withValues(alpha: 0.15)
+                        : AppTheme.textMedium.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.hiking,
+                    size: 20,
+                    color: userData.openToForage
+                        ? AppTheme.success
+                        : AppTheme.textMedium,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Open to Foraging Together',
+                        style: AppTheme.title(size: 14),
+                      ),
+                      Text(
+                        userData.openToForage
+                            ? 'Others can see you\'re open to meetups'
+                            : 'Toggle to show others you\'re available',
+                        style: AppTheme.caption(size: 11),
+                      ),
+                    ],
+                  ),
+                ),
+                Switch(
+                  value: userData.openToForage,
+                  activeTrackColor: AppTheme.success.withValues(alpha: 0.5),
+                  activeThumbColor: AppTheme.success,
+                  onChanged: (value) => _toggleOpenToForage(value),
+                ),
+              ],
+            ),
+            // Preferences field (shown when enabled)
+            if (userData.openToForage) ...[
+              const SizedBox(height: 12),
+              TextField(
+                controller: TextEditingController(
+                    text: userData.foragePreferences ?? ''),
+                decoration: InputDecoration(
+                  hintText: 'e.g., Weekends, mushrooms, beginner-friendly',
+                  hintStyle: AppTheme.caption(size: 12, color: AppTheme.textLight),
+                  labelText: 'Your foraging preferences',
+                  labelStyle: AppTheme.caption(size: 12),
+                  filled: true,
+                  fillColor: AppTheme.backgroundLight,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide.none,
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(Icons.save, size: 20, color: AppTheme.primary),
+                    onPressed: () {
+                      // Save will happen on unfocus or explicit save
+                    },
+                  ),
+                ),
+                style: AppTheme.body(size: 13),
+                maxLines: 2,
+                onChanged: (value) {
+                  // Debounced save
+                  _saveForagePreferences(value);
+                },
+              ),
+              const SizedBox(height: 12),
+              // Safety reminder
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.warning.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppTheme.warning.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.security, size: 16, color: AppTheme.warning),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Safety tip: Always meet in public first (trailhead, parking lot). Tell someone where you\'re going.',
+                        style: AppTheme.caption(
+                          size: 11,
+                          color: AppTheme.textDark,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _toggleOpenToForage(bool value) async {
+    try {
+      final userRepo = ref.read(userRepositoryProvider);
+      await userRepo.update(currentUser.email!, {
+        'openToForage': value,
+      });
+
+      if (mounted && value) {
+        // Show safety dialog when enabling
+        _showForagingSafetyDialog();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating preference: $e'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _saveForagePreferences(String preferences) async {
+    try {
+      final userRepo = ref.read(userRepositoryProvider);
+      await userRepo.update(currentUser.email!, {
+        'foragePreferences': preferences.trim().isEmpty ? null : preferences.trim(),
+      });
+    } catch (e) {
+      // Silent fail for preferences - not critical
+      debugPrint('Error saving forage preferences: $e');
+    }
+  }
+
+  void _showForagingSafetyDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: AppTheme.borderRadiusMedium,
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.security, color: AppTheme.warning),
+            const SizedBox(width: 8),
+            Text('Stay Safe While Foraging', style: AppTheme.title(size: 18)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'You\'re now visible to other foragers looking for partners. Remember these safety tips:',
+              style: AppTheme.body(size: 14),
+            ),
+            const SizedBox(height: 16),
+            _buildSafetyTip(Icons.location_on, 'Meet in public first (trailhead, parking lot)'),
+            _buildSafetyTip(Icons.people, 'Tell someone where you\'re going'),
+            _buildSafetyTip(Icons.group, 'Forage in groups when possible'),
+            _buildSafetyTip(Icons.psychology, 'Trust your instincts'),
+            _buildSafetyTip(Icons.share_location, 'Share your location with an emergency contact'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Got it!', style: AppTheme.button(color: AppTheme.primary)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSafetyTip(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 16, color: AppTheme.success),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(text, style: AppTheme.caption(size: 13)),
+          ),
+        ],
       ),
     );
   }

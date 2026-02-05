@@ -277,37 +277,96 @@ class _FriendRequestPageState extends ConsumerState<FriendRequestPage> {
             return Card(
               margin: const EdgeInsets.symmetric(
                   horizontal: 8.0, vertical: 4.0),
-              child: ListTile(
-                leading: FutureBuilder<String>(
-                  future: _getProfileImageUrl(request.fromPhotoUrl ?? ''),
-                  builder: (context, snapshot) {
-                    if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                      return CircleAvatar(
-                        backgroundImage: NetworkImage(snapshot.data!),
-                      );
-                    }
-                    return CircleAvatar(
-                      child: Text(request.fromDisplayName.isNotEmpty
-                          ? request.fromDisplayName[0].toUpperCase()
-                          : '?'),
-                    );
-                  },
-                ),
-                title: Text(request.fromDisplayName),
-                subtitle: Text(request.fromEmail),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.check, color: Colors.green),
-                      onPressed: () => _handleRequest(
-                          context, userId, request.id, request.fromEmail, true),
+                    Row(
+                      children: [
+                        FutureBuilder<String>(
+                          future: _getProfileImageUrl(request.fromPhotoUrl ?? ''),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                              return CircleAvatar(
+                                backgroundImage: NetworkImage(snapshot.data!),
+                              );
+                            }
+                            return CircleAvatar(
+                              child: Text(request.fromDisplayName.isNotEmpty
+                                  ? request.fromDisplayName[0].toUpperCase()
+                                  : '?'),
+                            );
+                          },
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                request.fromDisplayName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              Text(
+                                request.fromEmail,
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.check, color: Colors.green),
+                              onPressed: () => _handleRequest(
+                                  context, userId, request.id, request.fromEmail, true),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close, color: Colors.red),
+                              onPressed: () => _handleRequest(
+                                  context, userId, request.id, request.fromEmail, false),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.close, color: Colors.red),
-                      onPressed: () => _handleRequest(
-                          context, userId, request.id, request.fromEmail, false),
-                    ),
+                    // Show message if present
+                    if (request.message != null && request.message!.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Message:',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 11,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              request.message!,
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

@@ -237,99 +237,6 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
     }
   }
 
-  Widget _buildHowToStep(String number, String text) {
-    return Row(
-      children: [
-        Container(
-          width: 24,
-          height: 24,
-          decoration: BoxDecoration(
-            color: AppTheme.primary,
-            shape: BoxShape.circle,
-          ),
-          child: Center(
-            child: Text(
-              number,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Text(
-          text,
-          style: AppTheme.body(size: 13, color: AppTheme.textMedium),
-        ),
-      ],
-    );
-  }
-
-  void _showInfoDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.info_outline, color: AppTheme.primary),
-            const SizedBox(width: 8),
-            const Text('About Community'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Share your foraging finds with the community!',
-              style: AppTheme.body(size: 14, color: AppTheme.textDark),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Like and bookmark locations to save them for later exploration.',
-              style: AppTheme.body(size: 14, color: AppTheme.textMedium),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppTheme.primary.withValues(alpha: 0.1),
-                borderRadius: AppTheme.borderRadiusMedium,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'How to share:',
-                    style: AppTheme.caption(
-                      size: 13,
-                      weight: FontWeight.w600,
-                      color: AppTheme.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  _buildHowToStep('1', 'Create a marker on the map'),
-                  const SizedBox(height: 4),
-                  _buildHowToStep('2', 'Open your location details'),
-                  const SizedBox(height: 4),
-                  _buildHowToStep('3', 'Tap "Share with Community"'),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Got it'),
-          ),
-        ],
-      ),
-    );
-  }
-
   /// Get the appropriate post stream based on the selected filter
   Stream<List<PostModel>> _getFilteredStream(CommunityFilter filter) {
     final postRepo = ref.read(postRepositoryProvider);
@@ -396,20 +303,6 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
         children: [
           Column(
             children: [
-              // Info icon row
-              Padding(
-                padding: const EdgeInsets.only(right: 8, top: 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.info_outline, color: AppTheme.textMedium),
-                      onPressed: _showInfoDialog,
-                      tooltip: 'About Community',
-                    ),
-                  ],
-                ),
-              ),
               // Filter bar
               const CommunityFilterBar(),
               Expanded(
@@ -477,11 +370,11 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
                                   ],
                                 ),
                                 const SizedBox(height: 12),
-                                _buildHowToStep('1', 'Create a marker on the map'),
-                                const SizedBox(height: 8),
-                                _buildHowToStep('2', 'Open your location details'),
-                                const SizedBox(height: 8),
-                                _buildHowToStep('3', 'Tap "Share with Community"'),
+                                Text('1. Create a marker on the map', style: AppTheme.body(size: 13, color: AppTheme.textMedium)),
+                                const SizedBox(height: 4),
+                                Text('2. Open your location details', style: AppTheme.body(size: 13, color: AppTheme.textMedium)),
+                                const SizedBox(height: 4),
+                                Text('3. Tap "Share with Community"', style: AppTheme.body(size: 13, color: AppTheme.textMedium)),
                               ],
                             ),
                           ),
@@ -510,36 +403,44 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
 
                 final posts = snapshot.data!;
 
-                return ListView.builder(
-                  itemCount: posts.length,
-                  itemBuilder: (context, index) {
-                    final post = posts[index];
-                    _commentControllers.putIfAbsent(
-                        post.id, () => TextEditingController());
-                    _statusNoteControllers.putIfAbsent(
-                        post.id, () => TextEditingController());
+                return Container(
+                  color: const Color(0xFF15181c), // Dark slate background (X-style)
+                  child: ListView.separated(
+                    itemCount: posts.length,
+                    separatorBuilder: (context, index) => Divider(
+                      height: 1,
+                      thickness: 0.5,
+                      color: Colors.white.withValues(alpha: 0.12),
+                    ),
+                    itemBuilder: (context, index) {
+                      final post = posts[index];
+                      _commentControllers.putIfAbsent(
+                          post.id, () => TextEditingController());
+                      _statusNoteControllers.putIfAbsent(
+                          post.id, () => TextEditingController());
 
-                    return PostCard(
-                      post: post,
-                      isFavorite: post.likedBy.contains(currentUser.email),
-                      isBookmarked:
-                          post.bookmarkedBy.contains(currentUser.email),
-                      onToggleFavorite: () => toggleFavorite(
-                          post.id, post.likedBy.contains(currentUser.email)),
-                      onToggleBookmark: () => toggleBookmark(
-                          post.id,
-                          post.bookmarkedBy.contains(currentUser.email),
-                          post),
-                      onDelete: () => deletePost(post.id, post.userEmail),
-                      commentController: _commentControllers[post.id]!,
-                      statusNoteController: _statusNoteControllers[post.id]!,
-                      onAddComment: (comment) => addComment(post.id, comment),
-                      onUpdateStatus: (status, notes) =>
-                          updateStatus(post.id, status, notes),
-                      currentUserEmail: currentUser.email!,
-                      username: username,
-                    );
-                  },
+                      return PostCard(
+                        post: post,
+                        isFavorite: post.likedBy.contains(currentUser.email),
+                        isBookmarked:
+                            post.bookmarkedBy.contains(currentUser.email),
+                        onToggleFavorite: () => toggleFavorite(
+                            post.id, post.likedBy.contains(currentUser.email)),
+                        onToggleBookmark: () => toggleBookmark(
+                            post.id,
+                            post.bookmarkedBy.contains(currentUser.email),
+                            post),
+                        onDelete: () => deletePost(post.id, post.userEmail),
+                        commentController: _commentControllers[post.id]!,
+                        statusNoteController: _statusNoteControllers[post.id]!,
+                        onAddComment: (comment) => addComment(post.id, comment),
+                        onUpdateStatus: (status, notes) =>
+                            updateStatus(post.id, status, notes),
+                        currentUserEmail: currentUser.email!,
+                        username: username,
+                      );
+                    },
+                  ),
                 );
               },
             ),

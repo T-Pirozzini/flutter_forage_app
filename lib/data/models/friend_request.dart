@@ -38,6 +38,9 @@ class FriendRequestModel {
   /// Display name of receiver (denormalized)
   final String toDisplayName;
 
+  /// Optional intro message from sender (150 char max)
+  final String? message;
+
   /// Current status of the request
   final FriendRequestStatus status;
 
@@ -54,6 +57,7 @@ class FriendRequestModel {
     this.fromPhotoUrl,
     required this.toEmail,
     this.toDisplayName = '',
+    this.message,
     this.status = FriendRequestStatus.pending,
     required this.createdAt,
     this.respondedAt,
@@ -69,6 +73,7 @@ class FriendRequestModel {
       fromPhotoUrl: data['fromPhotoUrl'],
       toEmail: data['toEmail'] ?? '',
       toDisplayName: data['toDisplayName'] ?? '',
+      message: data['message'],
       status: FriendRequestStatus.fromString(data['status'] ?? 'pending'),
       createdAt: data['createdAt'] != null
           ? (data['createdAt'] as Timestamp).toDate()
@@ -88,6 +93,7 @@ class FriendRequestModel {
       fromPhotoUrl: map['fromPhotoUrl'],
       toEmail: map['toEmail'] ?? '',
       toDisplayName: map['toDisplayName'] ?? '',
+      message: map['message'],
       status: FriendRequestStatus.fromString(map['status'] ?? 'pending'),
       createdAt: map['createdAt'] != null
           ? (map['createdAt'] as Timestamp).toDate()
@@ -106,6 +112,7 @@ class FriendRequestModel {
       if (fromPhotoUrl != null) 'fromPhotoUrl': fromPhotoUrl,
       'toEmail': toEmail,
       'toDisplayName': toDisplayName,
+      if (message != null) 'message': message,
       'status': status.name,
       'createdAt': Timestamp.fromDate(createdAt),
       if (respondedAt != null) 'respondedAt': Timestamp.fromDate(respondedAt!),
@@ -129,6 +136,7 @@ class FriendRequestModel {
     String? fromPhotoUrl,
     String? toEmail,
     String? toDisplayName,
+    String? message,
     FriendRequestStatus? status,
     DateTime? createdAt,
     DateTime? respondedAt,
@@ -140,6 +148,7 @@ class FriendRequestModel {
       fromPhotoUrl: fromPhotoUrl ?? this.fromPhotoUrl,
       toEmail: toEmail ?? this.toEmail,
       toDisplayName: toDisplayName ?? this.toDisplayName,
+      message: message ?? this.message,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       respondedAt: respondedAt ?? this.respondedAt,

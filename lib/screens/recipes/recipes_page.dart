@@ -8,66 +8,6 @@ import 'add_recipe_page.dart';
 class RecipesPage extends ConsumerWidget {
   const RecipesPage({super.key});
 
-  void _showInfoDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: AppTheme.borderRadiusMedium),
-        title: Row(
-          children: [
-            Icon(Icons.restaurant_menu, color: AppTheme.primary, size: 24),
-            const SizedBox(width: 8),
-            Text(
-              'About Recipes',
-              style: AppTheme.heading(size: 18, color: AppTheme.primary),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Cook a meal with your foraged ingredients and share with the community!',
-              style: AppTheme.body(size: 14, color: AppTheme.textDark),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Icon(Icons.eco, color: AppTheme.success, size: 18),
-                const SizedBox(width: 8),
-                Text(
-                  'Foraged ingredients',
-                  style: AppTheme.body(size: 14, color: AppTheme.textDark),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.shopping_basket, color: AppTheme.secondary, size: 18),
-                const SizedBox(width: 8),
-                Text(
-                  'Purchased ingredients',
-                  style: AppTheme.body(size: 14, color: AppTheme.textDark),
-                ),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Got it',
-              style: AppTheme.body(color: AppTheme.primary),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final recipeStream = ref.watch(recipeStreamProvider);
@@ -77,26 +17,6 @@ class RecipesPage extends ConsumerWidget {
         data: (recipes) {
           return CustomScrollView(
             slivers: [
-              // Header with info icon
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      IconButton(
-                        icon: Icon(
-                          Icons.info_outline,
-                          color: AppTheme.primary,
-                        ),
-                        onPressed: () => _showInfoDialog(context),
-                        tooltip: 'About Recipes',
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
               // Empty state or grid
               if (recipes.isEmpty)
                 SliverFillRemaining(

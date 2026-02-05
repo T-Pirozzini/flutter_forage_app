@@ -20,12 +20,19 @@ class FriendModel {
   /// Whether this is a close friend (for visibility features)
   final bool closeFriend;
 
+  /// Whether this friend should be notified for safety when foraging
+  ///
+  /// Emergency contacts receive notifications when the user plans to
+  /// forage with someone new, including date, time, and location.
+  final bool isEmergencyContact;
+
   FriendModel({
     required this.friendEmail,
     required this.displayName,
     this.photoUrl,
     required this.addedAt,
     this.closeFriend = false,
+    this.isEmergencyContact = false,
   });
 
   /// Create from Firestore document
@@ -39,6 +46,7 @@ class FriendModel {
           ? (data['addedAt'] as Timestamp).toDate()
           : DateTime.now(),
       closeFriend: data['closeFriend'] ?? false,
+      isEmergencyContact: data['isEmergencyContact'] ?? false,
     );
   }
 
@@ -52,6 +60,7 @@ class FriendModel {
           ? (map['addedAt'] as Timestamp).toDate()
           : DateTime.now(),
       closeFriend: map['closeFriend'] ?? false,
+      isEmergencyContact: map['isEmergencyContact'] ?? false,
     );
   }
 
@@ -63,6 +72,7 @@ class FriendModel {
       if (photoUrl != null) 'photoUrl': photoUrl,
       'addedAt': Timestamp.fromDate(addedAt),
       'closeFriend': closeFriend,
+      'isEmergencyContact': isEmergencyContact,
     };
   }
 
@@ -73,6 +83,7 @@ class FriendModel {
     String? photoUrl,
     DateTime? addedAt,
     bool? closeFriend,
+    bool? isEmergencyContact,
   }) {
     return FriendModel(
       friendEmail: friendEmail ?? this.friendEmail,
@@ -80,6 +91,7 @@ class FriendModel {
       photoUrl: photoUrl ?? this.photoUrl,
       addedAt: addedAt ?? this.addedAt,
       closeFriend: closeFriend ?? this.closeFriend,
+      isEmergencyContact: isEmergencyContact ?? this.isEmergencyContact,
     );
   }
 
@@ -95,6 +107,6 @@ class FriendModel {
 
   @override
   String toString() {
-    return 'FriendModel(friendEmail: $friendEmail, displayName: $displayName, closeFriend: $closeFriend)';
+    return 'FriendModel(friendEmail: $friendEmail, displayName: $displayName, closeFriend: $closeFriend, isEmergencyContact: $isEmergencyContact)';
   }
 }

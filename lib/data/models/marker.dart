@@ -146,6 +146,10 @@ class MarkerModel {
   /// List of user emails allowed to view this marker (when visibility is 'specific')
   final List<String> allowedViewers;
 
+  /// Whether the location coordinates are obfuscated (for non-close friends)
+  /// When true, the lat/lng are approximate (~500m radius from actual location)
+  final bool isLocationObfuscated;
+
   String get imageUrl => imageUrls.isNotEmpty ? imageUrls.first : '';
 
   /// Whether this marker is visible to the public
@@ -176,6 +180,7 @@ class MarkerModel {
     this.statusHistory = const [],
     this.visibility = MarkerVisibility.private,
     this.allowedViewers = const [],
+    this.isLocationObfuscated = false,
   });
 
   factory MarkerModel.fromFirestore(DocumentSnapshot doc) {
@@ -255,6 +260,7 @@ class MarkerModel {
     List<MarkerStatusUpdate>? statusHistory,
     MarkerVisibility? visibility,
     List<String>? allowedViewers,
+    bool? isLocationObfuscated,
   }) {
     return MarkerModel(
       id: id ?? this.id,
@@ -272,6 +278,7 @@ class MarkerModel {
       statusHistory: statusHistory ?? this.statusHistory,
       visibility: visibility ?? this.visibility,
       allowedViewers: allowedViewers ?? this.allowedViewers,
+      isLocationObfuscated: isLocationObfuscated ?? this.isLocationObfuscated,
     );
   }
 

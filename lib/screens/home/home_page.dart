@@ -101,59 +101,57 @@ class _HomePageState extends ConsumerState<HomePage> {
       appBar: AppBar(
         toolbarHeight: 70,
         backgroundColor: AppTheme.primary,
-        // User avatar + username on LEFT - opens drawer
-        leadingWidth: 140,
+        // Hamburger menu + User avatar on LEFT
+        leadingWidth: 100,
         leading: Builder(
           builder: (context) => Padding(
-            padding: const EdgeInsets.only(left: 8.0),
-            child: GestureDetector(
-              onTap: () => Scaffold.of(context).openDrawer(),
-              child: StreamBuilder<UserModel?>(
-                stream: ref
-                    .read(userRepositoryProvider)
-                    .streamById(currentUser.email!),
-                builder: (context, snapshot) {
-                  final profilePic =
-                      snapshot.data?.profilePic ?? 'profileImage1.jpg';
-                  final username = snapshot.data?.username ??
-                      currentUser.email!.split('@')[0];
-                  return Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 46,
-                        height: 46,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border:
-                              Border.all(color: AppTheme.textWhite, width: 2),
-                          image: DecorationImage(
-                            image: AssetImage('lib/assets/images/$profilePic'),
-                            fit: BoxFit.cover,
-                            onError: (exception, stackTrace) {},
+            padding: const EdgeInsets.only(left: 4.0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Hamburger menu icon - opens drawer
+                IconButton(
+                  icon: const Icon(Icons.menu, color: Colors.white, size: 28),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                  tooltip: 'Menu',
+                ),
+                // User avatar - navigates to profile tab
+                GestureDetector(
+                  onTap: () => setState(() => currentIndex = 1), // Profile tab
+                  child: StreamBuilder<UserModel?>(
+                    stream: ref
+                        .read(userRepositoryProvider)
+                        .streamById(currentUser.email!),
+                    builder: (context, snapshot) {
+                      final profilePic =
+                          snapshot.data?.profilePic ?? 'profileImage1.jpg';
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border:
+                                  Border.all(color: AppTheme.textWhite, width: 2),
+                              image: DecorationImage(
+                                image: AssetImage('lib/assets/images/$profilePic'),
+                                fit: BoxFit.cover,
+                                onError: (exception, stackTrace) {},
+                              ),
+                            ),
+                            child: snapshot.data?.profilePic == null
+                                ? Icon(Icons.person,
+                                    color: AppTheme.textWhite, size: 22)
+                                : null,
                           ),
-                        ),
-                        child: snapshot.data?.profilePic == null
-                            ? Icon(Icons.person,
-                                color: AppTheme.textWhite, size: 24)
-                            : null,
-                      ),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          username,
-                          style: TextStyle(
-                            color: AppTheme.textWhite.withValues(alpha: 0.9),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -167,13 +165,47 @@ class _HomePageState extends ConsumerState<HomePage> {
             fit: BoxFit.contain,
           ),
         ),
-        // Notifications bell on RIGHT
+        // Welcome message + Notifications bell on RIGHT
         actions: [
+          // Welcome message with username
+          StreamBuilder<UserModel?>(
+            stream: ref
+                .read(userRepositoryProvider)
+                .streamById(currentUser.email!),
+            builder: (context, snapshot) {
+              final username = snapshot.data?.username ??
+                  currentUser.email!.split('@')[0];
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    'Welcome back,',
+                    style: TextStyle(
+                      color: AppTheme.textWhite.withValues(alpha: 0.7),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                  Text(
+                    username,
+                    style: TextStyle(
+                      color: AppTheme.textWhite,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              );
+            },
+          ),
+          // Notification bell
           Padding(
-            padding: const EdgeInsets.only(right: 8.0),
+            padding: const EdgeInsets.only(right: 4.0),
             child: IconButton(
               icon: Icon(Icons.notifications_outlined,
-                  color: AppTheme.textWhite, size: 32),
+                  color: AppTheme.textWhite, size: 28),
               onPressed: () {
                 // TODO: Navigate to notifications page
                 ScaffoldMessenger.of(context).showSnackBar(
