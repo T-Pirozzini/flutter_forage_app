@@ -8,7 +8,10 @@
       "Bash(git merge:*)",
       "Bash(git push:*)",
       "Bash(C:Userstpiroflutterbinflutter.bat analyze lib/screens/community/post_detail_screen.dart)",
-      "Bash(dart analyze:*)"
+      "Bash(dart analyze:*)",
+      "Bash(cmd /c \"flutter analyze lib/screens/friends/tabs/ lib/screens/friends/components/friend_card.dart lib/data/models/location_sharing_info.dart 2>&1\")",
+      "Bash(cmd /c \"flutter analyze 2>&1\")",
+      "Bash(powershell -Command:*)"
     ]
   }
 }

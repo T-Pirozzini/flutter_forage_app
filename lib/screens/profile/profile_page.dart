@@ -4,6 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
 import 'package:flutter_forager_app/data/models/user.dart';
+import 'package:flutter_forager_app/data/services/geocoding_cache.dart';
+import 'package:flutter_forager_app/core/utils/forage_type_utils.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:flutter_forager_app/providers/markers/marker_data.dart';
 import 'package:flutter_forager_app/screens/friends/friends_controller.dart';
 import 'package:flutter_forager_app/screens/my_foraging/my_foraging_page.dart';
@@ -683,36 +686,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             // Preferences field (shown when enabled)
             if (userData.openToForage) ...[
               const SizedBox(height: 12),
-              TextField(
-                controller: TextEditingController(
-                    text: userData.foragePreferences ?? ''),
-                decoration: InputDecoration(
-                  hintText: 'e.g., Weekends, mushrooms, beginner-friendly',
-                  hintStyle: AppTheme.caption(size: 12, color: AppTheme.textLight),
-                  labelText: 'Your foraging preferences',
-                  labelStyle: AppTheme.caption(size: 12),
-                  filled: true,
-                  fillColor: AppTheme.backgroundLight,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide.none,
-                  ),
-                  suffixIcon: IconButton(
-                    icon: Icon(Icons.save, size: 20, color: AppTheme.primary),
-                    onPressed: () {
-                      // Save will happen on unfocus or explicit save
-                    },
-                  ),
-                ),
-                style: AppTheme.body(size: 13),
-                maxLines: 2,
-                onChanged: (value) {
-                  // Debounced save
-                  _saveForagePreferences(value);
-                },
-              ),
+              _buildForagePreferencesSelector(userData),
+              const SizedBox(height: 12),
+              // Primary forage location
+              _buildPrimaryLocationRow(userData),
               const SizedBox(height: 12),
               // Safety reminder
               Container(
@@ -783,6 +760,492 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     }
   }
 
+  Widget _buildForagePreferencesSelector(UserModel userData) {
+    // Parse current preferences into a set of selected items
+    final currentPrefs = userData.foragePreferences ?? '';
+    final selectedTypes = currentPrefs
+        .split(',')
+        .map((s) => s.trim().toLowerCase())
+        .where((s) => s.isNotEmpty)
+        .toSet();
+
+    // Get standard forage types
+    final standardTypes = ForageTypeUtils.allTypes;
+
+    // Common availability/skill tags
+    final availabilityTags = [
+      'weekends',
+      'weekdays',
+      'mornings',
+      'evenings',
+    ];
+
+    final skillTags = [
+      'beginner-friendly',
+      'experienced',
+      'willing to teach',
+      'looking to learn',
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section: What do you forage?
+        Text(
+          'What do you forage?',
+          style: AppTheme.caption(size: 12, weight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: standardTypes.map((type) {
+            final isSelected = selectedTypes.contains(type.toLowerCase());
+            final color = ForageTypeUtils.getTypeColor(type);
+            return _buildSelectableChip(
+              label: _capitalizeFirst(type),
+              isSelected: isSelected,
+              color: color,
+              onTap: () => _toggleForagePreference(type, selectedTypes, userData),
+            );
+          }).toList(),
+        ),
+
+        // Custom marker types section
+        FutureBuilder<List<dynamic>>(
+          future: ref.read(customMarkerTypeRepositoryProvider).getByUserId(currentUser.email!),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return const SizedBox.shrink();
+            }
+
+            final customTypes = snapshot.data!;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 12),
+                Text(
+                  'Your custom types',
+                  style: AppTheme.caption(size: 12, weight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: customTypes.map((customType) {
+                    final typeName = customType.name as String;
+                    final emoji = customType.emoji as String;
+                    final isSelected = selectedTypes.contains(typeName.toLowerCase());
+                    return _buildSelectableChip(
+                      label: '$emoji $typeName',
+                      isSelected: isSelected,
+                      color: AppTheme.primary,
+                      onTap: () => _toggleForagePreference(typeName, selectedTypes, userData),
+                    );
+                  }).toList(),
+                ),
+              ],
+            );
+          },
+        ),
+
+        const SizedBox(height: 16),
+
+        // Section: When are you available?
+        Text(
+          'When are you available?',
+          style: AppTheme.caption(size: 12, weight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: availabilityTags.map((tag) {
+            final isSelected = selectedTypes.contains(tag.toLowerCase());
+            return _buildSelectableChip(
+              label: _capitalizeFirst(tag),
+              isSelected: isSelected,
+              color: AppTheme.info,
+              onTap: () => _toggleForagePreference(tag, selectedTypes, userData),
+            );
+          }).toList(),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Section: Experience level
+        Text(
+          'Experience level',
+          style: AppTheme.caption(size: 12, weight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: skillTags.map((tag) {
+            final isSelected = selectedTypes.contains(tag.toLowerCase());
+            return _buildSelectableChip(
+              label: _capitalizeFirst(tag),
+              isSelected: isSelected,
+              color: AppTheme.xp,
+              onTap: () => _toggleForagePreference(tag, selectedTypes, userData),
+            );
+          }).toList(),
+        ),
+
+        // Show selected summary
+        if (selectedTypes.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppTheme.success.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.check_circle, size: 14, color: AppTheme.success),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '${selectedTypes.length} preferences selected',
+                    style: AppTheme.caption(size: 11, color: AppTheme.success),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => _clearAllForagePreferences(),
+                  child: Text(
+                    'Clear all',
+                    style: AppTheme.caption(
+                      size: 11,
+                      color: AppTheme.textMedium,
+                      weight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSelectableChip({
+    required String label,
+    required bool isSelected,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? color : color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? color : color.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Text(
+          label,
+          style: AppTheme.caption(
+            size: 11,
+            color: isSelected ? Colors.white : color,
+            weight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _toggleForagePreference(
+    String preference,
+    Set<String> currentSelections,
+    UserModel userData,
+  ) {
+    final newSelections = Set<String>.from(currentSelections);
+    final lowerPref = preference.toLowerCase();
+
+    if (newSelections.contains(lowerPref)) {
+      newSelections.remove(lowerPref);
+    } else {
+      newSelections.add(lowerPref);
+    }
+
+    // Convert back to comma-separated string
+    final newPrefsString = newSelections.join(', ');
+    _saveForagePreferences(newPrefsString);
+  }
+
+  Future<void> _clearAllForagePreferences() async {
+    await _saveForagePreferences('');
+  }
+
+  String _capitalizeFirst(String text) {
+    if (text.isEmpty) return text;
+    // Handle hyphenated words like "beginner-friendly"
+    return text.split('-').map((word) {
+      if (word.isEmpty) return word;
+      return word[0].toUpperCase() + word.substring(1);
+    }).join('-');
+  }
+
+  Widget _buildPrimaryLocationRow(UserModel userData) {
+    final hasLocation = userData.hasPrimaryForageLocation;
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppTheme.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.location_on,
+            size: 18,
+            color: hasLocation ? AppTheme.primary : AppTheme.textMedium,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Primary Forage Location',
+                  style: AppTheme.caption(size: 11, color: AppTheme.textMedium),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  hasLocation
+                      ? userData.primaryForageLocation!
+                      : 'Not set - will use your marker locations',
+                  style: AppTheme.body(
+                    size: 13,
+                    color: hasLocation ? AppTheme.textDark : AppTheme.textMedium,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () => _showEditLocationDialog(userData),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              minimumSize: Size.zero,
+            ),
+            child: Text(
+              hasLocation ? 'Edit' : 'Set',
+              style: AppTheme.caption(
+                size: 12,
+                color: AppTheme.primary,
+                weight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showEditLocationDialog(UserModel userData) async {
+    await showDialog<bool>(
+      context: context,
+      builder: (context) => _LocationPickerDialog(
+        currentLocation: userData.primaryForageLocation,
+        onSave: _savePrimaryLocation,
+        onClear: _clearPrimaryLocation,
+        onPickFromMarkers: _showMarkerLocationPicker,
+      ),
+    );
+  }
+
+  Future<void> _showMarkerLocationPicker() async {
+    final markerRepo = ref.read(markerRepositoryProvider);
+    final markers = await markerRepo.getByUserId(currentUser.email!);
+
+    if (markers.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('No markers found. Add some forage locations first!'),
+            backgroundColor: AppTheme.warning,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Sort by most recent
+    markers.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
+    if (!mounted) return;
+
+    final selected = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        minChildSize: 0.3,
+        maxChildSize: 0.8,
+        expand: false,
+        builder: (context, scrollController) => Column(
+          children: [
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppTheme.textMedium.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Pick from your markers',
+                style: AppTheme.title(size: 16),
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                controller: scrollController,
+                itemCount: markers.length,
+                itemBuilder: (context, index) {
+                  final marker = markers[index];
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: AppTheme.primary.withValues(alpha: 0.15),
+                      child: Icon(Icons.location_on, color: AppTheme.primary, size: 20),
+                    ),
+                    title: Text(marker.name, style: AppTheme.body(size: 14)),
+                    subtitle: Text(
+                      marker.type,
+                      style: AppTheme.caption(size: 12, color: AppTheme.textMedium),
+                    ),
+                    onTap: () => Navigator.pop(context, {
+                      'lat': marker.latitude,
+                      'lng': marker.longitude,
+                    }),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (selected != null && mounted) {
+      // Use geocoding to get a readable address
+      final address = await GeocodingCache.getAddress(
+        selected['lat'] as double,
+        selected['lng'] as double,
+      );
+
+      await _savePrimaryLocation(
+        address,
+        latitude: selected['lat'] as double,
+        longitude: selected['lng'] as double,
+      );
+    }
+  }
+
+  Future<void> _savePrimaryLocation(
+    String location, {
+    double? latitude,
+    double? longitude,
+  }) async {
+    try {
+      double lat = latitude ?? 0.0;
+      double lng = longitude ?? 0.0;
+
+      // If no coordinates provided, try to geocode the location text
+      if (latitude == null || longitude == null) {
+        try {
+          final locations = await locationFromAddress(location);
+          if (locations.isNotEmpty) {
+            lat = locations.first.latitude;
+            lng = locations.first.longitude;
+          }
+        } catch (e) {
+          // Geocoding failed - warn user but still save the text
+          debugPrint('Geocoding failed for "$location": $e');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Could not verify "$location". Distance calculations may not work.'),
+                backgroundColor: AppTheme.warning,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        }
+      }
+
+      final userRepo = ref.read(userRepositoryProvider);
+      await userRepo.setPrimaryForageLocation(
+        userId: currentUser.email!,
+        location: location,
+        latitude: lat,
+        longitude: lng,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Primary location updated'),
+            backgroundColor: AppTheme.success,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving location: $e'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _clearPrimaryLocation() async {
+    try {
+      final userRepo = ref.read(userRepositoryProvider);
+      await userRepo.clearPrimaryForageLocation(currentUser.email!);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Location will be detected from your markers'),
+            backgroundColor: AppTheme.info,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error clearing location: $e'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    }
+  }
+
   void _showForagingSafetyDialog() {
     showDialog(
       context: context,
@@ -836,6 +1299,170 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Dialog for editing the primary forage location
+class _LocationPickerDialog extends StatefulWidget {
+  final String? currentLocation;
+  final Future<void> Function(String, {double? latitude, double? longitude}) onSave;
+  final Future<void> Function() onClear;
+  final Future<void> Function() onPickFromMarkers;
+
+  const _LocationPickerDialog({
+    this.currentLocation,
+    required this.onSave,
+    required this.onClear,
+    required this.onPickFromMarkers,
+  });
+
+  @override
+  State<_LocationPickerDialog> createState() => _LocationPickerDialogState();
+}
+
+class _LocationPickerDialogState extends State<_LocationPickerDialog> {
+  late TextEditingController _controller;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.currentLocation ?? '');
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: AppTheme.borderRadiusMedium,
+      ),
+      title: Row(
+        children: [
+          Icon(Icons.location_on, color: AppTheme.primary, size: 22),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text('Forage Location', style: AppTheme.title(size: 16)),
+          ),
+        ],
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'This helps other foragers find people nearby.',
+              style: AppTheme.caption(size: 12, color: AppTheme.textMedium),
+            ),
+            const SizedBox(height: 16),
+
+            // Pick from markers button (recommended)
+            OutlinedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                widget.onPickFromMarkers();
+              },
+              icon: const Icon(Icons.my_location, size: 18),
+              label: const Text('Use My Marker Location'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppTheme.primary,
+                minimumSize: const Size(double.infinity, 44),
+                side: BorderSide(color: AppTheme.primary),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Center(
+              child: Text(
+                '(Recommended - accurate distance)',
+                style: AppTheme.caption(size: 10, color: AppTheme.textMedium),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(child: Divider(color: AppTheme.textMedium.withValues(alpha: 0.3))),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text('or', style: AppTheme.caption(color: AppTheme.textMedium)),
+                ),
+                Expanded(child: Divider(color: AppTheme.textMedium.withValues(alpha: 0.3))),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Manual entry
+            TextField(
+              controller: _controller,
+              decoration: InputDecoration(
+                hintText: 'e.g., Portland, Oregon',
+                hintStyle: AppTheme.caption(color: AppTheme.textLight),
+                labelText: 'Enter city/region',
+                labelStyle: AppTheme.caption(size: 12),
+                filled: true,
+                fillColor: AppTheme.backgroundLight,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              style: AppTheme.body(size: 14),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        if (widget.currentLocation != null)
+          TextButton(
+            onPressed: () async {
+              await widget.onClear();
+              if (context.mounted) Navigator.pop(context, true);
+            },
+            child: Text(
+              'Clear',
+              style: AppTheme.button(color: AppTheme.textMedium),
+            ),
+          ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: Text(
+            'Cancel',
+            style: AppTheme.button(color: AppTheme.textMedium),
+          ),
+        ),
+        ElevatedButton(
+          onPressed: _isLoading
+              ? null
+              : () async {
+                  final location = _controller.text.trim();
+                  if (location.isEmpty) {
+                    Navigator.pop(context, false);
+                    return;
+                  }
+
+                  setState(() => _isLoading = true);
+                  await widget.onSave(location);
+                  if (context.mounted) Navigator.pop(context, true);
+                },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.primary,
+          ),
+          child: _isLoading
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                )
+              : const Text('Save'),
+        ),
+      ],
     );
   }
 }

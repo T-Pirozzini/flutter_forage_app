@@ -5,6 +5,7 @@ import 'package:flutter_forager_app/core/utils/location_obfuscation.dart';
 import 'package:flutter_forager_app/data/repositories/base_repository.dart';
 import 'package:flutter_forager_app/data/services/firebase/firestore_service.dart';
 import 'package:flutter_forager_app/data/models/marker.dart';
+import 'package:flutter_forager_app/data/models/location_sharing_info.dart';
 
 /// Repository for managing Marker data
 ///
@@ -365,5 +366,109 @@ class MarkerRepository extends BaseRepository<MarkerModel> {
     return markers.map((marker) {
       return LocationObfuscation.obfuscateMarker(marker);
     }).toList();
+  }
+
+  // ============ LOCATION SHARING INFO ============
+
+  /// Get location sharing information between two users.
+  ///
+  /// Returns how many of the owner's locations are shared with or hidden from
+  /// the viewer based on visibility settings.
+  ///
+  /// [ownerEmail] - Email of the user who owns the markers
+  /// [viewerEmail] - Email of the user viewing (to check visibility)
+  /// [isFriend] - Whether the viewer is a friend of the owner
+  Future<LocationSharingInfo> getLocationSharingInfo({
+    required String ownerEmail,
+    required String viewerEmail,
+  }) async {
+    try {
+      final markers = await getByUserId(ownerEmail);
+
+      if (markers.isEmpty) {
+        return const LocationSharingInfo.empty();
+      }
+
+      int sharedCount = 0;
+      int hiddenCount = 0;
+
+      for (final marker in markers) {
+        final isVisible = _isMarkerVisibleToViewer(
+          marker: marker,
+          viewerEmail: viewerEmail,
+        );
+
+        if (isVisible) {
+          sharedCount++;
+        } else {
+          hiddenCount++;
+        }
+      }
+
+      return LocationSharingInfo(
+        totalLocations: markers.length,
+        sharedWithViewer: sharedCount,
+        hiddenFromViewer: hiddenCount,
+      );
+    } catch (e) {
+      debugPrint('Error getting location sharing info: $e');
+      return const LocationSharingInfo.empty();
+    }
+  }
+
+  /// Stream location sharing info (updates when markers change).
+  Stream<LocationSharingInfo> streamLocationSharingInfo({
+    required String ownerEmail,
+    required String viewerEmail,
+  }) {
+    return streamByUserId(ownerEmail).map((markers) {
+      if (markers.isEmpty) {
+        return const LocationSharingInfo.empty();
+      }
+
+      int sharedCount = 0;
+      int hiddenCount = 0;
+
+      for (final marker in markers) {
+        final isVisible = _isMarkerVisibleToViewer(
+          marker: marker,
+          viewerEmail: viewerEmail,
+        );
+
+        if (isVisible) {
+          sharedCount++;
+        } else {
+          hiddenCount++;
+        }
+      }
+
+      return LocationSharingInfo(
+        totalLocations: markers.length,
+        sharedWithViewer: sharedCount,
+        hiddenFromViewer: hiddenCount,
+      );
+    });
+  }
+
+  /// Check if a marker is visible to a specific viewer.
+  bool _isMarkerVisibleToViewer({
+    required MarkerModel marker,
+    required String viewerEmail,
+  }) {
+    // Owner can always see their own markers
+    if (marker.markerOwner == viewerEmail) return true;
+
+    switch (marker.visibility) {
+      case MarkerVisibility.public:
+        return true;
+      case MarkerVisibility.private:
+        return false;
+      case MarkerVisibility.friends:
+        // For friends visibility, the caller should be a friend
+        // This method is called in friend context, so return true
+        return true;
+      case MarkerVisibility.specific:
+        return marker.allowedViewers.contains(viewerEmail);
+    }
   }
 }

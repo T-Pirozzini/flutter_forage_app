@@ -84,6 +84,37 @@ class UserRepository extends BaseRepository<UserModel> {
     });
   }
 
+  /// Set or update the user's primary forage location
+  ///
+  /// This is the location displayed on Discover cards to help foragers
+  /// find others nearby. Users can edit this in their profile.
+  ///
+  /// [userId] - The user's email/ID
+  /// [location] - Display string (e.g., "Portland, United States")
+  /// [latitude] - Location latitude
+  /// [longitude] - Location longitude
+  Future<void> setPrimaryForageLocation({
+    required String userId,
+    required String location,
+    required double latitude,
+    required double longitude,
+  }) async {
+    await update(userId, {
+      'primaryForageLocation': location,
+      'primaryForageLatitude': latitude,
+      'primaryForgeLongitude': longitude,
+    });
+  }
+
+  /// Clear the user's primary forage location
+  Future<void> clearPrimaryForageLocation(String userId) async {
+    await update(userId, {
+      'primaryForageLocation': FieldValue.delete(),
+      'primaryForageLatitude': FieldValue.delete(),
+      'primaryForgeLongitude': FieldValue.delete(),
+    });
+  }
+
   // GAMIFICATION METHODS
 
   /// Award points to a user

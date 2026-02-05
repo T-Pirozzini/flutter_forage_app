@@ -38,7 +38,8 @@ class UserModel {
   final Map<String, int> activityStats; // Detailed stats for gamification
   final int currentStreak; // Current daily activity streak
   final int longestStreak; // Best streak ever achieved
-  final DateTime? lastActivityDate; // Last time user was active (for streak tracking)
+  final DateTime?
+      lastActivityDate; // Last time user was active (for streak tracking)
 
   // PREMIUM - New fields
   final String subscriptionTier; // 'free', 'premium', 'pro'
@@ -54,6 +55,16 @@ class UserModel {
 
   /// User's foraging preferences/availability (e.g., "Weekends, mushrooms, beginner-friendly")
   final String? foragePreferences;
+
+  /// Primary forage location - display string (e.g., "Portland, United States")
+  /// If null, will be auto-set from user's first/most recent marker
+  final String? primaryForageLocation;
+
+  /// Primary forage location latitude (for distance calculations)
+  final double? primaryForageLatitude;
+
+  /// Primary forage location longitude (for distance calculations)
+  final double? primaryForgeLongitude;
 
   UserModel({
     required this.uid,
@@ -90,92 +101,99 @@ class UserModel {
     // Social/Foraging together fields
     this.openToForage = false,
     this.foragePreferences,
+    this.primaryForageLocation,
+    this.primaryForageLatitude,
+    this.primaryForgeLongitude,
   });
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
-  final data = doc.data() as Map<String, dynamic>;
+    final data = doc.data() as Map<String, dynamic>;
 
-  // Helper function to safely convert dynamic to Map<String, String>
-  Map<String, String> safeStringMapConvert(dynamic value) {
-    if (value == null) return {};
-    if (value is Map) {
-      return Map<String, String>.from(value);
+    // Helper function to safely convert dynamic to Map<String, String>
+    Map<String, String> safeStringMapConvert(dynamic value) {
+      if (value == null) return {};
+      if (value is Map) {
+        return Map<String, String>.from(value);
+      }
+      return {};
     }
-    return {};
-  }
 
-  // Helper function to safely convert dynamic to Map<String, int>
-  Map<String, int> safeIntMapConvert(dynamic value) {
-    if (value == null) return {};
-    if (value is Map) {
-      return Map<String, int>.from(value);
+    // Helper function to safely convert dynamic to Map<String, int>
+    Map<String, int> safeIntMapConvert(dynamic value) {
+      if (value == null) return {};
+      if (value is Map) {
+        return Map<String, int>.from(value);
+      }
+      return {};
     }
-    return {};
-  }
 
-  // Helper function to safely convert dynamic to List<String>
-  List<String> safeStringListConvert(dynamic value) {
-    if (value == null) return [];
-    if (value is List) {
-      return List<String>.from(value.whereType<String>());
+    // Helper function to safely convert dynamic to List<String>
+    List<String> safeStringListConvert(dynamic value) {
+      if (value == null) return [];
+      if (value is List) {
+        return List<String>.from(value.whereType<String>());
+      }
+      return [];
     }
-    return [];
-  }
 
-  // Helper function to get string value with fallback for empty strings
-  String getStringValue(dynamic value, String fallback) {
-    if (value == null) return fallback;
-    final stringValue = value.toString().trim();
-    return stringValue.isNotEmpty ? stringValue : fallback;
-  }
+    // Helper function to get string value with fallback for empty strings
+    String getStringValue(dynamic value, String fallback) {
+      if (value == null) return fallback;
+      final stringValue = value.toString().trim();
+      return stringValue.isNotEmpty ? stringValue : fallback;
+    }
 
-  return UserModel(
-    uid: doc.id,
-    email: data['email']?.toString() ?? '',
-    username: data['username']?.toString() ?? '',
-    bio: data['bio']?.toString() ?? '',
-    profilePic: getStringValue(data['profilePic'], 'profileImage1.jpg'),
-    profileBackground: getStringValue(data['profileBackground'], 'backgroundProfileImage1.jpg'),
-    friends: safeStringListConvert(data['friends']),
-    friendRequests: safeStringMapConvert(data['friendRequests']),
-    sentFriendRequests: safeStringMapConvert(data['sentFriendRequests']),
-    savedRecipes: safeStringListConvert(data['savedRecipes']),
-    savedLocations: safeStringListConvert(data['savedLocations']),
-    forageStats: safeIntMapConvert(data['forageStats']),
-    preferences: data['preferences'] is Map
-        ? Map<String, dynamic>.from(data['preferences'])
-        : {},
-    createdAt: data['createdAt'] is Timestamp
-        ? data['createdAt'] as Timestamp
-        : Timestamp.now(),
-    lastActive: data['lastActive'] is Timestamp
-        ? data['lastActive'] as Timestamp
-        : Timestamp.now(),
-    // Gamification fields (backwards compatible - default if missing)
-    points: data['points'] as int? ?? 0,
-    level: data['level'] as int? ?? 1,
-    achievements: safeStringListConvert(data['achievements']),
-    activityStats: safeIntMapConvert(data['activityStats']),
-    currentStreak: data['currentStreak'] as int? ?? 0,
-    longestStreak: data['longestStreak'] as int? ?? 0,
-    lastActivityDate: data['lastActivityDate'] != null
-        ? (data['lastActivityDate'] as Timestamp).toDate()
-        : null,
-    // Premium fields (backwards compatible)
-    subscriptionTier: data['subscriptionTier']?.toString() ?? 'free',
-    subscriptionExpiry: data['subscriptionExpiry'] != null
-        ? (data['subscriptionExpiry'] as Timestamp).toDate()
-        : null,
-    hasCompletedOnboarding: data['hasCompletedOnboarding'] as bool? ?? false,
-    // Notification preferences (backwards compatible)
-    notificationPreferences: NotificationPreferences.fromMap(
-      data['notificationPreferences'] as Map<String, dynamic>?,
-    ),
-    // Social/Foraging together fields (backwards compatible)
-    openToForage: data['openToForage'] as bool? ?? false,
-    foragePreferences: data['foragePreferences'] as String?,
-  );
-}
+    return UserModel(
+      uid: doc.id,
+      email: data['email']?.toString() ?? '',
+      username: data['username']?.toString() ?? '',
+      bio: data['bio']?.toString() ?? '',
+      profilePic: getStringValue(data['profilePic'], 'profileImage1.jpg'),
+      profileBackground: getStringValue(
+          data['profileBackground'], 'backgroundProfileImage1.jpg'),
+      friends: safeStringListConvert(data['friends']),
+      friendRequests: safeStringMapConvert(data['friendRequests']),
+      sentFriendRequests: safeStringMapConvert(data['sentFriendRequests']),
+      savedRecipes: safeStringListConvert(data['savedRecipes']),
+      savedLocations: safeStringListConvert(data['savedLocations']),
+      forageStats: safeIntMapConvert(data['forageStats']),
+      preferences: data['preferences'] is Map
+          ? Map<String, dynamic>.from(data['preferences'])
+          : {},
+      createdAt: data['createdAt'] is Timestamp
+          ? data['createdAt'] as Timestamp
+          : Timestamp.now(),
+      lastActive: data['lastActive'] is Timestamp
+          ? data['lastActive'] as Timestamp
+          : Timestamp.now(),
+      // Gamification fields (backwards compatible - default if missing)
+      points: data['points'] as int? ?? 0,
+      level: data['level'] as int? ?? 1,
+      achievements: safeStringListConvert(data['achievements']),
+      activityStats: safeIntMapConvert(data['activityStats']),
+      currentStreak: data['currentStreak'] as int? ?? 0,
+      longestStreak: data['longestStreak'] as int? ?? 0,
+      lastActivityDate: data['lastActivityDate'] != null
+          ? (data['lastActivityDate'] as Timestamp).toDate()
+          : null,
+      // Premium fields (backwards compatible)
+      subscriptionTier: data['subscriptionTier']?.toString() ?? 'free',
+      subscriptionExpiry: data['subscriptionExpiry'] != null
+          ? (data['subscriptionExpiry'] as Timestamp).toDate()
+          : null,
+      hasCompletedOnboarding: data['hasCompletedOnboarding'] as bool? ?? false,
+      // Notification preferences (backwards compatible)
+      notificationPreferences: NotificationPreferences.fromMap(
+        data['notificationPreferences'] as Map<String, dynamic>?,
+      ),
+      // Social/Foraging together fields (backwards compatible)
+      openToForage: data['openToForage'] as bool? ?? false,
+      foragePreferences: data['foragePreferences'] as String?,
+      primaryForageLocation: data['primaryForageLocation'] as String?,
+      primaryForageLatitude: (data['primaryForageLatitude'] as num?)?.toDouble(),
+      primaryForgeLongitude: (data['primaryForgeLongitude'] as num?)?.toDouble(),
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -215,6 +233,12 @@ class UserModel {
       // Social/Foraging together fields
       'openToForage': openToForage,
       if (foragePreferences != null) 'foragePreferences': foragePreferences,
+      if (primaryForageLocation != null)
+        'primaryForageLocation': primaryForageLocation,
+      if (primaryForageLatitude != null)
+        'primaryForageLatitude': primaryForageLatitude,
+      if (primaryForgeLongitude != null)
+        'primaryForgeLongitude': primaryForgeLongitude,
     };
   }
 
@@ -238,8 +262,10 @@ class UserModel {
   // GAMIFICATION HELPERS
 
   /// Check if user is a premium subscriber
-  bool get isPremium => subscriptionTier != 'free' &&
-      (subscriptionExpiry == null || subscriptionExpiry!.isAfter(DateTime.now()));
+  bool get isPremium =>
+      subscriptionTier != 'free' &&
+      (subscriptionExpiry == null ||
+          subscriptionExpiry!.isAfter(DateTime.now()));
 
   /// Check if user has completed onboarding
   bool get needsOnboarding => !hasCompletedOnboarding;
@@ -261,7 +287,8 @@ class UserModel {
   }
 
   /// Check if user has a specific achievement
-  bool hasAchievement(String achievementId) => achievements.contains(achievementId);
+  bool hasAchievement(String achievementId) =>
+      achievements.contains(achievementId);
 
   /// Get total number of achievements unlocked
   int get achievementCount => achievements.length;
@@ -301,6 +328,9 @@ class UserModel {
     // Social/Foraging together fields
     bool? openToForage,
     String? foragePreferences,
+    String? primaryForageLocation,
+    double? primaryForageLatitude,
+    double? primaryForgeLongitude,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -331,14 +361,28 @@ class UserModel {
       // Premium
       subscriptionTier: subscriptionTier ?? this.subscriptionTier,
       subscriptionExpiry: subscriptionExpiry ?? this.subscriptionExpiry,
-      hasCompletedOnboarding: hasCompletedOnboarding ?? this.hasCompletedOnboarding,
+      hasCompletedOnboarding:
+          hasCompletedOnboarding ?? this.hasCompletedOnboarding,
       // Notifications
-      notificationPreferences: notificationPreferences ?? this.notificationPreferences,
+      notificationPreferences:
+          notificationPreferences ?? this.notificationPreferences,
       // Social/Foraging together
       openToForage: openToForage ?? this.openToForage,
       foragePreferences: foragePreferences ?? this.foragePreferences,
+      primaryForageLocation:
+          primaryForageLocation ?? this.primaryForageLocation,
+      primaryForageLatitude:
+          primaryForageLatitude ?? this.primaryForageLatitude,
+      primaryForgeLongitude:
+          primaryForgeLongitude ?? this.primaryForgeLongitude,
     );
   }
+
+  /// Check if user has a primary forage location set
+  bool get hasPrimaryForageLocation =>
+      primaryForageLocation != null &&
+      primaryForageLatitude != null &&
+      primaryForgeLongitude != null;
 }
 
 enum FriendRequestStatus { pending, accepted, rejected, cancelled }
