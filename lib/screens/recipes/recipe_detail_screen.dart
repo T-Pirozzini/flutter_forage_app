@@ -9,6 +9,7 @@ import 'package:flutter_forager_app/data/models/ingredient.dart';
 import 'package:flutter_forager_app/data/models/recipe.dart';
 import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
 import 'package:flutter_forager_app/screens/recipes/add_recipe_page.dart';
+import 'package:flutter_forager_app/shared/gamification/gamification_helper.dart';
 import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:intl/intl.dart';
 
@@ -190,6 +191,15 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
         userId: currentUser!.email!,
         recipe: widget.recipe,
       );
+
+      // Award points when saving (not unsaving)
+      if (_isSaved && mounted) {
+        await GamificationHelper.awardRecipeSaved(
+          context: context,
+          ref: ref,
+          userId: currentUser!.email!,
+        );
+      }
     } catch (e) {
       // Revert on error
       if (mounted) {

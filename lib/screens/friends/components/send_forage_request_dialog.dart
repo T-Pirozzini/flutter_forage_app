@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
 import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 /// Dialog for sending a "Let's Forage Together" request to another user.
 ///
 /// Features:
-/// - Short intro message (150 char limit, LinkedIn-style)
+/// - For strangers: Short intro message (150 char limit, LinkedIn-style)
+/// - For friends: Planning details (date, location, what to forage)
 /// - Safety tips reminder
 /// - Send request to ForageRequests collection
 class SendForageRequestDialog extends ConsumerStatefulWidget {
@@ -15,12 +17,16 @@ class SendForageRequestDialog extends ConsumerStatefulWidget {
   final String senderUsername;
   final String senderEmail;
 
+  /// If true, shows planning UI instead of intro UI (for existing friends)
+  final bool isFriend;
+
   const SendForageRequestDialog({
     super.key,
     required this.recipientUsername,
     required this.recipientEmail,
     required this.senderUsername,
     required this.senderEmail,
+    this.isFriend = false,
   });
 
   @override
@@ -34,6 +40,10 @@ class _SendForageRequestDialogState
   bool _isSending = false;
   static const int _maxMessageLength = 150;
 
+  // Planning fields for friends
+  DateTime? _selectedDate;
+  TimeOfDay? _selectedTime;
+
   @override
   void dispose() {
     _messageController.dispose();
@@ -41,6 +51,17 @@ class _SendForageRequestDialogState
   }
 
   int get _remainingChars => _maxMessageLength - _messageController.text.length;
+
+  String get _formattedDateTime {
+    if (_selectedDate == null) return '';
+    final dateStr = DateFormat('EEE, MMM d').format(_selectedDate!);
+    if (_selectedTime != null) {
+      final hour = _selectedTime!.hourOfPeriod == 0 ? 12 : _selectedTime!.hourOfPeriod;
+      final period = _selectedTime!.period == DayPeriod.am ? 'AM' : 'PM';
+      return '$dateStr at $hour:${_selectedTime!.minute.toString().padLeft(2, '0')} $period';
+    }
+    return dateStr;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +75,7 @@ class _SendForageRequestDialogState
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              "Let's Forage Together",
+              widget.isFriend ? 'Plan a Forage' : "Let's Forage Together",
               style: AppTheme.title(size: 18),
             ),
           ),
@@ -94,7 +115,9 @@ class _SendForageRequestDialogState
                           style: AppTheme.title(size: 14),
                         ),
                         Text(
-                          'Send a forage request',
+                          widget.isFriend
+                              ? 'Plan a foraging trip'
+                              : 'Send a forage request',
                           style: AppTheme.caption(size: 12),
                         ),
                       ],
@@ -106,9 +129,54 @@ class _SendForageRequestDialogState
 
             const SizedBox(height: 16),
 
-            // Message input
+            // For friends: Date/time picker
+            if (widget.isFriend) ...[
+              Text(
+                'When do you want to go?',
+                style: AppTheme.body(size: 14, weight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _selectDate(context),
+                      icon: const Icon(Icons.calendar_today, size: 16),
+                      label: Text(
+                        _selectedDate != null
+                            ? DateFormat('EEE, MMM d').format(_selectedDate!)
+                            : 'Pick a date',
+                        style: AppTheme.caption(size: 12),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _selectTime(context),
+                      icon: const Icon(Icons.access_time, size: 16),
+                      label: Text(
+                        _selectedTime != null
+                            ? _selectedTime!.format(context)
+                            : 'Pick a time',
+                        style: AppTheme.caption(size: 12),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // Message input - different labels for friend vs stranger
             Text(
-              'Introduce yourself',
+              widget.isFriend ? 'Details & Location' : 'Introduce yourself',
               style: AppTheme.body(size: 14, weight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
@@ -117,8 +185,9 @@ class _SendForageRequestDialogState
               maxLength: _maxMessageLength,
               maxLines: 4,
               decoration: InputDecoration(
-                hintText:
-                    'Hi! I noticed you\'re interested in foraging. I\'d love to connect and explore together sometime...',
+                hintText: widget.isFriend
+                    ? 'Let\'s check out the trails near Oak Grove. I\'ve heard there are chanterelles this time of year!'
+                    : 'Hi! I noticed you\'re interested in foraging. I\'d love to connect and explore together sometime...',
                 hintStyle: AppTheme.body(
                   size: 13,
                   color: AppTheme.textMedium.withValues(alpha: 0.6),
@@ -149,7 +218,7 @@ class _SendForageRequestDialogState
 
             const SizedBox(height: 16),
 
-            // Safety reminder
+            // Safety reminder - different for friends
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -178,7 +247,9 @@ class _SendForageRequestDialogState
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'If accepted, you\'ll exchange contact info to coordinate off-platform. Always meet in public first and tell someone where you\'re going.',
+                    widget.isFriend
+                        ? 'After confirming, you can notify your emergency contacts about your foraging plans.'
+                        : 'If accepted, you\'ll exchange contact info to coordinate off-platform. Always meet in public first and tell someone where you\'re going.',
                     style: AppTheme.caption(size: 11),
                   ),
                 ],
@@ -212,10 +283,33 @@ class _SendForageRequestDialogState
                     color: Colors.white,
                   ),
                 )
-              : const Text('Send Request'),
+              : Text(widget.isFriend ? 'Send Invite' : 'Send Request'),
         ),
       ],
     );
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? now,
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 90)),
+    );
+    if (picked != null) {
+      setState(() => _selectedDate = picked);
+    }
+  }
+
+  Future<void> _selectTime(BuildContext context) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _selectedTime ?? const TimeOfDay(hour: 9, minute: 0),
+    );
+    if (picked != null) {
+      setState(() => _selectedTime = picked);
+    }
   }
 
   Future<void> _sendRequest() async {
@@ -226,12 +320,18 @@ class _SendForageRequestDialogState
     try {
       final forageRequestRepo = ref.read(forageRequestRepositoryProvider);
 
+      // Build message - include date/time for friends
+      String message = _messageController.text.trim();
+      if (widget.isFriend && _formattedDateTime.isNotEmpty) {
+        message = '📅 $_formattedDateTime\n\n$message';
+      }
+
       await forageRequestRepo.sendRequest(
         fromEmail: widget.senderEmail,
         fromUsername: widget.senderUsername,
         toEmail: widget.recipientEmail,
         toUsername: widget.recipientUsername,
-        message: _messageController.text.trim(),
+        message: message,
       );
 
       if (mounted) {

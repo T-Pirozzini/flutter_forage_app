@@ -1,16 +1,15 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_forager_app/core/utils/forage_type_utils.dart';
 import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
 import 'package:flutter_forager_app/data/models/marker.dart';
 import 'package:flutter_forager_app/screens/forage_locations/components/bookmark_section.dart';
 import 'package:flutter_forager_app/screens/forage_locations/components/subscribed_collections_section.dart';
 import 'package:flutter_forager_app/screens/forage_locations/location_detail_screen.dart';
-import 'package:flutter_forager_app/shared/styled_text.dart';
-import 'package:flutter_forager_app/theme.dart';
+import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 class ForageLocations extends ConsumerStatefulWidget {
@@ -113,42 +112,30 @@ class _ForageLocationsState extends ConsumerState<ForageLocations> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: StyledHeading(
-              widget.userLocations ? 'My Forage Spots' : 'Community Locations',
-            ),
-          ),
-          centerTitle: true,
-          backgroundColor: AppColors.secondaryColor,
-          elevation: 0,
-          shape: const RoundedRectangleBorder(),
-          iconTheme: const IconThemeData(color: Colors.white),
+    return Scaffold(
+      backgroundColor: AppTheme.surfaceDark,
+      appBar: AppBar(
+        title: Text(
+          widget.userLocations ? 'My Forage Spots' : 'Community Locations',
+          style: AppTheme.title(size: 20, color: AppTheme.textWhite),
         ),
-        body: StreamBuilder<List<MarkerModel>>(
+        centerTitle: true,
+        backgroundColor: AppTheme.primary,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: StreamBuilder<List<MarkerModel>>(
           stream: _markersStream,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(
-                child: CircularProgressIndicator(
-                  valueColor:
-                      AlwaysStoppedAnimation<Color>(Colors.deepOrangeAccent),
-                ),
-              );
+              return const Center(child: CircularProgressIndicator());
             }
 
             if (snapshot.hasError) {
               return Center(
                 child: Text(
                   'Error loading markers: ${snapshot.error}',
-                  style: GoogleFonts.poppins(color: Colors.red),
+                  style: TextStyle(color: AppTheme.error),
                 ),
               );
             }
@@ -175,23 +162,23 @@ class _ForageLocationsState extends ConsumerState<ForageLocations> {
                               Icon(
                                 Icons.add_location_alt,
                                 size: 64,
-                                color: Colors.grey[400],
+                                color: AppTheme.textLight,
                               ),
                               const SizedBox(height: 16),
                               Text(
                                 'No personal locations yet',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 18,
-                                  color: Colors.grey[600],
+                                style: AppTheme.heading(
+                                  size: 18,
+                                  color: AppTheme.textMedium,
                                 ),
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 'Add markers on the map to save your forage spots',
                                 textAlign: TextAlign.center,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 14,
-                                  color: Colors.grey[500],
+                                style: AppTheme.body(
+                                  size: 14,
+                                  color: AppTheme.textLight,
                                 ),
                               ),
                             ],
@@ -211,14 +198,14 @@ class _ForageLocationsState extends ConsumerState<ForageLocations> {
                     Icon(
                       Icons.location_off,
                       size: 64,
-                      color: Colors.grey[400],
+                      color: AppTheme.textLight,
                     ),
                     const SizedBox(height: 16),
                     Text(
                       'No locations found',
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        color: Colors.grey[600],
+                      style: AppTheme.heading(
+                        size: 18,
+                        color: AppTheme.textMedium,
                       ),
                     ),
                   ],
@@ -248,17 +235,23 @@ class _ForageLocationsState extends ConsumerState<ForageLocations> {
                         children: [
                           Icon(
                             Icons.location_on,
-                            color: Colors.deepOrange,
+                            color: AppTheme.primary,
                             size: 24,
                           ),
                           const SizedBox(width: 8),
-                          StyledHeading('My Locations'),
+                          Text(
+                            'My Locations',
+                            style: AppTheme.heading(
+                              size: 18,
+                              color: AppTheme.textWhite,
+                            ),
+                          ),
                           const Spacer(),
                           Text(
                             '${markers.length}',
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              color: Colors.grey[600],
+                            style: AppTheme.caption(
+                              size: 14,
+                              color: AppTheme.textLight,
                             ),
                           ),
                         ],
@@ -300,22 +293,27 @@ class _ForageLocationsState extends ConsumerState<ForageLocations> {
             );
           },
         ),
-      ),
     );
   }
 
   Widget _buildLocationCard(MarkerModel marker) {
     // CRITICAL: Only allow deletion if current user owns this marker
     final isOwner = marker.markerOwner == currentUser.email;
+    final typeColor = ForageTypeUtils.getTypeColor(marker.type);
 
     final cardContent = Card(
-      elevation: 2,
+      elevation: 1,
       margin: EdgeInsets.zero,
+      color: AppTheme.surfaceLight,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppTheme.borderRadiusMedium,
+        side: BorderSide(
+          color: AppTheme.secondary.withValues(alpha: 0.3),
+          width: 1,
+        ),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppTheme.borderRadiusMedium,
         onTap: () => _showMarkerDetails(marker),
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -325,45 +323,43 @@ class _ForageLocationsState extends ConsumerState<ForageLocations> {
               // Optimized image container
               if (marker.imageUrl.isNotEmpty)
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppTheme.borderRadiusSmall,
                   child: SizedBox(
-                    width: 80,
-                    height: 80,
+                    width: 70,
+                    height: 70,
                     child: CachedNetworkImage(
                       imageUrl: marker.imageUrl,
                       fit: BoxFit.cover,
                       placeholder: (context, url) => Container(
-                        color: Colors.grey[200],
+                        color: AppTheme.surfaceDark,
                         child: Center(
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.grey[400]!,
-                            ),
+                            color: AppTheme.textLight,
                           ),
                         ),
                       ),
                       errorWidget: (context, url, error) => Container(
-                        color: Colors.grey[200],
-                        child: const Icon(Icons.error),
+                        color: AppTheme.surfaceDark,
+                        child: Icon(Icons.error, color: AppTheme.textLight),
                       ),
                       fadeInDuration: const Duration(milliseconds: 300),
-                      memCacheHeight: 160, // 2x display size for retina
+                      memCacheHeight: 140,
                     ),
                   ),
                 )
               else
                 Container(
-                  width: 80,
-                  height: 80,
+                  width: 70,
+                  height: 70,
                   decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(8),
+                    color: AppTheme.surfaceDark,
+                    borderRadius: AppTheme.borderRadiusSmall,
                   ),
                   child: Icon(
                     Icons.photo,
-                    size: 40,
-                    color: Colors.grey[400],
+                    size: 32,
+                    color: AppTheme.textLight,
                   ),
                 ),
               const SizedBox(width: 12),
@@ -371,31 +367,27 @@ class _ForageLocationsState extends ConsumerState<ForageLocations> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Row(
-                        children: [
-                          // Name
-                          StyledHeadingSmall(
-                            marker.name,
-                          ),
-                        ],
+                    Text(
+                      marker.name,
+                      style: AppTheme.heading(
+                        size: 14,
+                        color: AppTheme.textDark,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
-                    // Description
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
+                    if (marker.description.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
                         marker.description,
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: Colors.grey[600],
+                        style: AppTheme.body(
+                          size: 12,
+                          color: AppTheme.textMedium,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    ),
+                    ],
                     const SizedBox(height: 4),
                     // Location coordinates
                     FutureBuilder<String>(
@@ -406,15 +398,24 @@ class _ForageLocationsState extends ConsumerState<ForageLocations> {
                             ConnectionState.waiting) {
                           return const SizedBox();
                         }
-                        return Text(
-                          snapshot.data ??
-                              '${marker.latitude.toStringAsFixed(4)}, ${marker.longitude.toStringAsFixed(4)}',
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            color: Colors.grey[500],
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        return Row(
+                          children: [
+                            Icon(Icons.location_on_outlined,
+                                size: 12, color: AppTheme.textLight),
+                            const SizedBox(width: 2),
+                            Expanded(
+                              child: Text(
+                                snapshot.data ??
+                                    '${marker.latitude.toStringAsFixed(4)}, ${marker.longitude.toStringAsFixed(4)}',
+                                style: AppTheme.caption(
+                                  size: 11,
+                                  color: AppTheme.textLight,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         );
                       },
                     ),
@@ -427,31 +428,30 @@ class _ForageLocationsState extends ConsumerState<ForageLocations> {
                 children: [
                   Text(
                     DateFormat('MMM dd').format(marker.timestamp),
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: Colors.grey[500],
+                    style: AppTheme.caption(
+                      size: 10,
+                      color: AppTheme.textLight,
                     ),
                   ),
                   const SizedBox(height: 8),
                   // Type icon
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
-                      color: _getTypeColor(marker.type).withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(6),
+                      color: typeColor.withValues(alpha: 0.2),
+                      borderRadius: AppTheme.borderRadiusSmall,
                     ),
                     child: Center(
                       child: ImageIcon(
                         AssetImage(
                           'lib/assets/images/${marker.type.toLowerCase()}_marker.png',
                         ),
-                        size: 32,
-                        color: _getTypeColor(marker.type),
+                        size: 24,
+                        color: typeColor,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
                 ],
               ),
             ],
@@ -467,8 +467,8 @@ class _ForageLocationsState extends ConsumerState<ForageLocations> {
         direction: DismissDirection.endToStart,
         background: Container(
           decoration: BoxDecoration(
-            color: Colors.red[400],
-            borderRadius: BorderRadius.circular(12),
+            color: AppTheme.error,
+            borderRadius: AppTheme.borderRadiusMedium,
           ),
           alignment: Alignment.centerRight,
           padding: const EdgeInsets.only(right: 20),
@@ -492,24 +492,5 @@ class _ForageLocationsState extends ConsumerState<ForageLocations> {
 
     // Return card without delete functionality for non-owners
     return cardContent;
-  }
-
-  Color _getTypeColor(String type) {
-    switch (type.toLowerCase()) {
-      case 'berries':
-        return Colors.purpleAccent;
-      case 'mushrooms':
-        return Colors.orangeAccent;
-      case 'nuts':
-        return Colors.brown;
-      case 'herbs':
-        return Colors.lightGreen;
-      case 'tree':
-        return Colors.green;
-      case 'fish':
-        return Colors.blue;
-      default:
-        return Colors.deepOrangeAccent;
-    }
   }
 }

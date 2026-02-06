@@ -60,8 +60,10 @@ class _LocationDetailScreenState extends ConsumerState<LocationDetailScreen> {
         TextEditingController(text: widget.marker.description);
     _isOwner = currentUser.email == widget.marker.markerOwner;
     _selectedStatus = widget.marker.currentStatus;
-    _statusHistory = List.from(widget.marker.statusHistory);
-    _comments = List.from(widget.marker.comments);
+    // Convert MarkerStatusUpdate objects to Map<String, dynamic>
+    _statusHistory = widget.marker.statusHistory.map((s) => s.toMap()).toList();
+    // Convert MarkerComment objects to Map<String, dynamic>
+    _comments = widget.marker.comments.map((c) => c.toMap()).toList();
     _fetchOwnerUsername();
     _refreshData();
     _checkBookmarkStatus();
@@ -348,6 +350,13 @@ class _LocationDetailScreenState extends ConsumerState<LocationDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Comment added')),
         );
+
+        // Award points for commenting on marker
+        await GamificationHelper.awardMarkerComment(
+          context: context,
+          ref: ref,
+          userId: currentUser.email!,
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -425,6 +434,13 @@ class _LocationDetailScreenState extends ConsumerState<LocationDetailScreen> {
         setState(() => _selectedStatus = newStatus);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Status updated')),
+        );
+
+        // Award points for updating marker status
+        await GamificationHelper.awardMarkerStatusUpdate(
+          context: context,
+          ref: ref,
+          userId: currentUser.email!,
         );
       }
     } catch (e) {
@@ -1119,8 +1135,7 @@ class _LocationDetailScreenState extends ConsumerState<LocationDetailScreen> {
                   icon: Icon(Icons.history, size: 16, color: AppTheme.primary),
                   label: Text(
                     'History',
-                    style:
-                        AppTheme.caption(size: 12, color: AppTheme.primary),
+                    style: AppTheme.caption(size: 12, color: AppTheme.primary),
                   ),
                 ),
               ],

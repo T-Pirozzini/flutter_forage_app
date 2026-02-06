@@ -183,7 +183,8 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                   enabled: !_isLoading,
                   style: AppTheme.body(size: 13, color: AppTheme.textWhite),
                   maxLength: maxBioLength,
-                  maxLines: 2,
+                  minLines: 3,
+                  maxLines: 5,
                   decoration: _inputDecoration(
                     label: 'Bio',
                     hint: 'Tell us about yourself',

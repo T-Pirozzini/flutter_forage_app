@@ -3,10 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/core/utils/forage_type_utils.dart';
 import 'package:flutter_forager_app/data/models/bookmark.dart';
 import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
-import 'package:flutter_forager_app/screens/forage/map_page.dart';
+import 'package:flutter_forager_app/screens/forage_locations/location_detail_screen.dart';
 import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 
 /// Tab showing user's bookmarked locations from friends/community
@@ -97,14 +96,52 @@ class _BookmarkedTabState extends ConsumerState<BookmarkedTab> {
     }
   }
 
-  void _viewOnMap(BookmarkModel bookmark) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => MapPage(
-          initialLocation: LatLng(bookmark.latitude, bookmark.longitude),
-        ),
-      ),
+  Future<void> _viewBookmarkDetail(BookmarkModel bookmark) async {
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
     );
+
+    try {
+      final markerRepo = ref.read(markerRepositoryProvider);
+
+      // First try to find marker by ID
+      var marker = await markerRepo.getById(bookmark.markerId);
+
+      // If not found by ID, try to find by owner and coordinates
+      // This handles bookmarks created from community posts (postId stored as markerId)
+      if (marker == null) {
+        marker = await markerRepo.findByOwnerAndCoordinates(
+          ownerEmail: bookmark.markerOwner,
+          latitude: bookmark.latitude,
+          longitude: bookmark.longitude,
+        );
+      }
+
+      if (!mounted) return;
+      Navigator.pop(context); // Close loading
+
+      if (marker != null) {
+        final foundMarker = marker; // Capture non-null for closure
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => LocationDetailScreen(marker: foundMarker),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Location not found. It may have been deleted.')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context); // Close loading
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading location: $e')),
+      );
+    }
   }
 
   @override
@@ -331,7 +368,7 @@ class _BookmarkedTabState extends ConsumerState<BookmarkedTab> {
       ),
       child: InkWell(
         borderRadius: AppTheme.borderRadiusMedium,
-        onTap: () => _viewOnMap(bookmark),
+        onTap: () => _viewBookmarkDetail(bookmark),
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Row(

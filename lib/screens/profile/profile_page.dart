@@ -11,12 +11,10 @@ import 'package:flutter_forager_app/providers/markers/marker_data.dart';
 import 'package:flutter_forager_app/screens/friends/friends_controller.dart';
 import 'package:flutter_forager_app/screens/my_foraging/my_foraging_page.dart';
 import 'package:flutter_forager_app/screens/onboarding/onboarding_screen.dart';
-import 'package:flutter_forager_app/screens/recipes/saved_recipes_page.dart';
 import 'package:flutter_forager_app/screens/recipes/user_recipes_page.dart';
 import 'package:flutter_forager_app/screens/profile/components/edit_profile_dialog.dart';
 import 'package:flutter_forager_app/screens/profile/components/user_heading.dart';
 import 'package:flutter_forager_app/screens/achievements/achievements_page.dart';
-import 'package:flutter_forager_app/screens/leaderboard/leaderboard_page.dart';
 import 'package:flutter_forager_app/shared/gamification/stats_card.dart';
 import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -148,7 +146,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
     return Container(
       decoration: BoxDecoration(
-        gradient: AppTheme.primaryGradient,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppTheme.primaryLight,
+            AppTheme.primaryLight.withValues(alpha: 0.85),
+          ],
+        ),
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -250,9 +255,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               crossAxisCount: 3,
-                              childAspectRatio: 0.95,
-                              mainAxisSpacing: 6,
-                              crossAxisSpacing: 6,
+                              childAspectRatio: 0.82,
+                              mainAxisSpacing: 10,
+                              crossAxisSpacing: 10,
                               padding: EdgeInsets.zero,
                               children: [
                                 _buildStatCard(
@@ -338,64 +343,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                             child: _buildOpenToForagingCard(userData),
                           ),
 
-                        // 4. SAVED RECIPES BUTTON
+                        // 3.6. LEADERBOARD VISIBILITY TOGGLE
                         if (_isCurrentUser)
                           Padding(
                             padding: const EdgeInsets.only(top: 8),
-                            child: _buildCompactButton(
-                              icon: Icons.bookmark,
-                              label: 'Saved Recipes',
-                              color: AppTheme.accent,
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const SavedRecipesPage(),
-                                ),
-                              ),
-                            ),
+                            child: _buildLeaderboardVisibilityCard(userData),
                           ),
 
-                        // 5. ACHIEVEMENTS & LEADERBOARD BUTTONS
-                        if (_isCurrentUser)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: _buildCompactButton(
-                                    icon: Icons.workspace_premium,
-                                    label: 'Achievements',
-                                    color: AppTheme.xp,
-                                    onTap: () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            const AchievementsPage(),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: _buildCompactButton(
-                                    icon: Icons.leaderboard,
-                                    label: 'Leaderboard',
-                                    color: AppTheme.secondary,
-                                    onTap: () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            const LeaderboardPage(),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                        // 6. FRIEND REQUESTS (if any)
+                        // 4. FRIEND REQUESTS (if any)
                         if (_isCurrentUser &&
                             widget.user.friendRequests.isNotEmpty)
                           Padding(
@@ -455,48 +410,109 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     VoidCallback? onTap,
     bool enabled = true,
   }) {
-    return Card(
-      elevation: enabled ? 4 : 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppTheme.borderRadiusMedium,
-      ),
-      color: enabled ? Colors.white : Colors.grey[100],
+    // Define unique colors for each card type
+    Color accentColor;
+    Color gradientStart;
+    Color gradientEnd;
+
+    switch (title) {
+      case 'My Foraging':
+        accentColor = AppTheme.success;
+        gradientStart = const Color(0xFF2E7D32);
+        gradientEnd = const Color(0xFF66BB6A);
+        break;
+      case 'Recipes':
+        accentColor = AppTheme.accent;
+        gradientStart = const Color(0xFFE65100);
+        gradientEnd = const Color(0xFFFF9800);
+        break;
+      case 'Friends':
+        accentColor = AppTheme.info;
+        gradientStart = const Color(0xFF1565C0);
+        gradientEnd = const Color(0xFF42A5F5);
+        break;
+      default:
+        accentColor = AppTheme.primary;
+        gradientStart = AppTheme.primary;
+        gradientEnd = AppTheme.primaryLight;
+    }
+
+    if (!enabled) {
+      accentColor = Colors.grey;
+      gradientStart = Colors.grey.shade400;
+      gradientEnd = Colors.grey.shade300;
+    }
+
+    return Material(
+      color: Colors.transparent,
       child: InkWell(
         borderRadius: AppTheme.borderRadiusMedium,
         onTap: enabled ? onTap : null,
         child: Container(
-          padding: const EdgeInsets.all(AppTheme.space12),
           decoration: BoxDecoration(
             borderRadius: AppTheme.borderRadiusMedium,
-            border: enabled
-                ? Border.all(
-                    color: AppTheme.primary.withValues(alpha: 0.1),
-                    width: 1,
-                  )
+            color: Colors.white,
+            border: Border.all(
+              color: accentColor.withValues(alpha: 0.2),
+              width: 1,
+            ),
+            boxShadow: enabled
+                ? [
+                    BoxShadow(
+                      color: accentColor.withValues(alpha: 0.15),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
                 : null,
           ),
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.center,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  icon,
-                  size: 24,
-                  color: enabled ? AppTheme.primary : Colors.grey,
-                ),
-                const SizedBox(height: AppTheme.space8),
-                AutoSizeText(
-                  value,
-                  minFontSize: 8,
-                  maxLines: 1,
-                  style: AppTheme.stats(
-                    size: 20,
-                    color: enabled ? AppTheme.primary : Colors.grey,
+                // Icon with gradient background circle
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        gradientStart.withValues(alpha: 0.2),
+                        gradientEnd.withValues(alpha: 0.1),
+                      ],
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 22,
+                    color: accentColor,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
+                // Value with gradient text effect
+                ShaderMask(
+                  shaderCallback: (bounds) => LinearGradient(
+                    colors: enabled
+                        ? [gradientStart, gradientEnd]
+                        : [Colors.grey, Colors.grey],
+                  ).createShader(bounds),
+                  child: AutoSizeText(
+                    value,
+                    minFontSize: 12,
+                    maxLines: 1,
+                    style: AppTheme.stats(
+                      size: 22,
+                      color: Colors.white,
+                      weight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                // Title
                 AutoSizeText(
                   title,
                   minFontSize: 8,
@@ -504,8 +520,18 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   style: AppTheme.caption(
                     size: 11,
                     color: enabled ? AppTheme.textMedium : Colors.grey,
+                    weight: FontWeight.w500,
                   ),
                 ),
+                // Tap hint arrow
+                if (enabled) ...[
+                  const SizedBox(height: 4),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: 10,
+                    color: accentColor.withValues(alpha: 0.5),
+                  ),
+                ],
               ],
             ),
           ),
@@ -542,43 +568,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             Icon(Icons.format_quote,
                 size: 12, color: AppTheme.primary.withValues(alpha: 0.4)),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCompactButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      elevation: 1,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppTheme.borderRadiusSmall,
-      ),
-      child: InkWell(
-        borderRadius: AppTheme.borderRadiusSmall,
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 18, color: color),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: AppTheme.caption(
-                  size: 12,
-                  color: color,
-                  weight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
@@ -633,59 +622,47 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             ? BorderSide(color: AppTheme.success, width: 2)
             : BorderSide.none,
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with toggle
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: userData.openToForage
-                        ? AppTheme.success.withValues(alpha: 0.15)
-                        : AppTheme.textMedium.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.hiking,
-                    size: 20,
-                    color: userData.openToForage
-                        ? AppTheme.success
-                        : AppTheme.textMedium,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Open to Foraging Together',
-                        style: AppTheme.title(size: 14),
-                      ),
-                      Text(
-                        userData.openToForage
-                            ? 'Others can see you\'re open to meetups'
-                            : 'Toggle to show others you\'re available',
-                        style: AppTheme.caption(size: 11),
-                      ),
-                    ],
-                  ),
-                ),
-                Switch(
-                  value: userData.openToForage,
-                  activeTrackColor: AppTheme.success.withValues(alpha: 0.5),
-                  activeThumbColor: AppTheme.success,
-                  onChanged: (value) => _toggleOpenToForage(value),
-                ),
-              ],
+      clipBehavior: Clip.antiAlias,
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          initiallyExpanded: false,
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: userData.openToForage
+                  ? AppTheme.success.withValues(alpha: 0.15)
+                  : AppTheme.textMedium.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
             ),
-            // Preferences field (shown when enabled)
+            child: Icon(
+              Icons.hiking,
+              size: 20,
+              color: userData.openToForage
+                  ? AppTheme.success
+                  : AppTheme.textMedium,
+            ),
+          ),
+          title: Text(
+            'Open to Foraging Together',
+            style: AppTheme.title(size: 14),
+          ),
+          subtitle: Text(
+            userData.openToForage
+                ? 'Tap to edit preferences'
+                : 'Toggle to show others you\'re available',
+            style: AppTheme.caption(size: 11),
+          ),
+          trailing: Switch(
+            value: userData.openToForage,
+            activeTrackColor: AppTheme.success.withValues(alpha: 0.5),
+            activeThumbColor: AppTheme.success,
+            onChanged: (value) => _toggleOpenToForage(value),
+          ),
+          children: [
             if (userData.openToForage) ...[
-              const SizedBox(height: 12),
               _buildForagePreferencesSelector(userData),
               const SizedBox(height: 12),
               // Primary forage location
@@ -718,6 +695,27 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   ],
                 ),
               ),
+            ] else ...[
+              // Show hint when collapsed and disabled
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.backgroundLight,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, size: 16, color: AppTheme.textMedium),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Enable the toggle to set your foraging preferences and appear in Discover.',
+                        style: AppTheme.caption(size: 12, color: AppTheme.textMedium),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ],
         ),
@@ -736,6 +734,69 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         // Show safety dialog when enabling
         _showForagingSafetyDialog();
       }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating preference: $e'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildLeaderboardVisibilityCard(UserModel userData) {
+    return Card(
+      elevation: 1,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppTheme.borderRadiusMedium,
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: userData.showOnLeaderboard
+                ? AppTheme.xp.withValues(alpha: 0.15)
+                : AppTheme.textMedium.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            Icons.leaderboard,
+            size: 20,
+            color: userData.showOnLeaderboard
+                ? AppTheme.xp
+                : AppTheme.textMedium,
+          ),
+        ),
+        title: Text(
+          'Show on Leaderboard',
+          style: AppTheme.title(size: 14),
+        ),
+        subtitle: Text(
+          userData.showOnLeaderboard
+              ? 'Your rank is visible to everyone'
+              : 'You are hidden from leaderboards',
+          style: AppTheme.caption(size: 11),
+        ),
+        trailing: Switch(
+          value: userData.showOnLeaderboard,
+          activeTrackColor: AppTheme.xp.withValues(alpha: 0.5),
+          activeThumbColor: AppTheme.xp,
+          onChanged: (value) => _toggleLeaderboardVisibility(value),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _toggleLeaderboardVisibility(bool value) async {
+    try {
+      final userRepo = ref.read(userRepositoryProvider);
+      await userRepo.update(currentUser.email!, {
+        'showOnLeaderboard': value,
+      });
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

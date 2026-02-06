@@ -13,6 +13,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
+import 'package:flutter_forager_app/shared/gamification/gamification_helper.dart';
 
 class AddRecipePage extends ConsumerStatefulWidget {
   final Recipe? recipeToEdit;
@@ -245,6 +246,15 @@ class _AddRecipePageState extends ConsumerState<AddRecipePage> {
       } else {
         // Create new recipe
         await recipeRepo.create(recipe, id: recipe.id);
+
+        // Award points for creating a recipe
+        if (mounted) {
+          await GamificationHelper.awardRecipeCreated(
+            context: context,
+            ref: ref,
+            userId: _userEmail,
+          );
+        }
       }
 
       _clearForm();

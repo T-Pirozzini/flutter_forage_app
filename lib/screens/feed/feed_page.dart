@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/screens/community/community_page.dart';
+import 'package:flutter_forager_app/screens/community/create_post_screen.dart';
+import 'package:flutter_forager_app/screens/recipes/add_recipe_page.dart';
 import 'package:flutter_forager_app/screens/recipes/recipes_page.dart';
 import 'package:flutter_forager_app/theme/app_theme.dart';
 
@@ -156,53 +158,111 @@ class _FeedPageState extends State<FeedPage>
     );
   }
 
+  void _handleAddButton() {
+    if (_tabController.index == 0) {
+      // Community tab - create post
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const CreatePostScreen()),
+      );
+    } else {
+      // Recipes tab - add recipe
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => AddRecipePage()),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         Container(
           color: AppTheme.primary,
-          child: TabBar(
-            controller: _tabController,
-            indicatorColor: AppTheme.secondary,
-            indicatorWeight: 3,
-            labelColor: AppTheme.textWhite,
-            unselectedLabelColor: AppTheme.textWhite.withValues(alpha: 0.6),
-            labelStyle: AppTheme.caption(size: 13, weight: FontWeight.w600),
-            unselectedLabelStyle: AppTheme.caption(size: 13),
-            tabs: [
-              Tab(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('Community'),
-                    const SizedBox(width: 4),
-                    GestureDetector(
-                      onTap: _showCommunityInfo,
-                      child: Icon(
-                        Icons.info_outline,
-                        size: 16,
-                        color: AppTheme.textWhite.withValues(alpha: 0.7),
+          child: Row(
+            children: [
+              // Tab bar takes most of the space
+              Expanded(
+                child: TabBar(
+                  controller: _tabController,
+                  indicatorColor: AppTheme.secondary,
+                  indicatorWeight: 3,
+                  labelColor: AppTheme.textWhite,
+                  unselectedLabelColor: AppTheme.textWhite.withValues(alpha: 0.6),
+                  labelStyle: AppTheme.caption(size: 13, weight: FontWeight.w600),
+                  unselectedLabelStyle: AppTheme.caption(size: 13),
+                  tabs: [
+                    Tab(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('Community'),
+                          const SizedBox(width: 4),
+                          GestureDetector(
+                            onTap: _showCommunityInfo,
+                            child: Icon(
+                              Icons.info_outline,
+                              size: 16,
+                              color: AppTheme.textWhite.withValues(alpha: 0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Tab(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('Recipes'),
+                          const SizedBox(width: 4),
+                          GestureDetector(
+                            onTap: _showRecipesInfo,
+                            child: Icon(
+                              Icons.info_outline,
+                              size: 16,
+                              color: AppTheme.textWhite.withValues(alpha: 0.7),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
-              Tab(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('Recipes'),
-                    const SizedBox(width: 4),
-                    GestureDetector(
-                      onTap: _showRecipesInfo,
-                      child: Icon(
-                        Icons.info_outline,
-                        size: 16,
-                        color: AppTheme.textWhite.withValues(alpha: 0.7),
+              // Add button on the right
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Material(
+                  color: AppTheme.accent,
+                  borderRadius: BorderRadius.circular(20),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: _handleAddButton,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.add, color: Colors.white, size: 18),
+                          const SizedBox(width: 4),
+                          AnimatedBuilder(
+                            animation: _tabController,
+                            builder: (context, child) {
+                              return Text(
+                                _tabController.index == 0 ? 'Post' : 'Recipe',
+                                style: AppTheme.caption(
+                                  size: 12,
+                                  weight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              );
+                            },
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
             ],

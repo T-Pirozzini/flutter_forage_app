@@ -582,6 +582,13 @@ class _ForageLocationInfoState extends ConsumerState<ForageLocationInfo> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Comment added successfully')),
         );
+
+        // Award points for commenting on marker
+        await GamificationHelper.awardMarkerComment(
+          context: context,
+          ref: ref,
+          userId: FirebaseAuth.instance.currentUser!.email!,
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -610,6 +617,13 @@ class _ForageLocationInfoState extends ConsumerState<ForageLocationInfo> {
         setState(() => _selectedStatus = newStatus);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Status updated successfully')),
+        );
+
+        // Award points for updating marker status
+        await GamificationHelper.awardMarkerStatusUpdate(
+          context: context,
+          ref: ref,
+          userId: FirebaseAuth.instance.currentUser!.email!,
         );
       }
     } catch (e) {

@@ -1,10 +1,11 @@
+import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/data/models/marker.dart';
 import 'package:flutter_forager_app/screens/forage/components/map_markers.dart';
 import 'package:flutter_forager_app/screens/forage/components/map_style.dart';
 import 'package:flutter_forager_app/data/services/map_permissions.dart';
-import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -15,6 +16,7 @@ import 'package:flutter_forager_app/screens/forage/components/locations_bottom_s
 import 'package:flutter_forager_app/providers/map/map_controller_provider.dart';
 import 'package:flutter_forager_app/providers/map/map_state_provider.dart';
 import 'package:flutter_forager_app/shared/gamification/gamification_helper.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 class MapPage extends ConsumerStatefulWidget {
@@ -116,12 +118,159 @@ class _MapPageState extends ConsumerState<MapPage> {
     }
   }
 
+  /// Build visibility option tiles with icons and point bonuses
+  List<Widget> _buildVisibilityOptions({
+    required MarkerVisibility selectedVisibility,
+    required void Function(MarkerVisibility) onChanged,
+  }) {
+    final options = [
+      _VisibilityOption(
+        visibility: MarkerVisibility.private,
+        icon: Icons.lock_outline,
+        iconColor: Colors.grey,
+        bonus: null,
+      ),
+      _VisibilityOption(
+        visibility: MarkerVisibility.closeFriends,
+        icon: Icons.star_outline,
+        iconColor: Colors.amber,
+        bonus: null,
+      ),
+      _VisibilityOption(
+        visibility: MarkerVisibility.friends,
+        icon: Icons.people_outline,
+        iconColor: AppTheme.primary,
+        bonus: '+15 pts',
+      ),
+      _VisibilityOption(
+        visibility: MarkerVisibility.specific,
+        icon: Icons.person_outline,
+        iconColor: Colors.blue,
+        bonus: null,
+      ),
+      _VisibilityOption(
+        visibility: MarkerVisibility.public,
+        icon: Icons.public,
+        iconColor: AppTheme.accent,
+        bonus: '+15 pts',
+      ),
+    ];
+
+    return options.map((option) {
+      final isSelected = selectedVisibility == option.visibility;
+      return InkWell(
+        onTap: () => onChanged(option.visibility),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected ? AppTheme.accent.withValues(alpha: 0.1) : null,
+            border: Border(
+              bottom: BorderSide(
+                color: Colors.grey.shade200,
+                width: option.visibility == MarkerVisibility.public ? 0 : 1,
+              ),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: option.iconColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  option.icon,
+                  size: 18,
+                  color: option.iconColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      option.visibility.displayName,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                        color: isSelected ? AppTheme.accent : Colors.black87,
+                      ),
+                    ),
+                    Text(
+                      option.visibility.description,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (option.bonus != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppTheme.success.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    option.bonus!,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.success,
+                    ),
+                  ),
+                ),
+              const SizedBox(width: 8),
+              Icon(
+                isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                size: 20,
+                color: isSelected ? AppTheme.accent : Colors.grey.shade400,
+              ),
+            ],
+          ),
+        ),
+      );
+    }).toList();
+  }
+
   void _showMarkerDetailsDialog(
       BuildContext parentContext, BuildContext context, String type) {
     final nameController = TextEditingController();
     final descriptionController = TextEditingController();
     final formKey = GlobalKey<FormState>();
     MarkerVisibility selectedVisibility = MarkerVisibility.private;
+    List<File> selectedImages = [];
+    final picker = ImagePicker();
+
+    Future<void> pickImage(ImageSource source, StateSetter setDialogState) async {
+      if (selectedImages.length >= 3) {
+        ScaffoldMessenger.of(parentContext).showSnackBar(
+          const SnackBar(content: Text('Maximum of 3 photos allowed')),
+        );
+        return;
+      }
+      try {
+        final pickedFile = await picker.pickImage(
+          source: source,
+          maxWidth: 1200,
+          maxHeight: 1200,
+          imageQuality: 85,
+        );
+        if (pickedFile != null) {
+          setDialogState(() {
+            selectedImages.add(File(pickedFile.path));
+          });
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(parentContext).showSnackBar(
+          SnackBar(content: Text('Error picking image: $e')),
+        );
+      }
+    }
 
     showDialog(
       context: context,
@@ -140,14 +289,133 @@ class _MapPageState extends ConsumerState<MapPage> {
                     size: 24,
                   ),
                   const SizedBox(width: 8),
-                  Text('Add ${type[0].toUpperCase() + type.substring(1)} Marker',
-                      style: AppTheme.title(size: 14, weight: FontWeight.bold)),
+                  Flexible(
+                    child: Text('Add ${type[0].toUpperCase() + type.substring(1)} Marker',
+                        style: AppTheme.title(size: 14, weight: FontWeight.bold)),
+                  ),
                 ],
               ),
               content: Form(
                 key: formKey,
                 child: SingleChildScrollView(
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    // Photo upload section
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppTheme.backgroundLight,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.camera_alt, color: AppTheme.accent, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Add Photos (Optional)',
+                                style: AppTheme.body(size: 14, weight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          // Photo picker buttons
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () => pickImage(ImageSource.camera, setDialogState),
+                                  icon: const Icon(Icons.camera_alt, size: 18),
+                                  label: const Text('Camera'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppTheme.accent,
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () => pickImage(ImageSource.gallery, setDialogState),
+                                  icon: const Icon(Icons.photo_library, size: 18),
+                                  label: const Text('Gallery'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppTheme.accent,
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          // Photo preview thumbnails
+                          if (selectedImages.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              height: 70,
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: selectedImages.length,
+                                itemBuilder: (context, index) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: Stack(
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(8),
+                                          child: Image.file(
+                                            selectedImages[index],
+                                            width: 70,
+                                            height: 70,
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
+                                        Positioned(
+                                          top: 2,
+                                          right: 2,
+                                          child: GestureDetector(
+                                            onTap: () {
+                                              setDialogState(() {
+                                                selectedImages.removeAt(index);
+                                              });
+                                            },
+                                            child: Container(
+                                              padding: const EdgeInsets.all(2),
+                                              decoration: const BoxDecoration(
+                                                color: Colors.red,
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: const Icon(
+                                                Icons.close,
+                                                size: 14,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 8),
+                          Text(
+                            selectedImages.isEmpty
+                                ? 'No service? You can add photos later from the location detail screen.'
+                                : '${selectedImages.length}/3 photos added',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     TextFormField(
                       controller: nameController,
                       decoration: InputDecoration(
@@ -183,51 +451,30 @@ class _MapPageState extends ConsumerState<MapPage> {
                       },
                     ),
                     const SizedBox(height: 16),
-                    // Visibility selector
+                    // Enhanced visibility selector
                     Container(
                       decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade400),
-                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Padding(
-                            padding: const EdgeInsets.only(left: 12, top: 8),
+                            padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
                             child: Text(
-                              'Visibility',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                              ),
+                              'Who can see this location?',
+                              style: AppTheme.body(size: 14, weight: FontWeight.w600),
                             ),
                           ),
-                          ...MarkerVisibility.values.map((visibility) {
-                            return RadioListTile<MarkerVisibility>(
-                              title: Text(
-                                visibility.displayName,
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                              subtitle: Text(
-                                visibility.description,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                              value: visibility,
-                              groupValue: selectedVisibility,
-                              dense: true,
-                              activeColor: AppTheme.accent,
-                              onChanged: (value) {
-                                if (value != null) {
-                                  setDialogState(() {
-                                    selectedVisibility = value;
-                                  });
-                                }
-                              },
-                            );
-                          }),
+                          ..._buildVisibilityOptions(
+                            selectedVisibility: selectedVisibility,
+                            onChanged: (value) {
+                              setDialogState(() {
+                                selectedVisibility = value;
+                              });
+                            },
+                          ),
                         ],
                       ),
                     ),
@@ -243,40 +490,6 @@ class _MapPageState extends ConsumerState<MapPage> {
                           ),
                         ),
                       ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Icon(Icons.camera_alt_outlined, color: AppTheme.accent),
-                        SizedBox(width: 8),
-                        Flexible(
-                          child: StyledTextSmall(
-                              'Take photos of your find! Add them to your marker later.',
-                              color: AppTheme.textDark),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.person, color: AppTheme.accent),
-                            SizedBox(width: 8),
-                            StyledTitleMedium('Profile', color: AppTheme.textDark),
-                            SizedBox(width: 20),
-                            Icon(Icons.arrow_circle_right_outlined,
-                                color: Colors.white),
-                            SizedBox(width: 20),
-                            Icon(Icons.location_on, color: AppTheme.accent),
-                            SizedBox(width: 8),
-                            StyledTitleMedium('Locations', color: AppTheme.textDark)
-                          ],
-                        ),
-                      ),
-                    )
                   ]),
                 ),
               ),
@@ -351,7 +564,7 @@ class _MapPageState extends ConsumerState<MapPage> {
                           name: name,
                           description: description,
                           type: type,
-                          images: [],
+                          images: selectedImages,
                           position: position,
                           visibility: selectedVisibility,
                         );
@@ -509,4 +722,19 @@ class _MapPageState extends ConsumerState<MapPage> {
       ),
     );
   }
+}
+
+/// Helper class for visibility option data
+class _VisibilityOption {
+  final MarkerVisibility visibility;
+  final IconData icon;
+  final Color iconColor;
+  final String? bonus;
+
+  const _VisibilityOption({
+    required this.visibility,
+    required this.icon,
+    required this.iconColor,
+    this.bonus,
+  });
 }

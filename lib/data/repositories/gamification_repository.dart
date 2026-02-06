@@ -184,20 +184,28 @@ class GamificationRepository {
   // LEADERBOARD
   // ============================================================================
 
-  /// Get top users by points
+  /// Get top users by points (only users who have opted in to leaderboard)
+  /// Note: Users without points/showOnLeaderboard fields get defaults (0, true)
   Future<List<UserModel>> getLeaderboard({
     int limit = 50,
   }) async {
     try {
+      // Fetch all users without orderBy (since some may not have points field)
+      // Then sort and filter client-side
       final snapshot = await userRepository.firestoreService
           .collection(userRepository.collectionPath)
-          .orderBy('points', descending: true)
-          .limit(limit)
           .get();
 
-      return snapshot.docs
+      final users = snapshot.docs
           .map((doc) => UserModel.fromFirestore(doc))
+          .where((user) => user.showOnLeaderboard) // Filter out opted-out users
           .toList();
+
+      // Sort by points descending (client-side)
+      users.sort((a, b) => b.points.compareTo(a.points));
+
+      // Return top N users
+      return users.take(limit).toList();
     } catch (e) {
       rethrow;
     }

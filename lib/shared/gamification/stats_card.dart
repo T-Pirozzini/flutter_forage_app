@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/data/models/gamification_constants.dart';
 import 'package:flutter_forager_app/data/models/user.dart';
+import 'package:flutter_forager_app/screens/profile/components/how_to_earn_xp_dialog.dart';
 import 'package:flutter_forager_app/theme/app_theme.dart';
 
 /// Display user's gamification stats with compact design
@@ -95,13 +96,33 @@ class StatsCard extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        '${user.points} XP',
-                        style: AppTheme.caption(
-                          size: 11,
-                          color: AppTheme.textWhite,
-                          weight: FontWeight.w600,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            '${user.points} XP',
+                            style: AppTheme.caption(
+                              size: 11,
+                              color: AppTheme.textWhite,
+                              weight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          GestureDetector(
+                            onTap: () => HowToEarnXPDialog.show(context),
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.info_outline,
+                                size: 12,
+                                color: AppTheme.textWhite.withOpacity(0.8),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       Text(
                         '$pointsNeeded XP to next level',
@@ -183,25 +204,41 @@ class StatsCard extends StatelessWidget {
                 ),
               ),
 
-              // Tap hint
+              // Tap hint - more prominent
               if (onTap != null) ...[
-                const SizedBox(height: 6),
-                Center(
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: AppTheme.borderRadiusSmall,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      Icon(
+                        Icons.workspace_premium,
+                        size: 14,
+                        color: AppTheme.xp,
+                      ),
+                      const SizedBox(width: 6),
                       Text(
-                        'Tap to view achievements',
+                        'View Achievements & Leaderboard',
                         style: AppTheme.caption(
-                          size: 10,
-                          color: AppTheme.textWhite.withOpacity(0.6),
+                          size: 11,
+                          color: AppTheme.textWhite,
+                          weight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 6),
                       Icon(
                         Icons.arrow_forward_ios,
-                        size: 10,
-                        color: AppTheme.textWhite.withOpacity(0.6),
+                        size: 12,
+                        color: AppTheme.textWhite.withOpacity(0.8),
                       ),
                     ],
                   ),

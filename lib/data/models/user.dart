@@ -56,6 +56,12 @@ class UserModel {
   /// User's foraging preferences/availability (e.g., "Weekends, mushrooms, beginner-friendly")
   final String? foragePreferences;
 
+  /// Whether user appears on the global leaderboard (default true, opt-out)
+  final bool showOnLeaderboard;
+
+  /// Whether user has admin privileges (for viewing direct messages, adding roadmap items)
+  final bool isAdmin;
+
   /// Primary forage location - display string (e.g., "Portland, United States")
   /// If null, will be auto-set from user's first/most recent marker
   final String? primaryForageLocation;
@@ -104,6 +110,10 @@ class UserModel {
     this.primaryForageLocation,
     this.primaryForageLatitude,
     this.primaryForgeLongitude,
+    // Leaderboard visibility (default true - opt out)
+    this.showOnLeaderboard = true,
+    // Admin privileges
+    this.isAdmin = false,
   });
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
@@ -192,6 +202,10 @@ class UserModel {
       primaryForageLocation: data['primaryForageLocation'] as String?,
       primaryForageLatitude: (data['primaryForageLatitude'] as num?)?.toDouble(),
       primaryForgeLongitude: (data['primaryForgeLongitude'] as num?)?.toDouble(),
+      // Leaderboard visibility (default true for existing users)
+      showOnLeaderboard: data['showOnLeaderboard'] as bool? ?? true,
+      // Admin privileges (default false)
+      isAdmin: data['isAdmin'] as bool? ?? false,
     );
   }
 
@@ -239,6 +253,10 @@ class UserModel {
         'primaryForageLatitude': primaryForageLatitude,
       if (primaryForgeLongitude != null)
         'primaryForgeLongitude': primaryForgeLongitude,
+      // Leaderboard visibility
+      'showOnLeaderboard': showOnLeaderboard,
+      // Admin privileges
+      'isAdmin': isAdmin,
     };
   }
 
@@ -331,6 +349,10 @@ class UserModel {
     String? primaryForageLocation,
     double? primaryForageLatitude,
     double? primaryForgeLongitude,
+    // Leaderboard visibility
+    bool? showOnLeaderboard,
+    // Admin privileges
+    bool? isAdmin,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -375,6 +397,10 @@ class UserModel {
           primaryForageLatitude ?? this.primaryForageLatitude,
       primaryForgeLongitude:
           primaryForgeLongitude ?? this.primaryForgeLongitude,
+      // Leaderboard visibility
+      showOnLeaderboard: showOnLeaderboard ?? this.showOnLeaderboard,
+      // Admin
+      isAdmin: isAdmin ?? this.isAdmin,
     );
   }
 

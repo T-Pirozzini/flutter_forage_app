@@ -7,6 +7,7 @@ import 'package:flutter_forager_app/data/repositories/repository_providers.dart'
 import 'package:flutter_forager_app/data/services/geocoding_cache.dart';
 import 'package:flutter_forager_app/screens/friends/components/send_forage_request_dialog.dart';
 import 'package:flutter_forager_app/screens/friends/components/send_friend_request_dialog.dart';
+import 'package:flutter_forager_app/screens/profile/user_profile_view_screen.dart';
 import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
@@ -477,10 +478,7 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
   Widget _buildForagerCard(UserModel user) {
     final currentUser = FirebaseAuth.instance.currentUser;
     final isCurrentUser = user.email == currentUser?.email;
-    final memberSince = user.createdAt.toDate();
-    final daysSinceMember = DateTime.now().difference(memberSince).inDays;
-    final activityLevel =
-        _getActivityLevel(daysSinceMember, user.friends.length);
+    final locationInfo = _userLocations[user.email];
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -491,177 +489,539 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
             : BorderSide.none,
       ),
       elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Avatar
-                FutureBuilder<String>(
-                  future: _getProfileImageUrl(user.profilePic),
-                  builder: (context, snapshot) {
-                    if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                      return CircleAvatar(
-                        radius: 26,
-                        backgroundImage: NetworkImage(snapshot.data!),
-                      );
-                    }
-                    return CircleAvatar(
-                      radius: 26,
-                      backgroundColor: AppTheme.primary,
-                      child: Text(
-                        user.username.isNotEmpty
-                            ? user.username[0].toUpperCase()
-                            : '?',
-                        style: AppTheme.title(color: Colors.white, size: 18),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(width: 12),
-
-                // User info
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              user.username,
-                              style: AppTheme.title(size: 15),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          _buildActivityBadge(activityLevel),
-                          if (isCurrentUser) ...[
-                            const SizedBox(width: 6),
-                            _buildYouBadge(),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      if (user.foragePreferences?.isNotEmpty ?? false)
-                        Text(
-                          user.foragePreferences!,
-                          style: AppTheme.body(
-                            size: 12,
-                            color: AppTheme.textMedium,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                    ],
-                  ),
-                ),
-
-                // Status indicator (not shown for current user)
-                if (!isCurrentUser) _buildStatusIndicator(user),
-              ],
-            ),
-
-            const SizedBox(height: 10),
-
-            // Location row (if available)
-            if (_userLocations.containsKey(user.email))
-              _buildLocationRow(_userLocations[user.email]!),
-            if (!_userLocations.containsKey(user.email) && !_isLoading)
-              _buildLocationLoadingRow(),
-
-            // Reputation row
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppTheme.backgroundLight,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+      child: InkWell(
+        borderRadius: AppTheme.borderRadiusMedium,
+        onTap: () => _showForagerDetailDialog(user, locationInfo),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  _buildReputationItem(
-                    Icons.calendar_today,
-                    'Member ${DateFormat('MMM yyyy').format(memberSince)}',
+                  // Avatar
+                  GestureDetector(
+                    onTap: isCurrentUser ? null : () => _viewUserProfile(user),
+                    child: FutureBuilder<String>(
+                      future: _getProfileImageUrl(user.profilePic),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                          return CircleAvatar(
+                            radius: 22,
+                            backgroundImage: NetworkImage(snapshot.data!),
+                          );
+                        }
+                        return CircleAvatar(
+                          radius: 22,
+                          backgroundColor: AppTheme.primary,
+                          child: Text(
+                            user.username.isNotEmpty
+                                ? user.username[0].toUpperCase()
+                                : '?',
+                            style: AppTheme.title(color: Colors.white, size: 16),
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                  Container(
-                    width: 1,
-                    height: 12,
-                    color: AppTheme.textMedium.withValues(alpha: 0.3),
+                  const SizedBox(width: 10),
+
+                  // User info
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                user.username,
+                                style: AppTheme.title(size: 14),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (isCurrentUser) ...[
+                              const SizedBox(width: 6),
+                              _buildYouBadge(),
+                            ],
+                            if (!isCurrentUser && user.isFriend) ...[
+                              const SizedBox(width: 6),
+                              _buildFriendBadge(),
+                            ],
+                          ],
+                        ),
+                        // Location (compact)
+                        if (locationInfo != null) ...[
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Icon(Icons.location_on, size: 12, color: AppTheme.textMedium),
+                              const SizedBox(width: 3),
+                              Expanded(
+                                child: Text(
+                                  locationInfo.address,
+                                  style: AppTheme.caption(size: 11, color: AppTheme.textMedium),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (_userLocation != null) ...[
+                                const SizedBox(width: 4),
+                                _buildDistanceBadge(locationInfo),
+                              ],
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
-                  _buildReputationItem(
-                    Icons.people,
-                    '${user.friends.length} friends',
+
+                  // View more indicator
+                  Icon(
+                    Icons.chevron_right,
+                    size: 20,
+                    color: AppTheme.textMedium.withValues(alpha: 0.5),
                   ),
                 ],
               ),
-            ),
 
-            const SizedBox(height: 12),
+              // Forage type chips (only forage types, compact)
+              if (user.foragePreferences?.isNotEmpty ?? false) ...[
+                const SizedBox(height: 8),
+                _buildForageTypeChips(user.foragePreferences!),
+              ],
 
-            // Action button (or info text for current user)
-            _buildActionButton(user, isCurrentUser),
-          ],
+              const SizedBox(height: 10),
+
+              // Action button (or info text for current user)
+              _buildActionButton(user, isCurrentUser),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildStatusIndicator(UserModel user) {
-    if (user.isFriend) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: AppTheme.success.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(8),
+  Widget _buildDistanceBadge(_UserLocationInfo locationInfo) {
+    final distanceMeters = Geolocator.distanceBetween(
+      _userLocation!.latitude,
+      _userLocation!.longitude,
+      locationInfo.latitude,
+      locationInfo.longitude,
+    );
+
+    String distanceText;
+    if (distanceMeters < 1000) {
+      distanceText = '${distanceMeters.round()}m';
+    } else if (distanceMeters < 10000) {
+      distanceText = '${(distanceMeters / 1000).toStringAsFixed(1)}km';
+    } else {
+      distanceText = '${(distanceMeters / 1000).round()}km';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+      decoration: BoxDecoration(
+        color: AppTheme.success.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        distanceText,
+        style: AppTheme.caption(size: 9, color: AppTheme.success, weight: FontWeight.w600),
+      ),
+    );
+  }
+
+  Widget _buildFriendBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+      decoration: BoxDecoration(
+        color: AppTheme.success.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        'Friend',
+        style: AppTheme.caption(size: 9, color: AppTheme.success, weight: FontWeight.w600),
+      ),
+    );
+  }
+
+  /// Build compact forage type chips (only forage types, max 3 + "more")
+  Widget _buildForageTypeChips(String preferences) {
+    final prefs = preferences
+        .split(',')
+        .map((s) => s.trim().toLowerCase())
+        .where((s) => s.isNotEmpty)
+        .toList();
+
+    if (prefs.isEmpty) return const SizedBox.shrink();
+
+    // Only show forage types
+    final forageTypes = ForageTypeUtils.allTypes.map((t) => t.toLowerCase()).toSet();
+    final matchingTypes = prefs.where((p) => forageTypes.contains(p)).take(3).toList();
+    final totalForageTypes = prefs.where((p) => forageTypes.contains(p)).length;
+    final extraCount = totalForageTypes - matchingTypes.length;
+
+    if (matchingTypes.isEmpty) return const SizedBox.shrink();
+
+    return Row(
+      children: [
+        Expanded(
+          child: Wrap(
+            spacing: 4,
+            runSpacing: 4,
+            children: [
+              ...matchingTypes.map((type) {
+                final color = ForageTypeUtils.getTypeColor(type);
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    _capitalizeFirst(type),
+                    style: AppTheme.caption(size: 9, color: color, weight: FontWeight.w500),
+                  ),
+                );
+              }),
+              if (extraCount > 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppTheme.textMedium.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '+$extraCount more',
+                    style: AppTheme.caption(size: 9, color: AppTheme.textMedium),
+                  ),
+                ),
+            ],
+          ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+      ],
+    );
+  }
+
+  /// Show detailed dialog for a forager
+  void _showForagerDetailDialog(UserModel user, _UserLocationInfo? locationInfo) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final isCurrentUser = user.email == currentUser?.email;
+    final memberSince = user.createdAt.toDate();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (context, scrollController) => SingleChildScrollView(
+          controller: scrollController,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Handle bar
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.textMedium.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+
+                // Profile header
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: isCurrentUser
+                          ? null
+                          : () {
+                              Navigator.pop(context); // Close bottom sheet first
+                              _viewUserProfile(user);
+                            },
+                      child: FutureBuilder<String>(
+                        future: _getProfileImageUrl(user.profilePic),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                            return CircleAvatar(
+                              radius: 36,
+                              backgroundImage: NetworkImage(snapshot.data!),
+                            );
+                          }
+                          return CircleAvatar(
+                            radius: 36,
+                            backgroundColor: AppTheme.primary,
+                            child: Text(
+                              user.username.isNotEmpty ? user.username[0].toUpperCase() : '?',
+                              style: AppTheme.title(color: Colors.white, size: 24),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  user.username,
+                                  style: AppTheme.heading(size: 20),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (isCurrentUser) ...[
+                                const SizedBox(width: 8),
+                                _buildYouBadge(),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Member since ${DateFormat('MMMM yyyy').format(memberSince)}',
+                            style: AppTheme.caption(color: AppTheme.textMedium),
+                          ),
+                          Text(
+                            '${user.friends.length} friends',
+                            style: AppTheme.caption(color: AppTheme.textMedium),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                // Location section
+                if (locationInfo != null) ...[
+                  _buildDetailSection(
+                    icon: Icons.location_on,
+                    title: 'Location',
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            locationInfo.address,
+                            style: AppTheme.body(size: 14),
+                          ),
+                        ),
+                        if (_userLocation != null)
+                          _buildDistanceBadge(locationInfo),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // Foraging interests section
+                if (user.foragePreferences?.isNotEmpty ?? false) ...[
+                  _buildDetailSection(
+                    icon: Icons.eco,
+                    title: 'Foraging Interests',
+                    child: _buildAllPreferenceChips(user.foragePreferences!),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // Bio section
+                if (user.bio.isNotEmpty) ...[
+                  _buildDetailSection(
+                    icon: Icons.person,
+                    title: 'About',
+                    child: Text(
+                      user.bio,
+                      style: AppTheme.body(size: 14),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // Status badges
+                if (!isCurrentUser) ...[
+                  _buildDetailSection(
+                    icon: Icons.badge,
+                    title: 'Status',
+                    child: Row(
+                      children: [
+                        if (user.isFriend)
+                          _buildStatusChip('Friend', AppTheme.success, Icons.check)
+                        else if (user.hasPendingRequest)
+                          _buildStatusChip('Request Pending', AppTheme.warning, Icons.pending)
+                        else
+                          _buildStatusChip('Not Connected', AppTheme.textMedium, Icons.person_add),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+
+                // Info text for current user
+                if (isCurrentUser) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.info.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppTheme.info.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.visibility, size: 18, color: AppTheme.info),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'This is how others see you in Discover. Edit your profile to update your info.',
+                            style: AppTheme.caption(size: 12, color: AppTheme.info),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ] else ...[
+                  // Action buttons
+                  if (user.isFriend)
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _showSendForageRequestDialog(user);
+                        },
+                        icon: const Icon(Icons.nature_people, size: 18),
+                        label: const Text('Plan a Forage Together'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.success,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    )
+                  else if (!user.hasPendingRequest)
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _showSendFriendRequestDialog(user);
+                        },
+                        icon: const Icon(Icons.person_add, size: 18),
+                        label: const Text("Let's Forage Together"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailSection({
+    required IconData icon,
+    required String title,
+    required Widget child,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
-            Icon(Icons.check, size: 12, color: AppTheme.success),
-            const SizedBox(width: 4),
+            Icon(icon, size: 16, color: AppTheme.primary),
+            const SizedBox(width: 6),
             Text(
-              'Friend',
-              style: AppTheme.caption(
-                size: 10,
-                color: AppTheme.success,
-                weight: FontWeight.w600,
-              ),
+              title,
+              style: AppTheme.title(size: 13, color: AppTheme.primary),
             ),
           ],
         ),
-      );
-    }
-
-    if (user.hasPendingRequest) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: AppTheme.warning.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(8),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.only(left: 22),
+          child: child,
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.pending, size: 12, color: AppTheme.warning),
-            const SizedBox(width: 4),
-            Text(
-              'Pending',
-              style: AppTheme.caption(
-                size: 10,
-                color: AppTheme.warning,
-                weight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
+      ],
+    );
+  }
 
-    return const SizedBox.shrink();
+  Widget _buildStatusChip(String label, Color color, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: AppTheme.caption(size: 12, color: color, weight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build all preference chips for the detail dialog
+  Widget _buildAllPreferenceChips(String preferences) {
+    final prefs = preferences
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+
+    if (prefs.isEmpty) return const SizedBox.shrink();
+
+    final forageTypes = ForageTypeUtils.allTypes.map((t) => t.toLowerCase()).toSet();
+
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: prefs.map((pref) {
+        final isForageType = forageTypes.contains(pref.toLowerCase());
+        final color = isForageType
+            ? ForageTypeUtils.getTypeColor(pref.toLowerCase())
+            : AppTheme.info;
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withValues(alpha: 0.3)),
+          ),
+          child: Text(
+            _capitalizeFirst(pref),
+            style: AppTheme.caption(size: 12, color: color, weight: FontWeight.w500),
+          ),
+        );
+      }).toList(),
+    );
   }
 
   Widget _buildActionButton(UserModel user, bool isCurrentUser) {
@@ -750,48 +1110,6 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
     );
   }
 
-  Widget _buildActivityBadge(String level) {
-    Color color;
-    IconData icon;
-
-    switch (level) {
-      case 'Active':
-        color = AppTheme.success;
-        icon = Icons.verified;
-        break;
-      case 'New':
-        color = AppTheme.info;
-        icon = Icons.new_releases;
-        break;
-      default:
-        color = AppTheme.textMedium;
-        icon = Icons.person;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 10, color: color),
-          const SizedBox(width: 3),
-          Text(
-            level,
-            style: AppTheme.caption(
-              size: 9,
-              weight: FontWeight.w600,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildYouBadge() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -810,121 +1128,25 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
     );
   }
 
-  Widget _buildReputationItem(IconData icon, String text) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 11, color: AppTheme.textMedium),
-        const SizedBox(width: 4),
-        Text(text, style: AppTheme.caption(size: 10)),
-      ],
-    );
-  }
-
-  Widget _buildLocationRow(_UserLocationInfo locationInfo) {
-    // Calculate distance if user's device location is available
-    String? distanceText;
-    if (_userLocation != null) {
-      final distanceMeters = Geolocator.distanceBetween(
-        _userLocation!.latitude,
-        _userLocation!.longitude,
-        locationInfo.latitude,
-        locationInfo.longitude,
-      );
-
-      // Convert to readable distance
-      if (distanceMeters < 1000) {
-        distanceText = '${distanceMeters.round()} m';
-      } else if (distanceMeters < 10000) {
-        distanceText = '${(distanceMeters / 1000).toStringAsFixed(1)} km';
-      } else {
-        distanceText = '${(distanceMeters / 1000).round()} km';
-      }
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppTheme.primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.location_on, size: 14, color: AppTheme.primary),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              locationInfo.address,
-              style: AppTheme.caption(
-                size: 11,
-                color: AppTheme.textDark,
-                weight: FontWeight.w500,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          if (distanceText != null) ...[
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppTheme.success.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                distanceText,
-                style: AppTheme.caption(
-                  size: 10,
-                  color: AppTheme.success,
-                  weight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLocationLoadingRow() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppTheme.backgroundLight,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.location_on, size: 14, color: AppTheme.textMedium.withValues(alpha: 0.5)),
-          const SizedBox(width: 6),
-          Text(
-            'Loading location...',
-            style: AppTheme.caption(
-              size: 11,
-              color: AppTheme.textMedium.withValues(alpha: 0.7),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _getActivityLevel(int daysSinceMember, int friendCount) {
-    if (daysSinceMember < 7 || friendCount < 2) {
-      return 'New';
-    }
-    if (daysSinceMember > 30 && friendCount > 5) {
-      return 'Active';
-    }
-    return 'Regular';
-  }
-
   String _capitalizeFirst(String text) {
     if (text.isEmpty) return text;
     return text[0].toUpperCase() + text.substring(1);
+  }
+
+  void _viewUserProfile(UserModel user) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    // Don't navigate if it's the current user's own profile
+    if (user.email == currentUser?.email) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => UserProfileViewScreen(
+          userEmail: user.email,
+          displayName: user.username,
+        ),
+      ),
+    );
   }
 
   Future<void> _showSendFriendRequestDialog(UserModel recipient) async {
@@ -1000,6 +1222,7 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
         recipientEmail: recipient.email,
         senderUsername: currentUserData?.username ?? currentUser.email!,
         senderEmail: currentUser.email!,
+        isFriend: recipient.isFriend, // Show planning UI for friends
       ),
     );
 

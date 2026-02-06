@@ -339,26 +339,19 @@ class MapFloatingControls extends ConsumerWidget {
                 const SizedBox(height: 10),
                 // Draggable test location target
                 _DraggableSpoofTarget(),
-                const SizedBox(height: 10),
-                // Fullscreen Button - only show when not already in fullscreen
-                if (onFullScreenPressed != null) ...[
-                  Tooltip(
-                    message: 'Full screen mode',
-                    child: FloatingActionButton(
-                      heroTag: 'fullscreenButton',
-                      onPressed: onFullScreenPressed,
-                      mini: true,
-                      backgroundColor: AppTheme.primary,
-                      child: const Icon(
-                        Icons.fullscreen,
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                ],
-                // Info Button - at bottom of controls
+              ],
+            ),
+          ),
+
+        // Left Side Controls - Info and Fullscreen - hide when search is focused
+        if (!isSearchFocused)
+          Positioned(
+            left: 12,
+            top: safePadding.top + 140, // Below search bar, same as right side
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Info Button
                 Tooltip(
                   message: 'About exploring',
                   child: FloatingActionButton(
@@ -373,6 +366,24 @@ class MapFloatingControls extends ConsumerWidget {
                     ),
                   ),
                 ),
+                // Fullscreen Button - only show when not already in fullscreen
+                if (onFullScreenPressed != null) ...[
+                  const SizedBox(height: 10),
+                  Tooltip(
+                    message: 'Full screen mode',
+                    child: FloatingActionButton(
+                      heroTag: 'fullscreenButton',
+                      onPressed: onFullScreenPressed,
+                      mini: true,
+                      backgroundColor: AppTheme.primary,
+                      child: const Icon(
+                        Icons.fullscreen,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

@@ -3,7 +3,6 @@ import 'package:flutter_forager_app/providers/recipes/recipe_provider.dart';
 import 'package:flutter_forager_app/screens/recipes/components/recipe_grid_card.dart';
 import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'add_recipe_page.dart';
 
 class RecipesPage extends ConsumerWidget {
   const RecipesPage({super.key});
@@ -12,8 +11,20 @@ class RecipesPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final recipeStream = ref.watch(recipeStreamProvider);
 
-    return Scaffold(
-      body: recipeStream.when(
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppTheme.primaryLight,
+            AppTheme.primaryLight.withValues(alpha: 0.85),
+          ],
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: recipeStream.when(
         data: (recipes) {
           return CustomScrollView(
             slivers: [
@@ -105,21 +116,6 @@ class RecipesPage extends ConsumerWidget {
           ),
         ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.miniEndFloat,
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 80),
-        child: FloatingActionButton(
-          heroTag: 'addRecipeButton',
-          foregroundColor: Colors.white,
-          backgroundColor: AppTheme.accent,
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => AddRecipePage()),
-            );
-          },
-          child: const Icon(Icons.add),
-        ),
       ),
     );
   }

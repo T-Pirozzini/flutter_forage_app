@@ -90,14 +90,17 @@ class MarkerRepository extends BaseRepository<MarkerModel> {
   /// Returns markers that the user can see based on visibility settings:
   /// - All markers owned by the user
   /// - All public markers
+  /// - Close-friends-only markers if viewer is a close friend of the owner
   /// - Friends-only markers if the user is friends with the owner
   /// - Specific markers if the user is in the allowedViewers list
   ///
   /// [viewerEmail] is the email of the user viewing markers
   /// [friendEmails] is the list of the viewer's friends' emails
+  /// [closeFriendOfViewerEmails] is the set of owner emails who marked viewer as close friend
   Stream<List<MarkerModel>> streamVisibleMarkers({
     required String viewerEmail,
     required List<String> friendEmails,
+    Set<String> closeFriendOfViewerEmails = const {},
     int limit = 100,
   }) {
     return firestoreService
@@ -118,6 +121,9 @@ class MarkerRepository extends BaseRepository<MarkerModel> {
             return true;
           case MarkerVisibility.private:
             return false; // Only owner can see
+          case MarkerVisibility.closeFriends:
+            // Visible if the owner considers viewer a close friend
+            return closeFriendOfViewerEmails.contains(marker.markerOwner);
           case MarkerVisibility.friends:
             return friendEmails.contains(marker.markerOwner);
           case MarkerVisibility.specific:
@@ -131,6 +137,7 @@ class MarkerRepository extends BaseRepository<MarkerModel> {
   Future<List<MarkerModel>> getVisibleMarkers({
     required String viewerEmail,
     required List<String> friendEmails,
+    Set<String> closeFriendOfViewerEmails = const {},
   }) async {
     try {
       final snapshot = await firestoreService
@@ -150,6 +157,9 @@ class MarkerRepository extends BaseRepository<MarkerModel> {
             return true;
           case MarkerVisibility.private:
             return false;
+          case MarkerVisibility.closeFriends:
+            // Visible if the owner considers viewer a close friend
+            return closeFriendOfViewerEmails.contains(marker.markerOwner);
           case MarkerVisibility.friends:
             return friendEmails.contains(marker.markerOwner);
           case MarkerVisibility.specific:
@@ -450,10 +460,43 @@ class MarkerRepository extends BaseRepository<MarkerModel> {
     });
   }
 
+  /// Find a marker by matching owner and coordinates.
+  ///
+  /// This is a fallback method for when markerId doesn't match a marker
+  /// (e.g., bookmarks created from community posts store postId as markerId).
+  ///
+  /// Returns the first marker that matches owner, latitude, and longitude.
+  Future<MarkerModel?> findByOwnerAndCoordinates({
+    required String ownerEmail,
+    required double latitude,
+    required double longitude,
+  }) async {
+    try {
+      final markers = await getByUserId(ownerEmail);
+
+      // Find marker with matching coordinates (within small tolerance for floating point)
+      const tolerance = 0.0001; // About 11 meters
+      for (final marker in markers) {
+        if ((marker.latitude - latitude).abs() < tolerance &&
+            (marker.longitude - longitude).abs() < tolerance) {
+          return marker;
+        }
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error finding marker by coordinates: $e');
+      return null;
+    }
+  }
+
   /// Check if a marker is visible to a specific viewer.
+  ///
+  /// [isViewerCloseFriendOfOwner] should be true if the viewer is marked as
+  /// a close friend by the marker owner.
   bool _isMarkerVisibleToViewer({
     required MarkerModel marker,
     required String viewerEmail,
+    bool isViewerCloseFriendOfOwner = false,
   }) {
     // Owner can always see their own markers
     if (marker.markerOwner == viewerEmail) return true;
@@ -463,6 +506,9 @@ class MarkerRepository extends BaseRepository<MarkerModel> {
         return true;
       case MarkerVisibility.private:
         return false;
+      case MarkerVisibility.closeFriends:
+        // Visible only if the owner considers viewer a close friend
+        return isViewerCloseFriendOfOwner;
       case MarkerVisibility.friends:
         // For friends visibility, the caller should be a friend
         // This method is called in friend context, so return true

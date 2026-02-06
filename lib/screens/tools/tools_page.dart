@@ -10,78 +10,92 @@ class ToolsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Column(
-        children: [
-          const ScreenHeading(title: 'Tools'),
-          Container(
-            width: double.infinity,
-            padding:
-                const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-            color: AppTheme.primary.withValues(alpha: 0.1),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                StyledTextMedium(
-                  'Helpful tools for your foraging adventures',
-                  color: AppTheme.textDark,
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: GridView.count(
-                crossAxisCount: 2,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
-                childAspectRatio: 1,
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppTheme.primaryLight,
+            AppTheme.primaryLight.withValues(alpha: 0.85),
+          ],
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Column(
+          children: [
+            const ScreenHeading(title: 'Tools'),
+            Container(
+              width: double.infinity,
+              padding:
+                  const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+              color: AppTheme.primary.withValues(alpha: 0.08),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  _ToolCard(
-                    icon: Icons.water_drop,
-                    title: 'Shellfish Tracker',
-                    description: 'Track your shellfish harvest with legal limits',
-                    color: AppTheme.primary,
-                    enabled: true,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ShellfishTrackerPage(),
-                        ),
-                      );
-                    },
-                  ),
-                  _ToolCard(
-                    icon: Icons.eco,
-                    title: 'Plant ID',
-                    description: 'Identify plants and mushrooms',
-                    color: AppTheme.success,
-                    enabled: false,
-                    onTap: null,
-                  ),
-                  _ToolCard(
-                    icon: Icons.wb_sunny,
-                    title: 'Weather',
-                    description: 'Local foraging conditions',
-                    color: AppTheme.secondary,
-                    enabled: false,
-                    onTap: null,
-                  ),
-                  _ToolCard(
-                    icon: Icons.calendar_today,
-                    title: 'Seasonal Guide',
-                    description: 'What to forage each season',
-                    color: AppTheme.accent,
-                    enabled: false,
-                    onTap: null,
+                  StyledTextMedium(
+                    'Helpful tools for your foraging adventures',
+                    color: AppTheme.textDark,
                   ),
                 ],
               ),
             ),
-          ),
-        ],
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: GridView.count(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 16,
+                  childAspectRatio: 0.85, // Slightly taller to prevent overflow
+                  children: [
+                    _ToolCard(
+                      icon: Icons.water_drop,
+                      title: 'Shellfish Tracker',
+                      description:
+                          'Track your shellfish harvest with legal limits',
+                      color: AppTheme.primary,
+                      enabled: true,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ShellfishTrackerPage(),
+                          ),
+                        );
+                      },
+                    ),
+                    _ToolCard(
+                      icon: Icons.eco,
+                      title: 'Plant ID',
+                      description: 'Identify plants and mushrooms',
+                      color: AppTheme.success,
+                      enabled: false,
+                      onTap: null,
+                    ),
+                    _ToolCard(
+                      icon: Icons.wb_sunny,
+                      title: 'Weather',
+                      description: 'Local foraging conditions',
+                      color: AppTheme.secondary,
+                      enabled: false,
+                      onTap: null,
+                    ),
+                    _ToolCard(
+                      icon: Icons.calendar_today,
+                      title: 'Seasonal Guide',
+                      description: 'What to forage each season',
+                      color: AppTheme.accent,
+                      enabled: false,
+                      onTap: null,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -132,7 +146,8 @@ class _ToolCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: enabled ? color.withValues(alpha: 0.1) : Colors.grey[200],
+                  color:
+                      enabled ? color.withValues(alpha: 0.1) : Colors.grey[200],
                   shape: BoxShape.circle,
                 ),
                 child: Icon(

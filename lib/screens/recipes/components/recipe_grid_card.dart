@@ -45,6 +45,7 @@ class RecipeGridCard extends StatelessWidget {
       child: Card(
         elevation: 2,
         shadowColor: AppTheme.primary.withValues(alpha: 0.2),
+        color: Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: AppTheme.borderRadiusMedium,
           side: BorderSide(

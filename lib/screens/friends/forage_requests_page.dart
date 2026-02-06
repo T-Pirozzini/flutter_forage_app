@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 
 import 'components/respond_to_request_dialog.dart';
 import 'components/contact_exchange_dialog.dart';
+import 'components/notify_emergency_contact_dialog.dart';
 
 /// Page for managing forage requests (incoming and outgoing).
 ///
@@ -814,6 +815,22 @@ class _ConnectionCard extends ConsumerWidget {
                   ],
                 ),
               ),
+
+              const SizedBox(height: 12),
+
+              // Notify Emergency Contacts button
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _showNotifyEmergencyContactDialog(context, otherUsername),
+                  icon: Icon(Icons.security, size: 18, color: AppTheme.warning),
+                  label: const Text('Notify Emergency Contacts'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.warning,
+                    side: BorderSide(color: AppTheme.warning),
+                  ),
+                ),
+              ),
             ],
           ],
         ),
@@ -890,6 +907,24 @@ class _ConnectionCard extends ConsumerWidget {
           );
         }
       }
+    }
+  }
+
+  Future<void> _showNotifyEmergencyContactDialog(BuildContext context, String partnerUsername) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => NotifyEmergencyContactDialog(
+        partnerUsername: partnerUsername,
+      ),
+    );
+
+    if (result == true && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Emergency contacts notified!'),
+          backgroundColor: AppTheme.success,
+        ),
+      );
     }
   }
 }

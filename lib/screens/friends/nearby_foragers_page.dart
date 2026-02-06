@@ -553,6 +553,7 @@ class _NearbyForagersPageState extends ConsumerState<NearbyForagersPage> {
         recipientEmail: recipient.email,
         senderUsername: currentUserData?.username ?? currentUser.email!,
         senderEmail: currentUser.email!,
+        isFriend: recipient.isFriend, // Show planning UI for friends
       ),
     );
 

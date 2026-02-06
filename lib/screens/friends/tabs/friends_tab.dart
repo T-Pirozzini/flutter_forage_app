@@ -7,6 +7,7 @@ import 'package:flutter_forager_app/data/repositories/repository_providers.dart'
 import 'package:flutter_forager_app/screens/forage_locations/forage_locations_page.dart';
 import 'package:flutter_forager_app/screens/friends/components/friend_card.dart';
 import 'package:flutter_forager_app/screens/friends/components/notify_emergency_contact_dialog.dart';
+import 'package:flutter_forager_app/screens/friends/components/send_forage_request_dialog.dart';
 import 'package:flutter_forager_app/screens/profile/profile_page.dart';
 import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -252,6 +253,39 @@ class _FriendsTabState extends ConsumerState<FriendsTab> {
   }
 
   Future<void> _showForageTogetherDialog(FriendModel friend) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser?.email == null) return;
+
+    final userRepo = ref.read(userRepositoryProvider);
+    final currentUserData = await userRepo.getById(currentUser!.email!);
+
+    if (!mounted) return;
+
+    // Show planning dialog (with isFriend: true for planning-focused UI)
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => SendForageRequestDialog(
+        recipientUsername: friend.displayName,
+        recipientEmail: friend.friendEmail,
+        senderUsername: currentUserData?.username ?? currentUser.email!,
+        senderEmail: currentUser.email!,
+        isFriend: true, // Show planning UI, not intro UI
+      ),
+    );
+
+    if (result == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Forage invite sent to ${friend.displayName}!'),
+          backgroundColor: AppTheme.success,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  /// Show dialog to notify emergency contacts about a planned forage
+  Future<void> _showNotifyEmergencyContactDialog(FriendModel friend) async {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => NotifyEmergencyContactDialog(

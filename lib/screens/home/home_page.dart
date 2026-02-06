@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/data/services/ad_mob_service.dart';
+import 'package:flutter_forager_app/data/services/notification_service.dart';
 import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
 import 'package:flutter_forager_app/data/models/user.dart';
 import 'package:flutter_forager_app/screens/profile/profile_page.dart';
@@ -61,6 +62,13 @@ class _HomePageState extends ConsumerState<HomePage> {
             ref: ref,
             userId: currentUser.email!,
           );
+        }
+      });
+
+      // Save FCM token for push notifications (defer to not block startup)
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) {
+          NotificationService.instance.getAndSaveToken();
         }
       });
     });
@@ -269,32 +277,58 @@ class _HomePageState extends ConsumerState<HomePage> {
           // EXPLORE - Prominent center tab with amber background (oversized)
           BottomNavigationBarItem(
             icon: Transform.translate(
-              offset: const Offset(0, -12), // Push up to lean over edge
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppTheme.secondary, // Always amber - prominent!
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppTheme.surfaceLight,
-                    width: 3,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.secondary.withValues(alpha: 0.5),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+              offset: const Offset(0, -12), // Hang over the nav bar edge
+              child: SizedBox(
+                height: 84, // Increased height to prevent overflow
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(14), // Restored padding
+                      decoration: BoxDecoration(
+                        color: currentIndex == 2
+                            ? AppTheme.secondary
+                            : AppTheme.secondary.withValues(alpha: 0.5),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppTheme.surfaceLight,
+                          width: 3,
+                        ),
+                        boxShadow: currentIndex == 2
+                            ? [
+                                BoxShadow(
+                                  color: AppTheme.secondary.withValues(alpha: 0.5),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : [],
+                      ),
+                      child: Icon(
+                        Icons.explore,
+                        color: currentIndex == 2
+                            ? AppTheme.textWhite
+                            : AppTheme.textWhite.withValues(alpha: 0.6),
+                        size: currentIndex == 2 ? 28 : 24,
+                      ),
+                    ),
+                    const Spacer(), // Push text to bottom
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        'Explore',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: currentIndex == 2 ? FontWeight.w600 : FontWeight.normal,
+                          color: currentIndex == 2 ? AppTheme.primary : AppTheme.textMedium,
+                        ),
+                      ),
                     ),
                   ],
                 ),
-                child: Icon(
-                  Icons.explore,
-                  color: AppTheme.textWhite,
-                  size: 32,
-                ),
               ),
             ),
-            label: 'Explore',
+            label: '', // Empty - we handle label in icon widget
           ),
           const BottomNavigationBarItem(
             icon: Icon(Icons.build_outlined),

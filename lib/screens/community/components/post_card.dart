@@ -10,6 +10,7 @@ import 'package:flutter_forager_app/data/services/firebase/firestore_service.dar
 import 'package:flutter_forager_app/screens/community/community_page.dart';
 import 'package:flutter_forager_app/screens/community/components/comment_tile.dart';
 import 'package:flutter_forager_app/screens/community/post_detail_screen.dart';
+import 'package:flutter_forager_app/screens/profile/user_profile_view_screen.dart';
 import 'package:flutter_forager_app/data/services/marker_service.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_forager_app/theme/app_theme.dart';
@@ -131,6 +132,21 @@ class _PostCardState extends State<PostCard> {
         );
       }
     }
+  }
+
+  void _viewUserProfile(String username) {
+    // Don't navigate if it's the current user's own post
+    if (widget.post.userEmail == widget.currentUserEmail) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => UserProfileViewScreen(
+          userEmail: widget.post.userEmail,
+          displayName: username,
+        ),
+      ),
+    );
   }
 
   Future<void> _fetchMarkerIdAndRefreshData() async {
@@ -470,10 +486,10 @@ class _PostCardState extends State<PostCard> {
     final username = widget.post.userEmail.split('@')[0];
     final timeAgo = _getTimeAgo(widget.post.postTimestamp);
 
-    // X/Twitter style colors
-    const darkBg = Color(0xFF15181c);
-    const textPrimary = Color(0xFFe7e9ea);
-    const textSecondary = Color(0xFF71767b);
+    // App theme green background
+    final cardBg = AppTheme.primaryLight;
+    final textPrimary = AppTheme.textWhite;
+    final textSecondary = AppTheme.textWhite;
 
     return InkWell(
       onTap: () {
@@ -493,13 +509,16 @@ class _PostCardState extends State<PostCard> {
         );
       },
       child: Container(
-        color: darkBg,
+        color: cardBg,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Avatar with profile pic and initial overlay
-            _buildUserAvatar(username),
+            // Avatar with profile pic and initial overlay - tappable for profile
+            GestureDetector(
+              onTap: () => _viewUserProfile(username),
+              child: _buildUserAvatar(username),
+            ),
             const SizedBox(width: 12),
             // Content
             Expanded(
@@ -509,18 +528,21 @@ class _PostCardState extends State<PostCard> {
                   // Header: Username, time, follow button
                   Row(
                     children: [
-                      Text(
-                        '@$username',
-                        style: const TextStyle(
-                          color: textPrimary,
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
+                      GestureDetector(
+                        onTap: () => _viewUserProfile(username),
+                        child: Text(
+                          '@$username',
+                          style: TextStyle(
+                            color: textPrimary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 4),
                       Text(
                         '· $timeAgo',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: textSecondary,
                           fontSize: 14,
                         ),
@@ -558,7 +580,7 @@ class _PostCardState extends State<PostCard> {
                       Expanded(
                         child: Text(
                           widget.post.name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: textPrimary,
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
@@ -567,7 +589,6 @@ class _PostCardState extends State<PostCard> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      _buildCompactStatusBadge(),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -575,7 +596,7 @@ class _PostCardState extends State<PostCard> {
                   if (widget.post.description.isNotEmpty)
                     Text(
                       widget.post.description,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: textPrimary,
                         fontSize: 14,
                         height: 1.3,
@@ -584,28 +605,44 @@ class _PostCardState extends State<PostCard> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   const SizedBox(height: 10),
-                  // Image (if exists)
+                  // Image (if exists) with status badge overlay
                   if (widget.post.imageUrls.isNotEmpty)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: CachedNetworkImage(
-                        imageUrl: widget.post.imageUrls.first,
-                        height: 180,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          height: 180,
-                          color: const Color(0xFF2f3336),
-                          child: const Center(
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                    Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: CachedNetworkImage(
+                            imageUrl: widget.post.imageUrls.first,
+                            height: 180,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => Container(
+                              height: 180,
+                              color: AppTheme.backgroundLight,
+                              child: const Center(
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => Container(
+                              height: 180,
+                              color: AppTheme.backgroundLight,
+                              child: Icon(Icons.image_not_supported, color: textSecondary),
+                            ),
                           ),
                         ),
-                        errorWidget: (context, url, error) => Container(
-                          height: 180,
-                          color: const Color(0xFF2f3336),
-                          child: const Icon(Icons.image_not_supported, color: textSecondary),
+                        // Status badge in top-right corner
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: _buildCompactStatusBadge(),
                         ),
-                      ),
+                      ],
+                    ),
+                  // Show status badge inline if no image
+                  if (widget.post.imageUrls.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: _buildCompactStatusBadge(),
                     ),
                   const SizedBox(height: 10),
                   // Location row with coordinates
@@ -613,7 +650,7 @@ class _PostCardState extends State<PostCard> {
                     future: getLocationWithFlag(widget.post.latitude, widget.post.longitude),
                     builder: (context, snapshot) {
                       final location = snapshot.data ?? '';
-                      final coords = '${widget.post.latitude.toStringAsFixed(4)}°, ${widget.post.longitude.toStringAsFixed(4)}°';
+                      final coords = '${widget.post.latitude.toStringAsFixed(3)}°, ${widget.post.longitude.toStringAsFixed(3)}°';
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 8),
                         child: Row(
@@ -623,7 +660,7 @@ class _PostCardState extends State<PostCard> {
                             Expanded(
                               child: Text(
                                 location.isNotEmpty ? '$location · $coords' : coords,
-                                style: const TextStyle(color: textSecondary, fontSize: 12),
+                                style: TextStyle(color: textSecondary, fontSize: 12),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -726,7 +763,7 @@ class _PostCardState extends State<PostCard> {
                     shape: BoxShape.circle,
                     color: AppTheme.primary,
                     border: Border.all(
-                      color: const Color(0xFF15181c),
+                      color: Colors.white,
                       width: 2,
                     ),
                   ),
@@ -771,7 +808,7 @@ class _PostCardState extends State<PostCard> {
     required bool isActive,
     required Color activeColor,
   }) {
-    const textSecondary = Color(0xFF71767b);
+    final textSecondary = AppTheme.textWhite;
     return GestureDetector(
       onTap: onTap,
       child: Row(
@@ -797,7 +834,6 @@ class _PostCardState extends State<PostCard> {
   }
 
   Widget _buildCompactFollowButton() {
-    const textSecondary = Color(0xFF71767b);
     if (_isLoadingFollow) {
       return const SizedBox(
         width: 16,
@@ -814,13 +850,13 @@ class _PostCardState extends State<PostCard> {
           color: _isFollowing ? Colors.transparent : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: _isFollowing
-              ? Border.all(color: textSecondary, width: 1)
+              ? Border.all(color: AppTheme.textWhite, width: 1)
               : null,
         ),
         child: Text(
           _isFollowing ? 'Following' : 'Follow',
           style: TextStyle(
-            color: _isFollowing ? Colors.white : Colors.black,
+            color: _isFollowing ? AppTheme.textWhite : Colors.black,
             fontSize: 13,
             fontWeight: FontWeight.bold,
           ),
@@ -846,7 +882,7 @@ class _PostCardState extends State<PostCard> {
     }
   }
 
-  /// Build a compact status badge showing last update info
+  /// Build a compact status badge showing last update info - white card for readability
   Widget _buildCompactStatusBadge() {
     final lastUpdate = _statusHistory.isNotEmpty ? _statusHistory.last : null;
     final status = lastUpdate?['status'] ?? widget.post.currentStatus;
@@ -866,39 +902,67 @@ class _PostCardState extends State<PostCard> {
       dateStr = DateFormat('MMM d').format(date);
     }
 
+    final statusColor = _getStatusColor(status);
+
     return GestureDetector(
       onTap: _showStatusUpdateDialog,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: _getStatusColor(status).withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(4),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(6),
           border: Border.all(
-            color: _getStatusColor(status).withValues(alpha: 0.25),
-            width: 1,
+            color: statusColor.withValues(alpha: 0.4),
+            width: 1.5,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 2,
+              offset: const Offset(0, 1),
+            ),
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              _getStatusIcon(status),
-              size: 10,
-              color: _getStatusColor(status),
+            Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Icon(
+                _getStatusIcon(status),
+                size: 12,
+                color: statusColor,
+              ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 6),
             Flexible(
-              child: Text(
-                username.isNotEmpty && dateStr.isNotEmpty
-                    ? '${status.replaceAll('_', ' ')} • $username $dateStr'
-                    : status.replaceAll('_', ' '),
-                style: AppTheme.caption(
-                  size: 9,
-                  color: _getStatusColor(status),
-                  weight: FontWeight.w500,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    status.replaceAll('_', ' ').toUpperCase(),
+                    style: AppTheme.caption(
+                      size: 10,
+                      color: statusColor,
+                      weight: FontWeight.w700,
+                    ),
+                  ),
+                  if (username.isNotEmpty || dateStr.isNotEmpty)
+                    Text(
+                      username.isNotEmpty && dateStr.isNotEmpty
+                          ? '$username · $dateStr'
+                          : username.isNotEmpty ? username : dateStr,
+                      style: AppTheme.caption(
+                        size: 8,
+                        color: AppTheme.textMedium,
+                      ),
+                    ),
+                ],
               ),
             ),
           ],
@@ -916,11 +980,11 @@ class _PostCardState extends State<PostCard> {
       case 'sparse':
         return AppTheme.secondary;
       case 'out_of_season':
-        return AppTheme.textMedium;
+        return AppTheme.textWhite;
       case 'no_longer_available':
         return AppTheme.error;
       default:
-        return AppTheme.textMedium;
+        return AppTheme.textWhite;
     }
   }
 

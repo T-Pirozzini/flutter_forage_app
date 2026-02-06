@@ -270,8 +270,9 @@ class GamificationHelper {
           ),
         );
       }
-    } catch (e) {
-      debugPrint('Error updating streak: $e');
+    } catch (e, stackTrace) {
+      debugPrint('Error updating streak for user $userId: $e');
+      debugPrint('Stack trace: $stackTrace');
     }
   }
 
@@ -301,9 +302,10 @@ class GamificationHelper {
       if (showNotification && result.hasRewards) {
         RewardNotification.showRewards(context, result: result);
       }
-    } catch (e) {
-      debugPrint('Error awarding points: $e');
-      // Silently fail - don't disrupt user experience
+    } catch (e, stackTrace) {
+      debugPrint('Error awarding points for user $userId: $e');
+      debugPrint('Stack trace: $stackTrace');
+      // Log but don't disrupt user experience
     }
   }
 }

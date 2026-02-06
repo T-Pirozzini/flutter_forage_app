@@ -6,14 +6,17 @@ enum MarkerVisibility {
   /// Only the owner can see this marker
   private,
 
-  /// Anyone can see this marker (community feed)
-  public,
+  /// Only the owner's close/trusted friends can see this marker
+  closeFriends,
 
   /// Only the owner's friends can see this marker
   friends,
 
   /// Only specific users can see this marker
-  specific;
+  specific,
+
+  /// Anyone can see this marker (community feed)
+  public;
 
   /// Convert from string (for Firestore)
   static MarkerVisibility fromString(String? value) {
@@ -29,12 +32,14 @@ enum MarkerVisibility {
     switch (this) {
       case MarkerVisibility.private:
         return 'Private';
-      case MarkerVisibility.public:
-        return 'Public';
+      case MarkerVisibility.closeFriends:
+        return 'Trusted Foragers';
       case MarkerVisibility.friends:
         return 'Friends Only';
       case MarkerVisibility.specific:
         return 'Specific Friends';
+      case MarkerVisibility.public:
+        return 'Public';
     }
   }
 
@@ -43,12 +48,14 @@ enum MarkerVisibility {
     switch (this) {
       case MarkerVisibility.private:
         return 'Only you can see this location';
-      case MarkerVisibility.public:
-        return 'Visible to everyone in the community';
+      case MarkerVisibility.closeFriends:
+        return 'Only your trusted foragers can see this';
       case MarkerVisibility.friends:
         return 'Visible to all your friends';
       case MarkerVisibility.specific:
         return 'Visible to selected friends only';
+      case MarkerVisibility.public:
+        return 'Visible to everyone in the community';
     }
   }
 }
@@ -157,6 +164,9 @@ class MarkerModel {
 
   /// Whether this marker is private (owner only)
   bool get isPrivate => visibility == MarkerVisibility.private;
+
+  /// Whether this marker is visible to close/trusted friends only
+  bool get isCloseFriendsOnly => visibility == MarkerVisibility.closeFriends;
 
   /// Whether this marker is visible to friends only
   bool get isFriendsOnly => visibility == MarkerVisibility.friends;

@@ -5,7 +5,7 @@ import 'package:flutter_forager_app/data/models/post.dart';
 import 'package:flutter_forager_app/providers/community/community_filter_provider.dart';
 import 'package:flutter_forager_app/screens/community/components/community_filter_bar.dart';
 import 'package:flutter_forager_app/screens/community/components/post_card.dart';
-import 'package:flutter_forager_app/screens/my_foraging/my_foraging_page.dart';
+import 'package:flutter_forager_app/shared/gamification/gamification_helper.dart';
 import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geocoding/geocoding.dart';
@@ -81,6 +81,15 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
         username: username ?? currentUser.email!.split('@')[0],
         text: comment,
       );
+
+      // Award points for commenting
+      if (mounted) {
+        await GamificationHelper.awardPostComment(
+          context: context,
+          ref: ref,
+          userId: currentUser.email!,
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -125,6 +134,15 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
         userEmail: currentUser.email!,
         isCurrentlyLiked: isCurrentlyLiked,
       );
+
+      // Award points when liking (not unliking)
+      if (!isCurrentlyLiked && mounted) {
+        await GamificationHelper.awardPostLiked(
+          context: context,
+          ref: ref,
+          userId: currentUser.email!,
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -298,15 +316,25 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
   Widget build(BuildContext context) {
     final currentFilter = ref.watch(communityFilterProvider);
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              // Filter bar
-              const CommunityFilterBar(),
-              Expanded(
-            child: StreamBuilder<List<PostModel>>(
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppTheme.primaryLight,
+            AppTheme.primaryLight.withValues(alpha: 0.85),
+          ],
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Column(
+          children: [
+            // Filter bar
+            const CommunityFilterBar(),
+            Expanded(
+              child: StreamBuilder<List<PostModel>>(
               stream: _getFilteredStream(currentFilter),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -403,9 +431,7 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
 
                 final posts = snapshot.data!;
 
-                return Container(
-                  color: const Color(0xFF15181c), // Dark slate background (X-style)
-                  child: ListView.separated(
+                return ListView.separated(
                     itemCount: posts.length,
                     separatorBuilder: (context, index) => Divider(
                       height: 1,
@@ -440,35 +466,12 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
                         username: username,
                       );
                     },
-                  ),
-                );
+                  );
               },
             ),
           ),
-            ],
-          ),
-          // FAB for sharing
-          Positioned(
-            right: 16,
-            bottom: 16,
-            child: FloatingActionButton.extended(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const MyForagingPage(),
-                  ),
-                );
-              },
-              backgroundColor: AppTheme.primary,
-              icon: const Icon(Icons.share, color: Colors.white),
-              label: Text(
-                'Share',
-                style: AppTheme.caption(size: 14, weight: FontWeight.w600),
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

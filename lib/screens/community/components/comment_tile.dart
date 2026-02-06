@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/data/models/post_comment.dart';
+import 'package:flutter_forager_app/screens/profile/user_profile_view_screen.dart';
 import 'package:flutter_forager_app/shared/styled_text.dart';
 import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:intl/intl.dart';
@@ -13,28 +14,52 @@ import 'package:intl/intl.dart';
 class CommentTile extends StatelessWidget {
   final PostCommentModel? commentModel;
   final Map<String, dynamic>? legacyComment;
+  final String? currentUserEmail;
 
   const CommentTile({
     super.key,
     this.commentModel,
     this.legacyComment,
+    this.currentUserEmail,
   }) : assert(commentModel != null || legacyComment != null,
             'Either commentModel or legacyComment must be provided');
 
   /// Factory constructor for new PostCommentModel
-  const CommentTile.fromModel({super.key, required PostCommentModel comment})
-      : commentModel = comment,
+  const CommentTile.fromModel({
+    super.key,
+    required PostCommentModel comment,
+    this.currentUserEmail,
+  })  : commentModel = comment,
         legacyComment = null;
 
   /// Factory constructor for legacy Map format
-  const CommentTile.fromMap({super.key, required Map<String, dynamic> comment})
-      : commentModel = null,
+  const CommentTile.fromMap({
+    super.key,
+    required Map<String, dynamic> comment,
+    this.currentUserEmail,
+  })  : commentModel = null,
         legacyComment = comment;
+
+  void _viewUserProfile(BuildContext context, String userEmail, String username) {
+    // Don't navigate if it's the current user's own comment
+    if (currentUserEmail != null && userEmail == currentUserEmail) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => UserProfileViewScreen(
+          userEmail: userEmail,
+          displayName: username,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     // Extract data from either model or legacy map
     final String username;
+    final String userEmail;
     final String text;
     final DateTime? createdAt;
     final String? profilePic;
@@ -43,6 +68,7 @@ class CommentTile extends StatelessWidget {
       username = commentModel!.username.isNotEmpty
           ? commentModel!.username
           : commentModel!.userEmail.split('@')[0];
+      userEmail = commentModel!.userEmail;
       text = commentModel!.text;
       createdAt = commentModel!.createdAt;
       profilePic = commentModel!.profilePic;
@@ -51,6 +77,7 @@ class CommentTile extends StatelessWidget {
       username = legacy['username'] ??
           legacy['userEmail']?.split('@')[0] ??
           'Anonymous';
+      userEmail = legacy['userEmail'] ?? '';
       text = legacy['text'] ?? '';
 
       // Handle legacy timestamp (could be Timestamp or DateTime)
@@ -69,19 +96,26 @@ class CommentTile extends StatelessWidget {
         ? DateFormat('MMM d, h:mm a').format(createdAt)
         : 'Just now';
 
+    final canTapProfile = userEmail.isNotEmpty && userEmail != currentUserEmail;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 18,
-            backgroundColor: AppTheme.primary.withValues(alpha: 0.15),
-            backgroundImage:
-                profilePic != null ? NetworkImage(profilePic) : null,
-            child: profilePic == null
-                ? Icon(Icons.person, size: 18, color: AppTheme.primary)
+          GestureDetector(
+            onTap: canTapProfile
+                ? () => _viewUserProfile(context, userEmail, username)
                 : null,
+            child: CircleAvatar(
+              radius: 18,
+              backgroundColor: AppTheme.primary.withValues(alpha: 0.15),
+              backgroundImage:
+                  profilePic != null ? NetworkImage(profilePic) : null,
+              child: profilePic == null
+                  ? Icon(Icons.person, size: 18, color: AppTheme.primary)
+                  : null,
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -97,9 +131,14 @@ class CommentTile extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      StyledTextMedium(
-                        username,
-                        color: AppTheme.secondary,
+                      GestureDetector(
+                        onTap: canTapProfile
+                            ? () => _viewUserProfile(context, userEmail, username)
+                            : null,
+                        child: StyledTextMedium(
+                          username,
+                          color: AppTheme.secondary,
+                        ),
                       ),
                       StyledTextSmall(
                         displayTime,
