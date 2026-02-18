@@ -45,6 +45,7 @@ class UserModel {
   final String subscriptionTier; // 'free', 'premium', 'pro'
   final DateTime? subscriptionExpiry; // When premium expires
   final bool hasCompletedOnboarding; // Track if user has seen onboarding
+  final String? lastSeenTutorialVersion; // App version user last saw tutorial/what's new
 
   // NOTIFICATIONS - New fields
   final NotificationPreferences notificationPreferences;
@@ -102,6 +103,7 @@ class UserModel {
     this.subscriptionTier = 'free',
     this.subscriptionExpiry,
     this.hasCompletedOnboarding = false,
+    this.lastSeenTutorialVersion,
     // Notification fields
     this.notificationPreferences = const NotificationPreferences(),
     // Social/Foraging together fields
@@ -192,6 +194,7 @@ class UserModel {
           ? (data['subscriptionExpiry'] as Timestamp).toDate()
           : null,
       hasCompletedOnboarding: data['hasCompletedOnboarding'] as bool? ?? false,
+      lastSeenTutorialVersion: data['lastSeenTutorialVersion'] as String?,
       // Notification preferences (backwards compatible)
       notificationPreferences: NotificationPreferences.fromMap(
         data['notificationPreferences'] as Map<String, dynamic>?,
@@ -242,6 +245,8 @@ class UserModel {
           ? Timestamp.fromDate(subscriptionExpiry!)
           : null,
       'hasCompletedOnboarding': hasCompletedOnboarding,
+      if (lastSeenTutorialVersion != null)
+        'lastSeenTutorialVersion': lastSeenTutorialVersion,
       // Notification preferences
       'notificationPreferences': notificationPreferences.toMap(),
       // Social/Foraging together fields
@@ -287,6 +292,13 @@ class UserModel {
 
   /// Check if user has completed onboarding
   bool get needsOnboarding => !hasCompletedOnboarding;
+
+  /// Check if user should see What's New for a given app version.
+  bool needsWhatsNew(String currentAppVersion) {
+    if (!hasCompletedOnboarding) return false;
+    if (lastSeenTutorialVersion == null) return true;
+    return lastSeenTutorialVersion != currentAppVersion;
+  }
 
   /// Calculate points needed for next level
   int get pointsNeededForNextLevel {
@@ -341,6 +353,7 @@ class UserModel {
     String? subscriptionTier,
     DateTime? subscriptionExpiry,
     bool? hasCompletedOnboarding,
+    String? lastSeenTutorialVersion,
     // Notification fields
     NotificationPreferences? notificationPreferences,
     // Social/Foraging together fields
@@ -385,6 +398,8 @@ class UserModel {
       subscriptionExpiry: subscriptionExpiry ?? this.subscriptionExpiry,
       hasCompletedOnboarding:
           hasCompletedOnboarding ?? this.hasCompletedOnboarding,
+      lastSeenTutorialVersion:
+          lastSeenTutorialVersion ?? this.lastSeenTutorialVersion,
       // Notifications
       notificationPreferences:
           notificationPreferences ?? this.notificationPreferences,

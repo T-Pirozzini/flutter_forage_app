@@ -1,11 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_forager_app/core/utils/app_version.dart';
 import 'package:flutter_forager_app/data/models/notification_preferences.dart';
 import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
+import 'package:flutter_forager_app/data/repositories/user_repository.dart';
 import 'package:flutter_forager_app/data/models/user.dart';
 import 'package:flutter_forager_app/screens/home/home_page.dart';
 import 'package:flutter_forager_app/screens/onboarding/onboarding_screen.dart';
+import 'package:flutter_forager_app/screens/onboarding/whats_new_dialog.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Wrapper that determines whether to show onboarding or home page
@@ -147,8 +150,11 @@ class OnboardingWrapper extends ConsumerWidget {
           return OnboardingScreen(
             isTutorial: false,
             onComplete: () async {
-              // Mark onboarding as complete
-              await userRepo.completeOnboarding(currentUser.email!);
+              // Mark onboarding as complete with current version
+              await userRepo.completeOnboarding(
+                currentUser.email!,
+                appVersion: AppVersion.current,
+              );
 
               // Navigate to home page
               if (context.mounted) {
@@ -163,9 +169,57 @@ class OnboardingWrapper extends ConsumerWidget {
           );
         }
 
-        // User has completed onboarding, show home page
+        // Check if returning user needs to see What's New
+        if (user.needsWhatsNew(AppVersion.current)) {
+          return _HomeWithWhatsNew(
+            userEmail: currentUser.email!,
+            userRepo: userRepo,
+          );
+        }
+
+        // User has completed onboarding and seen latest version, show home page
         return const HomePage(currentIndex: 2);
       },
     );
+  }
+}
+
+/// Shows the home page, then triggers the What's New dialog once.
+class _HomeWithWhatsNew extends ConsumerStatefulWidget {
+  final String userEmail;
+  final UserRepository userRepo;
+
+  const _HomeWithWhatsNew({
+    required this.userEmail,
+    required this.userRepo,
+  });
+
+  @override
+  ConsumerState<_HomeWithWhatsNew> createState() => _HomeWithWhatsNewState();
+}
+
+class _HomeWithWhatsNewState extends ConsumerState<_HomeWithWhatsNew> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showWhatsNew();
+    });
+  }
+
+  Future<void> _showWhatsNew() async {
+    if (!mounted) return;
+    final shown = await showWhatsNewDialog(context);
+    if (shown) {
+      await widget.userRepo.markTutorialVersionSeen(
+        widget.userEmail,
+        AppVersion.current,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const HomePage(currentIndex: 2);
   }
 }

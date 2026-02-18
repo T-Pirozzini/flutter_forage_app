@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_forager_app/core/utils/app_version.dart';
 import 'package:flutter_forager_app/data/services/ad_mob_service.dart';
 import 'package:flutter_forager_app/data/services/marker_icon_service.dart';
 import 'package:flutter_forager_app/data/services/notification_service.dart';
@@ -46,6 +47,9 @@ Future main() async {
 
   // Initialize push notification service
   await NotificationService.instance.initialize();
+
+  // Initialize app version tracking
+  await AppVersion.initialize();
 
   // Don't block startup - icons will load in background after first frame
   runApp(const ProviderScope(child: MyApp()));

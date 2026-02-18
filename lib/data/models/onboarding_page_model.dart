@@ -50,6 +50,28 @@ class OnboardingContent {
       ],
     ),
     OnboardingPageModel(
+      title: 'Foraging Tools',
+      description:
+          'Use built-in tools to help track and manage your foraging sessions.',
+      imagePath: 'assets/onboarding/tools.png',
+      features: [
+        'Shellfish tracker for tide-based foraging',
+        'Filter markers by type on the map',
+        'Switch between terrain and satellite views',
+      ],
+    ),
+    OnboardingPageModel(
+      title: 'Forage Together',
+      description:
+          'Find nearby foragers and safely connect for group outings.',
+      imagePath: 'assets/onboarding/forage_together.png',
+      features: [
+        'Discover foragers open to meetups',
+        'Send forage requests with a short intro',
+        'Designate emergency contacts for safety',
+      ],
+    ),
+    OnboardingPageModel(
       title: 'Track Your Progress',
       description:
           'Monitor your foraging journey with streaks, achievements, and levels.',

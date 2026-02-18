@@ -225,12 +225,13 @@ class FriendRepository {
         .collection('FriendRequests')
         .where('toEmail', isEqualTo: userId)
         .where('status', isEqualTo: 'pending')
-        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
+      final requests = snapshot.docs
           .map((doc) => FriendRequestModel.fromFirestore(doc))
           .toList();
+      requests.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return requests;
     });
   }
 
@@ -242,12 +243,14 @@ class FriendRepository {
         .collection('FriendRequests')
         .where('fromEmail', isEqualTo: userId)
         .where('status', isEqualTo: 'pending')
-        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
+      final requests = snapshot.docs
           .map((doc) => FriendRequestModel.fromFirestore(doc))
           .toList();
+      // Sort client-side to avoid needing a composite Firestore index
+      requests.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return requests;
     });
   }
 
@@ -298,12 +301,21 @@ class FriendRepository {
       createdAt: DateTime.now(),
     );
 
+    final requestData = request.toMap();
+
     // Add to recipient's FriendRequests subcollection
     await firestoreService
         .collection('Users')
         .doc(toEmail)
         .collection('FriendRequests')
-        .add(request.toMap());
+        .add(requestData);
+
+    // Also add to sender's subcollection so outgoing requests are queryable
+    await firestoreService
+        .collection('Users')
+        .doc(fromEmail)
+        .collection('FriendRequests')
+        .add(requestData);
 
     debugPrint('Friend request sent: $fromEmail -> $toEmail');
   }
@@ -331,16 +343,25 @@ class FriendRepository {
 
     final request = FriendRequestModel.fromFirestore(requestDoc);
 
-    // Update request status
+    final updateData = {
+      'status': FriendRequestStatus.accepted.name,
+      'respondedAt': Timestamp.now(),
+    };
+
+    // Update request status in recipient's subcollection
     await firestoreService
         .collection('Users')
         .doc(userId)
         .collection('FriendRequests')
         .doc(requestId)
-        .update({
-      'status': FriendRequestStatus.accepted.name,
-      'respondedAt': Timestamp.now(),
-    });
+        .update(updateData);
+
+    // Also update the sender's copy
+    await _updateSenderRequestCopy(
+      request.fromEmail,
+      request.toEmail,
+      updateData,
+    );
 
     // Add friend relationship
     await addFriend(
@@ -357,23 +378,38 @@ class FriendRepository {
 
   /// Decline a friend request
   Future<void> declineRequest(String userId, String requestId) async {
-    await firestoreService
+    // Get the request first to find the sender
+    final requestDoc = await firestoreService
         .collection('Users')
         .doc(userId)
         .collection('FriendRequests')
         .doc(requestId)
-        .update({
+        .get();
+
+    final updateData = {
       'status': FriendRequestStatus.declined.name,
       'respondedAt': Timestamp.now(),
-    });
+    };
+
+    await requestDoc.reference.update(updateData);
+
+    // Also update the sender's copy
+    if (requestDoc.exists) {
+      final request = FriendRequestModel.fromFirestore(requestDoc);
+      await _updateSenderRequestCopy(
+        request.fromEmail,
+        request.toEmail,
+        updateData,
+      );
+    }
 
     debugPrint('Friend request declined: $requestId');
   }
 
   /// Cancel a sent friend request
   Future<void> cancelRequest(String fromEmail, String toEmail) async {
-    // Find and delete the request from recipient's subcollection
-    final requests = await firestoreService
+    // Delete from recipient's subcollection
+    final recipientRequests = await firestoreService
         .collection('Users')
         .doc(toEmail)
         .collection('FriendRequests')
@@ -381,11 +417,45 @@ class FriendRepository {
         .where('status', isEqualTo: 'pending')
         .get();
 
-    for (final doc in requests.docs) {
+    for (final doc in recipientRequests.docs) {
+      await doc.reference.delete();
+    }
+
+    // Also delete from sender's subcollection
+    final senderRequests = await firestoreService
+        .collection('Users')
+        .doc(fromEmail)
+        .collection('FriendRequests')
+        .where('fromEmail', isEqualTo: fromEmail)
+        .where('toEmail', isEqualTo: toEmail)
+        .where('status', isEqualTo: 'pending')
+        .get();
+
+    for (final doc in senderRequests.docs) {
       await doc.reference.delete();
     }
 
     debugPrint('Friend request cancelled: $fromEmail -> $toEmail');
+  }
+
+  /// Helper to update the sender's copy of a friend request
+  Future<void> _updateSenderRequestCopy(
+    String fromEmail,
+    String toEmail,
+    Map<String, dynamic> updateData,
+  ) async {
+    final senderRequests = await firestoreService
+        .collection('Users')
+        .doc(fromEmail)
+        .collection('FriendRequests')
+        .where('fromEmail', isEqualTo: fromEmail)
+        .where('toEmail', isEqualTo: toEmail)
+        .where('status', isEqualTo: 'pending')
+        .get();
+
+    for (final doc in senderRequests.docs) {
+      await doc.reference.update(updateData);
+    }
   }
 
   /// Check if there's a pending request between two users

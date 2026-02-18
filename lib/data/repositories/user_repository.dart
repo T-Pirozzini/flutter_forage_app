@@ -307,9 +307,21 @@ class UserRepository extends BaseRepository<UserModel> {
   // ONBOARDING & PREMIUM
 
   /// Mark onboarding as completed
-  Future<void> completeOnboarding(String userId) async {
+  Future<void> completeOnboarding(String userId, {String? appVersion}) async {
+    final updates = <String, dynamic>{
+      'hasCompletedOnboarding': true,
+    };
+    if (appVersion != null) {
+      updates['lastSeenTutorialVersion'] = appVersion;
+    }
+    await update(userId, updates);
+  }
+
+  /// Mark the tutorial/what's-new as seen for a specific app version.
+  Future<void> markTutorialVersionSeen(String userId, String version) async {
     await update(userId, {
       'hasCompletedOnboarding': true,
+      'lastSeenTutorialVersion': version,
     });
   }
 

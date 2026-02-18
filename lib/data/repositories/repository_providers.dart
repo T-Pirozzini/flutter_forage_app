@@ -10,6 +10,7 @@ import 'package:flutter_forager_app/data/repositories/emergency_notification_rep
 import 'package:flutter_forager_app/data/repositories/forage_request_repository.dart';
 import 'package:flutter_forager_app/data/repositories/friend_repository.dart';
 import 'package:flutter_forager_app/data/repositories/marker_repository.dart';
+import 'package:flutter_forager_app/data/repositories/notification_repository.dart';
 import 'package:flutter_forager_app/data/repositories/post_draft_repository.dart';
 import 'package:flutter_forager_app/data/repositories/post_repository.dart';
 import 'package:flutter_forager_app/data/repositories/recipe_repository.dart';
@@ -159,6 +160,14 @@ final roadmapRepositoryProvider = Provider<RoadmapRepository>((ref) {
 /// Drafts are stored in user subcollections for privacy.
 final postDraftRepositoryProvider = Provider<PostDraftRepository>((ref) {
   return PostDraftRepository();
+});
+
+/// NotificationRepository provider
+///
+/// Manages in-app notification history stored in Firestore subcollections.
+final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
+  final firestoreService = ref.watch(firestoreServiceProvider);
+  return NotificationRepository(firestoreService: firestoreService);
 });
 
 /// NotificationService provider

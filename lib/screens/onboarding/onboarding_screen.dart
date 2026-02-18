@@ -66,6 +66,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void _complete() {
     if (widget.onComplete != null) {
       widget.onComplete!();
+    } else if (widget.isTutorial) {
+      Navigator.pop(context);
     }
   }
 
@@ -338,6 +340,10 @@ class _OnboardingPage extends StatelessWidget {
         return Icons.people;
       case 'Cook & Share Recipes':
         return Icons.restaurant_menu;
+      case 'Foraging Tools':
+        return Icons.build_outlined;
+      case 'Forage Together':
+        return Icons.group_add;
       case 'Track Your Progress':
         return Icons.trending_up;
       case 'Safety First':

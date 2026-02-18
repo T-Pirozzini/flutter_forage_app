@@ -85,17 +85,20 @@ class _ContactTabState extends ConsumerState<ContactTab> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Send message form
-          _buildMessageForm(),
-          const SizedBox(height: 24),
-          // My sent messages section
-          _buildMyMessagesSection(),
-        ],
+    return Container(
+      color: AppTheme.primaryLight.withValues(alpha: 0.15),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Send message form
+            _buildMessageForm(),
+            const SizedBox(height: 24),
+            // My sent messages section
+            _buildMyMessagesSection(),
+          ],
+        ),
       ),
     );
   }

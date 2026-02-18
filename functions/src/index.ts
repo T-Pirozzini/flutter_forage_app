@@ -101,6 +101,38 @@ async function sendNotification(
   }
 }
 
+/**
+ * Store a notification in the recipient's Notifications subcollection.
+ */
+async function storeNotification(
+  recipientEmail: string,
+  title: string,
+  body: string,
+  type: string,
+  data: Record<string, string>
+): Promise<void> {
+  try {
+    await db
+      .collection("Users")
+      .doc(recipientEmail)
+      .collection("Notifications")
+      .add({
+        type,
+        title,
+        body,
+        fromEmail: data.fromEmail || data.likerEmail || data.commenterEmail || null,
+        fromDisplayName: data.fromDisplayName || null,
+        postId: data.postId || null,
+        requestId: data.requestId || null,
+        isRead: false,
+        createdAt: new Date(),
+      });
+    console.log(`Notification stored for ${recipientEmail}`);
+  } catch (error) {
+    console.error(`Error storing notification for ${recipientEmail}:`, error);
+  }
+}
+
 // ============================================================================
 // 1. FRIEND REQUEST RECEIVED
 // ============================================================================
@@ -114,43 +146,43 @@ export const onFriendRequestCreated = onDocumentCreated(
     const request = snap.data();
     const recipientEmail = event.params.userId;
 
-    // Only notify for pending requests
+    // Only notify for pending requests sent TO this user (not outgoing copies)
     if (request.status !== "pending") {
       console.log("Skipping non-pending request");
       return;
     }
+    if (request.fromEmail === recipientEmail) {
+      console.log("Skipping sender's own copy of request");
+      return;
+    }
 
-    // Get recipient's notification settings
+    // Build notification content
+    const senderName = request.fromDisplayName || "Someone";
+    const hasMessage = request.message && request.message.trim().length > 0;
+    const notifTitle = "New Friend Request";
+    const notifBody = hasMessage
+      ? `${senderName}: "${request.message.slice(0, 50)}${request.message.length > 50 ? "..." : ""}"`
+      : `${senderName} wants to connect with you!`;
+    const notifData = {
+      type: "friend_request",
+      requestId: event.params.requestId,
+      fromEmail: request.fromEmail || "",
+      fromDisplayName: senderName,
+    };
+
+    // Always store in Firestore for in-app notification list
+    await storeNotification(recipientEmail, notifTitle, notifBody, "friend_request", notifData);
+
+    // Send push notification if enabled
     const {token, socialEnabled, enabled} = await getUserNotificationInfo(
       recipientEmail
     );
-
-    if (!token) {
-      console.log(`No FCM token for user ${recipientEmail}`);
+    if (!token || !enabled || !socialEnabled) {
+      console.log(`Push skipped for ${recipientEmail} (no token or disabled)`);
       return;
     }
 
-    if (!enabled || !socialEnabled) {
-      console.log(`Notifications disabled for user ${recipientEmail}`);
-      return;
-    }
-
-    // Send notification
-    const senderName = request.fromDisplayName || "Someone";
-    const hasMessage = request.message && request.message.trim().length > 0;
-
-    await sendNotification(
-      token,
-      "New Friend Request",
-      hasMessage
-        ? `${senderName}: "${request.message.slice(0, 50)}${request.message.length > 50 ? "..." : ""}"`
-        : `${senderName} wants to connect with you!`,
-      {
-        type: "friend_request",
-        requestId: event.params.requestId,
-        fromEmail: request.fromEmail || "",
-      }
-    );
+    await sendNotification(token, notifTitle, notifBody, notifData);
   }
 );
 
@@ -176,21 +208,6 @@ export const onFriendRequestUpdated = onDocumentUpdated(
       return;
     }
 
-    // Get sender's notification settings
-    const {token, socialEnabled, enabled} = await getUserNotificationInfo(
-      senderEmail
-    );
-
-    if (!token) {
-      console.log(`No FCM token for user ${senderEmail}`);
-      return;
-    }
-
-    if (!enabled || !socialEnabled) {
-      console.log(`Notifications disabled for user ${senderEmail}`);
-      return;
-    }
-
     // Get acceptor's name
     const acceptorEmail = event.params.userId;
     const acceptorDoc = await db.collection("Users").doc(acceptorEmail).get();
@@ -198,16 +215,29 @@ export const onFriendRequestUpdated = onDocumentUpdated(
                          acceptorDoc.data()?.username ||
                          "Someone";
 
-    // Send notification
-    await sendNotification(
-      token,
-      "Friend Request Accepted",
-      `${acceptorName} accepted your friend request!`,
-      {
-        type: "friend_accepted",
-        friendEmail: acceptorEmail,
-      }
+    // Build notification content
+    const notifTitle = "Friend Request Accepted";
+    const notifBody = `${acceptorName} accepted your friend request!`;
+    const notifData = {
+      type: "friend_accepted",
+      friendEmail: acceptorEmail,
+      fromEmail: acceptorEmail,
+      fromDisplayName: acceptorName,
+    };
+
+    // Always store in Firestore
+    await storeNotification(senderEmail, notifTitle, notifBody, "friend_accepted", notifData);
+
+    // Send push if enabled
+    const {token, socialEnabled, enabled} = await getUserNotificationInfo(
+      senderEmail
     );
+    if (!token || !enabled || !socialEnabled) {
+      console.log(`Push skipped for ${senderEmail}`);
+      return;
+    }
+
+    await sendNotification(token, notifTitle, notifBody, notifData);
   }
 );
 
@@ -244,21 +274,6 @@ export const onPostLiked = onDocumentUpdated(
       return;
     }
 
-    // Get post owner's notification settings
-    const {token, socialEnabled, enabled} = await getUserNotificationInfo(
-      postOwnerEmail
-    );
-
-    if (!token) {
-      console.log(`No FCM token for user ${postOwnerEmail}`);
-      return;
-    }
-
-    if (!enabled || !socialEnabled) {
-      console.log(`Notifications disabled for user ${postOwnerEmail}`);
-      return;
-    }
-
     // Get liker's name
     const likerDoc = await db.collection("Users").doc(newLiker).get();
     const likerName = likerDoc.data()?.displayName ||
@@ -267,18 +282,30 @@ export const onPostLiked = onDocumentUpdated(
 
     const postName = afterData.name || "your post";
 
-    // Send notification
-    await sendNotification(
-      token,
-      "Someone liked your post",
-      `${likerName} liked "${postName}"`,
-      {
-        type: "post_like",
-        postId: event.params.postId,
-        likerEmail: newLiker,
-      },
-      "normal"
+    // Build notification content
+    const notifTitle = "Someone liked your post";
+    const notifBody = `${likerName} liked "${postName}"`;
+    const notifData = {
+      type: "post_like",
+      postId: event.params.postId,
+      likerEmail: newLiker,
+      fromEmail: newLiker,
+      fromDisplayName: likerName,
+    };
+
+    // Always store in Firestore
+    await storeNotification(postOwnerEmail, notifTitle, notifBody, "post_like", notifData);
+
+    // Send push if enabled
+    const {token, socialEnabled, enabled} = await getUserNotificationInfo(
+      postOwnerEmail
     );
+    if (!token || !enabled || !socialEnabled) {
+      console.log(`Push skipped for ${postOwnerEmail}`);
+      return;
+    }
+
+    await sendNotification(token, notifTitle, notifBody, notifData, "normal");
   }
 );
 
@@ -317,21 +344,6 @@ export const onPostComment = onDocumentCreated(
       return;
     }
 
-    // Get post owner's notification settings
-    const {token, socialEnabled, enabled} = await getUserNotificationInfo(
-      postOwnerEmail
-    );
-
-    if (!token) {
-      console.log(`No FCM token for user ${postOwnerEmail}`);
-      return;
-    }
-
-    if (!enabled || !socialEnabled) {
-      console.log(`Notifications disabled for user ${postOwnerEmail}`);
-      return;
-    }
-
     // Get commenter's name
     const commenterName = comment.username ||
                           commenterEmail?.split("@")[0] ||
@@ -343,18 +355,30 @@ export const onPostComment = onDocumentCreated(
       ? `${commentText.slice(0, 50)}...`
       : commentText;
 
-    // Send notification
-    await sendNotification(
-      token,
-      "New comment on your post",
-      `${commenterName}: ${preview}`,
-      {
-        type: "post_comment",
-        postId: postId,
-        commentId: event.params.commentId,
-        commenterEmail: commenterEmail || "",
-      },
-      "normal"
+    // Build notification content
+    const notifTitle = "New comment on your post";
+    const notifBody = `${commenterName}: ${preview}`;
+    const notifData = {
+      type: "post_comment",
+      postId: postId,
+      commentId: event.params.commentId,
+      commenterEmail: commenterEmail || "",
+      fromEmail: commenterEmail || "",
+      fromDisplayName: commenterName,
+    };
+
+    // Always store in Firestore
+    await storeNotification(postOwnerEmail, notifTitle, notifBody, "post_comment", notifData);
+
+    // Send push if enabled
+    const {token, socialEnabled, enabled} = await getUserNotificationInfo(
+      postOwnerEmail
     );
+    if (!token || !enabled || !socialEnabled) {
+      console.log(`Push skipped for ${postOwnerEmail}`);
+      return;
+    }
+
+    await sendNotification(token, notifTitle, notifBody, notifData, "normal");
   }
 );

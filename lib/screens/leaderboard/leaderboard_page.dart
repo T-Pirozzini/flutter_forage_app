@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_forager_app/data/models/gamification_constants.dart';
 import 'package:flutter_forager_app/data/models/user.dart';
 import 'package:flutter_forager_app/providers/gamification/gamification_provider.dart';
+import 'package:flutter_forager_app/screens/profile/user_profile_view_screen.dart';
 import 'package:flutter_forager_app/shared/screen_heading.dart';
 import 'package:flutter_forager_app/theme/app_theme.dart';
 
@@ -147,13 +148,30 @@ class _LeaderboardPageState extends ConsumerState<LeaderboardPage>
                         return Card(
                           elevation: isCurrentUser ? 4 : 1,
                           color: isCurrentUser
-                              ? AppTheme.accent.withOpacity(0.1)
+                              ? const Color(0xFFFFF3E0)
                               : null,
                           margin: const EdgeInsets.only(bottom: AppTheme.space8),
                           shape: RoundedRectangleBorder(
                             borderRadius: AppTheme.borderRadiusMedium,
+                            side: isCurrentUser
+                                ? BorderSide(color: AppTheme.accent, width: 2)
+                                : BorderSide.none,
                           ),
                           child: ListTile(
+                            onTap: isCurrentUser
+                                ? null
+                                : () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            UserProfileViewScreen(
+                                          userEmail: user.email,
+                                          displayName: user.username,
+                                        ),
+                                      ),
+                                    );
+                                  },
                             leading: SizedBox(
                               width: 50,
                               child: Row(

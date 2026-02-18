@@ -336,6 +336,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                             ),
                           ),
 
+                        // 3.25. APP TUTORIAL CARD
+                        if (_isCurrentUser)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: _buildTutorialCard(),
+                          ),
+
                         // 3.5. OPEN TO FORAGING TOGETHER TOGGLE
                         if (_isCurrentUser)
                           Padding(
@@ -358,29 +365,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                             child: _buildFriendRequestsButton(),
                           ),
 
-                        // 7. TUTORIAL BUTTON - Small, at bottom
-                        if (_isCurrentUser)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: TextButton.icon(
-                              icon: Icon(Icons.help_outline,
-                                  size: 16, color: AppTheme.textMedium),
-                              label: Text(
-                                'App Tutorial',
-                                style: AppTheme.caption(
-                                    size: 12, color: AppTheme.textMedium),
-                              ),
-                              onPressed: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const OnboardingScreen(isTutorial: true),
-                                ),
-                              ),
-                            ),
-                          ),
                         const SizedBox(
-                            height: 80), // Bottom padding for nav bar
+                            height: 160), // Bottom padding for nav bar
                       ],
                     ),
                   ),
@@ -606,6 +592,66 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTutorialCard() {
+    return Card(
+      elevation: 2,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppTheme.borderRadiusMedium,
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const OnboardingScreen(isTutorial: true),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.info.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.school,
+                  size: 20,
+                  color: AppTheme.info,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'App Tutorial',
+                      style: AppTheme.title(size: 14),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Learn how to use all of Forager\'s features',
+                      style: AppTheme.caption(size: 11, color: AppTheme.textMedium),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: AppTheme.textMedium,
+                size: 20,
+              ),
+            ],
           ),
         ),
       ),

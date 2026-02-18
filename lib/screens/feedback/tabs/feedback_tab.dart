@@ -65,13 +65,15 @@ class _FeedbackTabState extends State<FeedbackTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Compact input at top
-        _buildInputSection(),
-        // Feedback list
-        Expanded(
-          child: StreamBuilder<QuerySnapshot>(
+    return Container(
+      color: AppTheme.primaryLight.withValues(alpha: 0.15),
+      child: Column(
+        children: [
+          // Compact input at top
+          _buildInputSection(),
+          // Feedback list
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
                 .collection('Feedback')
                 .orderBy('timestamp', descending: true)
@@ -107,6 +109,7 @@ class _FeedbackTabState extends State<FeedbackTab> {
           ),
         ),
       ],
+    ),
     );
   }
 

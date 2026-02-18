@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/data/services/ad_mob_service.dart';
 import 'package:flutter_forager_app/data/services/notification_service.dart';
+import 'package:flutter_forager_app/screens/notifications/notifications_page.dart';
 import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
 import 'package:flutter_forager_app/data/models/user.dart';
 import 'package:flutter_forager_app/screens/profile/profile_page.dart';
@@ -208,19 +209,10 @@ class _HomePageState extends ConsumerState<HomePage> {
               );
             },
           ),
-          // Notification bell
+          // Notification bell with unread badge
           Padding(
             padding: const EdgeInsets.only(right: 4.0),
-            child: IconButton(
-              icon: Icon(Icons.notifications_outlined,
-                  color: AppTheme.textWhite, size: 28),
-              onPressed: () {
-                // TODO: Navigate to notifications page
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Notifications coming soon!')),
-                );
-              },
-            ),
+            child: _buildNotificationBell(),
           ),
         ],
       ),
@@ -341,6 +333,71 @@ class _HomePageState extends ConsumerState<HomePage> {
         ],
       ),
       extendBody: true,
+    );
+  }
+
+  Widget _buildNotificationBell() {
+    final userId = FirebaseAuth.instance.currentUser?.email;
+    if (userId == null) {
+      return Icon(Icons.notifications_outlined,
+          color: AppTheme.textWhite, size: 28);
+    }
+
+    final notifRepo = ref.read(notificationRepositoryProvider);
+
+    return StreamBuilder<int>(
+      stream: notifRepo.streamUnreadCount(userId),
+      builder: (context, snapshot) {
+        final unreadCount = snapshot.data ?? 0;
+
+        return IconButton(
+          icon: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Icon(
+                unreadCount > 0
+                    ? Icons.notifications
+                    : Icons.notifications_outlined,
+                color: AppTheme.textWhite,
+                size: 28,
+              ),
+              if (unreadCount > 0)
+                Positioned(
+                  right: -4,
+                  top: -4,
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      color: AppTheme.accent,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 18,
+                      minHeight: 18,
+                    ),
+                    child: Text(
+                      unreadCount > 9 ? '9+' : '$unreadCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const NotificationsPage(),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

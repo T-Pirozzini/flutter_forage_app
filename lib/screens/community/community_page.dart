@@ -316,19 +316,8 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
   Widget build(BuildContext context) {
     final currentFilter = ref.watch(communityFilterProvider);
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppTheme.primaryLight,
-            AppTheme.primaryLight.withValues(alpha: 0.85),
-          ],
-        ),
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
+    return Scaffold(
+        backgroundColor: const Color(0xFFF2F2F7),
         body: Column(
           children: [
             // Filter bar
@@ -472,7 +461,6 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
           ),
           ],
         ),
-      ),
     );
   }
 }
