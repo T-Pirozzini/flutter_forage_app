@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_forager_app/data/models/custom_marker_type.dart';
 import 'package:flutter_forager_app/data/models/marker.dart';
+import 'package:flutter_forager_app/screens/forage/components/friend_picker_dialog.dart';
 import 'package:flutter_forager_app/screens/forage/components/map_markers.dart';
 import 'package:flutter_forager_app/screens/forage/components/map_style.dart';
 import 'package:flutter_forager_app/data/services/map_permissions.dart';
@@ -246,7 +248,7 @@ class _MapPageState extends ConsumerState<MapPage> {
     List<File> selectedImages = [];
     final picker = ImagePicker();
 
-    Future<void> pickImage(ImageSource source, StateSetter setDialogState) async {
+    Future<void> pickImage(ImageSource source, StateSetter setSheetState) async {
       if (selectedImages.length >= 3) {
         ScaffoldMessenger.of(parentContext).showSnackBar(
           const SnackBar(content: Text('Maximum of 3 photos allowed')),
@@ -261,7 +263,7 @@ class _MapPageState extends ConsumerState<MapPage> {
           imageQuality: 85,
         );
         if (pickedFile != null) {
-          setDialogState(() {
+          setSheetState(() {
             selectedImages.add(File(pickedFile.path));
           });
         }
@@ -272,322 +274,413 @@ class _MapPageState extends ConsumerState<MapPage> {
       }
     }
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) {
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
         return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              shape:
-                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: Row(
-                children: [
-                  ImageIcon(
-                    AssetImage(
-                        'lib/assets/images/${type.toLowerCase()}_marker.png'),
-                    color: _getTypeColor(type),
-                    size: 24,
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text('Add ${type[0].toUpperCase() + type.substring(1)} Marker',
-                        style: AppTheme.title(size: 14, weight: FontWeight.bold)),
-                  ),
-                ],
+          builder: (sheetContext, setSheetState) {
+            return Container(
+              // Take up to 90% of screen height, keyboard pushes content up
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(sheetContext).size.height * 0.9,
               ),
-              content: Form(
-                key: formKey,
-                child: SingleChildScrollView(
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    // Photo upload section
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppTheme.backgroundLight,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey.shade300),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Drag handle
+                    Center(
+                      child: Container(
+                        margin: const EdgeInsets.only(top: 12, bottom: 8),
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    ),
+                    // Header
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      child: Row(
                         children: [
-                          Row(
-                            children: [
-                              Icon(Icons.camera_alt, color: AppTheme.accent, size: 20),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Add Photos (Optional)',
-                                style: AppTheme.body(size: 14, weight: FontWeight.w600),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          // Photo picker buttons
-                          Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  onPressed: () => pickImage(ImageSource.camera, setDialogState),
-                                  icon: const Icon(Icons.camera_alt, size: 18),
-                                  label: const Text('Camera'),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: AppTheme.accent,
-                                    padding: const EdgeInsets.symmetric(vertical: 8),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  onPressed: () => pickImage(ImageSource.gallery, setDialogState),
-                                  icon: const Icon(Icons.photo_library, size: 18),
-                                  label: const Text('Gallery'),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: AppTheme.accent,
-                                    padding: const EdgeInsets.symmetric(vertical: 8),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          // Photo preview thumbnails
-                          if (selectedImages.isNotEmpty) ...[
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              height: 70,
-                              child: ListView.builder(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: selectedImages.length,
-                                itemBuilder: (context, index) {
-                                  return Padding(
-                                    padding: const EdgeInsets.only(right: 8),
-                                    child: Stack(
-                                      children: [
-                                        ClipRRect(
-                                          borderRadius: BorderRadius.circular(8),
-                                          child: Image.file(
-                                            selectedImages[index],
-                                            width: 70,
-                                            height: 70,
-                                            fit: BoxFit.cover,
-                                          ),
-                                        ),
-                                        Positioned(
-                                          top: 2,
-                                          right: 2,
-                                          child: GestureDetector(
-                                            onTap: () {
-                                              setDialogState(() {
-                                                selectedImages.removeAt(index);
-                                              });
-                                            },
-                                            child: Container(
-                                              padding: const EdgeInsets.all(2),
-                                              decoration: const BoxDecoration(
-                                                color: Colors.red,
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: const Icon(
-                                                Icons.close,
-                                                size: 14,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              ),
+                          if (CustomMarkerType.isCustomType(type))
+                            Text(
+                              CustomMarkerType.getEmojiFromType(type) ?? '📍',
+                              style: const TextStyle(fontSize: 24),
+                            )
+                          else
+                            ImageIcon(
+                              AssetImage(
+                                  'lib/assets/images/${type.toLowerCase()}_marker.png'),
+                              color: _getTypeColor(type),
+                              size: 24,
                             ),
-                          ],
-                          const SizedBox(height: 8),
-                          Text(
-                            selectedImages.isEmpty
-                                ? 'No service? You can add photos later from the location detail screen.'
-                                : '${selectedImages.length}/3 photos added',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey.shade600,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: nameController,
-                      decoration: InputDecoration(
-                        labelText: 'Name',
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8)),
-                        filled: true,
-                        fillColor: AppTheme.backgroundLight,
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter a name';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: descriptionController,
-                      decoration: InputDecoration(
-                        labelText: 'Description',
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8)),
-                        filled: true,
-                        fillColor: AppTheme.backgroundLight,
-                      ),
-                      maxLines: 3,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter a description';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    // Enhanced visibility selector
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+                          const SizedBox(width: 8),
+                          Expanded(
                             child: Text(
-                              'Who can see this location?',
-                              style: AppTheme.body(size: 14, weight: FontWeight.w600),
+                              CustomMarkerType.isCustomType(type)
+                                  ? 'Add Custom Marker'
+                                  : 'Add ${type[0].toUpperCase() + type.substring(1)} Marker',
+                              style: AppTheme.title(size: 16, weight: FontWeight.bold),
                             ),
                           ),
-                          ..._buildVisibilityOptions(
-                            selectedVisibility: selectedVisibility,
-                            onChanged: (value) {
-                              setDialogState(() {
-                                selectedVisibility = value;
-                              });
+                          IconButton(
+                            icon: const Icon(Icons.close, size: 22),
+                            onPressed: () {
+                              Navigator.of(sheetContext).pop();
+                              nameController.dispose();
+                              descriptionController.dispose();
                             },
                           ),
                         ],
                       ),
                     ),
-                    if (selectedVisibility == MarkerVisibility.specific)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          'You can select specific friends after creating the marker.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ),
-                  ]),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    nameController.dispose();
-                    descriptionController.dispose();
-                  },
-                  child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.accent,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                  ),
-                  onPressed: () async {
-                    if (formKey.currentState!.validate()) {
-                      final name = nameController.text.trim();
-                      final description = descriptionController.text.trim();
-
-                      try {
-                        final position = await MapPermissions.getCurrentPosition();
-
-                        // Check GPS accuracy before saving
-                        if (position.accuracy > 50) {
-                          final proceed = await showDialog<bool>(
-                            context: context,
-                            builder: (ctx) => AlertDialog(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
+                    const Divider(height: 1),
+                    // Scrollable content
+                    Flexible(
+                      child: Form(
+                        key: formKey,
+                        child: ListView(
+                          shrinkWrap: true,
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                          children: [
+                            // Photo upload section
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppTheme.backgroundLight,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey.shade300),
                               ),
-                              title: Row(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Icon(Icons.gps_off, color: AppTheme.warning),
-                                  const SizedBox(width: 8),
-                                  const Text('Low GPS Accuracy'),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.camera_alt, color: AppTheme.accent, size: 20),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Add Photos (Optional)',
+                                        style: AppTheme.body(size: 14, weight: FontWeight.w600),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  // Photo picker buttons
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: OutlinedButton.icon(
+                                          onPressed: () => pickImage(ImageSource.camera, setSheetState),
+                                          icon: const Icon(Icons.camera_alt, size: 18),
+                                          label: const Text('Camera'),
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: AppTheme.accent,
+                                            padding: const EdgeInsets.symmetric(vertical: 8),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: OutlinedButton.icon(
+                                          onPressed: () => pickImage(ImageSource.gallery, setSheetState),
+                                          icon: const Icon(Icons.photo_library, size: 18),
+                                          label: const Text('Gallery'),
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: AppTheme.accent,
+                                            padding: const EdgeInsets.symmetric(vertical: 8),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  // Photo preview thumbnails
+                                  if (selectedImages.isNotEmpty) ...[
+                                    const SizedBox(height: 12),
+                                    SizedBox(
+                                      height: 70,
+                                      child: ListView.builder(
+                                        scrollDirection: Axis.horizontal,
+                                        itemCount: selectedImages.length,
+                                        itemBuilder: (context, index) {
+                                          return Padding(
+                                            padding: const EdgeInsets.only(right: 8),
+                                            child: Stack(
+                                              children: [
+                                                ClipRRect(
+                                                  borderRadius: BorderRadius.circular(8),
+                                                  child: Image.file(
+                                                    selectedImages[index],
+                                                    width: 70,
+                                                    height: 70,
+                                                    fit: BoxFit.cover,
+                                                  ),
+                                                ),
+                                                Positioned(
+                                                  top: 2,
+                                                  right: 2,
+                                                  child: GestureDetector(
+                                                    onTap: () {
+                                                      setSheetState(() {
+                                                        selectedImages.removeAt(index);
+                                                      });
+                                                    },
+                                                    child: Container(
+                                                      padding: const EdgeInsets.all(2),
+                                                      decoration: const BoxDecoration(
+                                                        color: Colors.red,
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                      child: const Icon(
+                                                        Icons.close,
+                                                        size: 14,
+                                                        color: Colors.white,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    selectedImages.isEmpty
+                                        ? 'No service? You can add photos later from the location detail screen.'
+                                        : '${selectedImages.length}/3 photos added',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey.shade600,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
                                 ],
                               ),
-                              content: Text(
-                                'Current GPS accuracy: ${position.accuracy.toInt()}m\n\n'
-                                'The marker location may be inaccurate. '
-                                'For best results, wait for better GPS signal.',
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(ctx, false),
-                                  child: const Text('Wait'),
-                                ),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppTheme.accent,
-                                  ),
-                                  onPressed: () => Navigator.pop(ctx, true),
-                                  child: const Text('Save Anyway'),
-                                ),
-                              ],
                             ),
-                          );
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: nameController,
+                              decoration: InputDecoration(
+                                labelText: 'Name',
+                                border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8)),
+                                filled: true,
+                                fillColor: AppTheme.backgroundLight,
+                              ),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Please enter a name';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: descriptionController,
+                              decoration: InputDecoration(
+                                labelText: 'Description',
+                                border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8)),
+                                filled: true,
+                                fillColor: AppTheme.backgroundLight,
+                              ),
+                              maxLines: 3,
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Please enter a description';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            // Enhanced visibility selector
+                            Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+                                    child: Text(
+                                      'Who can see this location?',
+                                      style: AppTheme.body(size: 14, weight: FontWeight.w600),
+                                    ),
+                                  ),
+                                  ..._buildVisibilityOptions(
+                                    selectedVisibility: selectedVisibility,
+                                    onChanged: (value) {
+                                      setSheetState(() {
+                                        selectedVisibility = value;
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (selectedVisibility == MarkerVisibility.specific)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Text(
+                                  'You can select specific friends after creating the marker.',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ),
+                            const SizedBox(height: 12),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Fixed bottom action buttons
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () {
+                                Navigator.of(sheetContext).pop();
+                                nameController.dispose();
+                                descriptionController.dispose();
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.grey,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              child: const Text('Cancel'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            flex: 2,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.accent,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8)),
+                              ),
+                              onPressed: () async {
+                                if (formKey.currentState!.validate()) {
+                                  final name = nameController.text.trim();
+                                  final description = descriptionController.text.trim();
 
-                          if (proceed != true) return;
-                        }
+                                  // If "specific", show friend picker before saving
+                                  List<String> allowedViewers = [];
+                                  if (selectedVisibility == MarkerVisibility.specific) {
+                                    final selected = await FriendPickerDialog.show(
+                                      sheetContext,
+                                    );
+                                    if (selected == null) return; // User cancelled
+                                    allowedViewers = selected;
+                                  }
 
-                        Navigator.of(context).pop();
+                                  try {
+                                    final position = await MapPermissions.getCurrentPosition();
 
-                        final markerService =
-                            MapMarkerService(FirebaseAuth.instance.currentUser!);
-                        await markerService.saveMarker(
-                          name: name,
-                          description: description,
-                          type: type,
-                          images: selectedImages,
-                          position: position,
-                          visibility: selectedVisibility,
-                        );
+                                    // Check GPS accuracy before saving
+                                    if (position.accuracy > 50) {
+                                      final proceed = await showDialog<bool>(
+                                        context: sheetContext,
+                                        builder: (ctx) => AlertDialog(
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(16),
+                                          ),
+                                          title: Row(
+                                            children: [
+                                              Icon(Icons.gps_off, color: AppTheme.warning),
+                                              const SizedBox(width: 8),
+                                              const Text('Low GPS Accuracy'),
+                                            ],
+                                          ),
+                                          content: Text(
+                                            'Current GPS accuracy: ${position.accuracy.toInt()}m\n\n'
+                                            'The marker location may be inaccurate. '
+                                            'For best results, wait for better GPS signal.',
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.pop(ctx, false),
+                                              child: const Text('Wait'),
+                                            ),
+                                            ElevatedButton(
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: AppTheme.accent,
+                                              ),
+                                              onPressed: () => Navigator.pop(ctx, true),
+                                              child: const Text('Save Anyway'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
 
-                        // Award points for creating marker
-                        await GamificationHelper.awardMarkerCreated(
-                          context: parentContext,
-                          ref: ref,
-                          userId: FirebaseAuth.instance.currentUser!.email!,
-                        );
-                      } catch (e) {
-                        ScaffoldMessenger.of(parentContext).showSnackBar(
-                          SnackBar(content: Text('Error saving marker: $e')),
-                        );
-                      } finally {
-                        nameController.dispose();
-                        descriptionController.dispose();
-                      }
-                    }
-                  },
-                  child: const Text('Save'),
+                                      if (proceed != true) return;
+                                    }
+
+                                    Navigator.of(sheetContext).pop();
+
+                                    final markerService =
+                                        MapMarkerService(FirebaseAuth.instance.currentUser!);
+                                    await markerService.saveMarker(
+                                      name: name,
+                                      description: description,
+                                      type: type,
+                                      images: selectedImages,
+                                      position: position,
+                                      visibility: selectedVisibility,
+                                      allowedViewers: allowedViewers,
+                                    );
+
+                                    // Award points for creating marker
+                                    await GamificationHelper.awardMarkerCreated(
+                                      context: parentContext,
+                                      ref: ref,
+                                      userId: FirebaseAuth.instance.currentUser!.email!,
+                                    );
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(parentContext).showSnackBar(
+                                      SnackBar(content: Text('Error saving marker: $e')),
+                                    );
+                                  } finally {
+                                    nameController.dispose();
+                                    descriptionController.dispose();
+                                  }
+                                }
+                              },
+                              child: const Text('Save Marker'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             );
           },
         );

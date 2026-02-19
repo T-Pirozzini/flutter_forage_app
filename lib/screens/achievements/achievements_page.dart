@@ -6,6 +6,7 @@ import 'package:flutter_forager_app/data/models/gamification_constants.dart';
 import 'package:flutter_forager_app/data/models/user.dart';
 import 'package:flutter_forager_app/data/repositories/gamification_repository.dart';
 import 'package:flutter_forager_app/providers/gamification/gamification_provider.dart';
+import 'package:flutter_forager_app/screens/profile/user_profile_view_screen.dart';
 import 'package:flutter_forager_app/theme/app_theme.dart';
 
 /// Combined Achievements and Leaderboard page with modern styling
@@ -800,11 +801,27 @@ class _LeaderboardTabState extends ConsumerState<_LeaderboardTab> {
                             final levelTitle =
                                 LevelSystem.getLevelTitle(user.level);
 
-                            return _LeaderboardCard(
-                              user: user,
-                              rank: rank,
-                              isCurrentUser: isCurrentUser,
-                              levelTitle: levelTitle,
+                            return GestureDetector(
+                              onTap: isCurrentUser
+                                  ? null
+                                  : () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              UserProfileViewScreen(
+                                            userEmail: user.email,
+                                            displayName: user.username,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                              child: _LeaderboardCard(
+                                user: user,
+                                rank: rank,
+                                isCurrentUser: isCurrentUser,
+                                levelTitle: levelTitle,
+                              ),
                             );
                           },
                         ),
@@ -855,12 +872,10 @@ class _LeaderboardCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: isCurrentUser
-            ? AppTheme.primary.withValues(alpha: 0.1)
-            : Colors.white,
+        color: Colors.white,
         borderRadius: AppTheme.borderRadiusMedium,
         border: isCurrentUser
-            ? Border.all(color: AppTheme.primary, width: 2)
+            ? Border.all(color: AppTheme.accent, width: 2)
             : Border.all(color: AppTheme.textLight.withValues(alpha: 0.15)),
         boxShadow: isCurrentUser ? AppTheme.shadowMedium : AppTheme.shadowSoft,
       ),

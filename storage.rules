@@ -1,0 +1,67 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ================================================================
+    // HELPER FUNCTIONS
+    // ================================================================
+
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // Max file size: 10 MB
+    function isUnderSizeLimit() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+
+    // Only allow image content types
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    // ================================================================
+    // MARKER IMAGES
+    // ================================================================
+    match /marker_images/{fileName} {
+      allow read: if isAuth();
+      allow create: if isAuth() && isImage() && isUnderSizeLimit();
+      // Allow delete for cleanup (owner check not possible with timestamp filenames)
+      allow delete: if isAuth();
+      // No update — upload a new file instead
+    }
+
+    // ================================================================
+    // GENERAL LOCATION IMAGES
+    // ================================================================
+    match /images/{fileName} {
+      allow read: if isAuth();
+      allow create: if isAuth() && isImage() && isUnderSizeLimit();
+      allow delete: if isAuth();
+    }
+
+    // ================================================================
+    // RECIPE IMAGES
+    // ================================================================
+    match /recipes/{fileName} {
+      allow read: if isAuth();
+      allow create: if isAuth() && isImage() && isUnderSizeLimit();
+      allow delete: if isAuth();
+    }
+
+    // ================================================================
+    // PROFILE IMAGES
+    // ================================================================
+    match /profile_images/{fileName} {
+      allow read: if isAuth();
+      allow create: if isAuth() && isImage() && isUnderSizeLimit();
+      allow delete: if isAuth();
+    }
+
+    // ================================================================
+    // DENY EVERYTHING ELSE
+    // ================================================================
+    // No wildcard match — any path not listed above is implicitly denied
+  }
+}

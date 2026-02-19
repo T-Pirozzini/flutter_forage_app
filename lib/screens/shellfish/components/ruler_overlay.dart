@@ -13,6 +13,56 @@ class RulerOverlay extends StatefulWidget {
 class _RulerOverlayState extends State<RulerOverlay> {
   bool _showMetric = true;
 
+  void _showInfo() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.surfaceDark,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.info_outline, color: AppTheme.accent, size: 22),
+                const SizedBox(width: 10),
+                Text(
+                  'How to use',
+                  style: AppTheme.title(
+                    size: 16,
+                    weight: FontWeight.bold,
+                    color: AppTheme.textWhite,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '1. Place your shellfish next to the screen\n'
+              '2. Align the shell edge with the 0 mark\n'
+              '3. Read measurement at the opposite edge',
+              style: AppTheme.body(size: 14, color: AppTheme.textWhite),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Note: Ruler is calibrated for standard screen DPI. '
+              'For precise measurements, use an official measuring tool.',
+              style: AppTheme.caption(
+                size: 12,
+                color: AppTheme.textWhite.withValues(alpha: 0.6),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -20,118 +70,53 @@ class _RulerOverlayState extends State<RulerOverlay> {
       child: SafeArea(
         child: Column(
           children: [
-            // Header
+            // Compact header: close, title, unit toggle, info
             Padding(
-              padding: const EdgeInsets.all(AppTheme.space16),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Shellfish Ruler',
-                    style: AppTheme.heading(size: 20, color: AppTheme.textWhite),
-                  ),
                   IconButton(
                     icon: Icon(Icons.close, color: AppTheme.textWhite),
                     onPressed: () => Navigator.pop(context),
                   ),
-                ],
-              ),
-            ),
-
-            // Instructions
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: AppTheme.space16),
-              padding: const EdgeInsets.all(AppTheme.space12),
-              decoration: BoxDecoration(
-                color: AppTheme.accent.withValues(alpha: 0.2),
-                borderRadius: AppTheme.borderRadiusSmall,
-                border: Border.all(color: AppTheme.accent, width: 1),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.info_outline,
-                          color: AppTheme.accent, size: 20),
-                      const SizedBox(width: AppTheme.space8),
-                      Text(
-                        'How to use:',
-                        style: AppTheme.title(
-                            size: 14,
-                            weight: FontWeight.bold,
-                            color: AppTheme.textWhite),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppTheme.space8),
                   Text(
-                    '• Place your shellfish next to the ruler\n'
-                    '• Align the shell edge with the 0 mark\n'
-                    '• Read measurement at the opposite edge',
-                    style:
-                        AppTheme.caption(size: 12, color: AppTheme.textWhite),
+                    'Shellfish Ruler',
+                    style: AppTheme.heading(size: 18, color: AppTheme.textWhite),
+                  ),
+                  const Spacer(),
+                  // Unit toggle chips
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppTheme.backgroundDark,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildUnitChip('cm', true),
+                        _buildUnitChip('in', false),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    icon: Icon(Icons.help_outline, color: AppTheme.textWhite, size: 22),
+                    onPressed: _showInfo,
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: AppTheme.space24),
-
-            // Unit toggle
-            SegmentedButton<bool>(
-              selected: {_showMetric},
-              onSelectionChanged: (Set<bool> selection) {
-                setState(() => _showMetric = selection.first);
-              },
-              segments: [
-                ButtonSegment(
-                  value: true,
-                  label: Text('Centimeters'),
-                  icon: Icon(Icons.straighten),
-                ),
-                ButtonSegment(
-                  value: false,
-                  label: Text('Inches'),
-                  icon: Icon(Icons.straighten),
-                ),
-              ],
-              style: ButtonStyle(
-                backgroundColor: WidgetStateProperty.resolveWith((states) {
-                  if (states.contains(WidgetState.selected)) {
-                    return AppTheme.secondary;
-                  }
-                  return AppTheme.backgroundDark;
-                }),
-                foregroundColor: WidgetStateProperty.resolveWith((states) {
-                  if (states.contains(WidgetState.selected)) {
-                    return AppTheme.textWhite;
-                  }
-                  return AppTheme.textMedium;
-                }),
-              ),
-            ),
-
-            const SizedBox(height: AppTheme.space32),
-
-            // Ruler
+            // Ruler fills remaining space
             Expanded(
-              child: Center(
-                child: _showMetric
-                    ? const MetricRuler()
-                    : const ImperialRuler(),
-              ),
-            ),
-
-            // Calibration note
-            Padding(
-              padding: const EdgeInsets.all(AppTheme.space16),
-              child: Text(
-                'Note: Ruler is calibrated for standard screen DPI.\n'
-                'For precise measurements, use an official measuring tool.',
-                textAlign: TextAlign.center,
-                style: AppTheme.caption(
-                    size: 11, color: AppTheme.textWhite.withValues(alpha: 0.7)),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return Center(
+                    child: _showMetric
+                        ? MetricRuler(availableHeight: constraints.maxHeight)
+                        : ImperialRuler(availableHeight: constraints.maxHeight),
+                  );
+                },
               ),
             ),
           ],
@@ -139,62 +124,90 @@ class _RulerOverlayState extends State<RulerOverlay> {
       ),
     );
   }
-}
 
-/// Vertical ruler showing centimeters
-class MetricRuler extends StatelessWidget {
-  const MetricRuler({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    // Get physical pixel ratio to approximate real size
-    final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
-
-    // Standard Android/iOS DPI is ~160 (mdpi), which is ~63 pixels per cm
-    // Adjust based on device pixel ratio
-    final pixelsPerCm = 63.0 / devicePixelRatio;
-
-    return RotatedBox(
-      quarterTurns: 3,
+  Widget _buildUnitChip(String label, bool isMetric) {
+    final isSelected = _showMetric == isMetric;
+    return GestureDetector(
+      onTap: () => setState(() => _showMetric = isMetric),
       child: Container(
-        width: pixelsPerCm * 25, // 25cm ruler
-        height: 80,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color: AppTheme.textWhite,
-          borderRadius: BorderRadius.circular(4),
-          // boxShadow: AppTheme.shadowLarge,
+          color: isSelected ? AppTheme.secondary : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
         ),
-        child: CustomPaint(
-          painter: MetricRulerPainter(pixelsPerCm: pixelsPerCm),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? AppTheme.textWhite : AppTheme.textMedium,
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
         ),
       ),
     );
   }
 }
 
-/// Vertical ruler showing inches
-class ImperialRuler extends StatelessWidget {
-  const ImperialRuler({super.key});
+/// Vertical ruler showing centimeters — dynamically sized to fit screen
+class MetricRuler extends StatelessWidget {
+  final double availableHeight;
+
+  const MetricRuler({super.key, required this.availableHeight});
 
   @override
   Widget build(BuildContext context) {
     final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
+    final pixelsPerCm = 63.0 / devicePixelRatio;
 
-    // ~160 DPI = ~160 pixels per inch at 1x scale
-    final pixelsPerInch = 160.0 / devicePixelRatio;
+    // Calculate how many whole cm fit in the available height (with some padding)
+    final usableHeight = availableHeight - 32; // 16px padding top+bottom
+    final maxCm = (usableHeight / pixelsPerCm).floor();
+    final rulerCm = maxCm.clamp(1, 30); // Cap at 30cm max
 
     return RotatedBox(
       quarterTurns: 3,
       child: Container(
-        width: pixelsPerInch * 10, // 10 inch ruler
-        height: 80,
+        width: pixelsPerCm * rulerCm,
+        height: 120,
         decoration: BoxDecoration(
           color: AppTheme.textWhite,
           borderRadius: BorderRadius.circular(4),
-          // boxShadow: AppTheme.shadowLarge,
         ),
         child: CustomPaint(
-          painter: ImperialRulerPainter(pixelsPerInch: pixelsPerInch),
+          painter: MetricRulerPainter(pixelsPerCm: pixelsPerCm, totalCm: rulerCm),
+        ),
+      ),
+    );
+  }
+}
+
+/// Vertical ruler showing inches — dynamically sized to fit screen
+class ImperialRuler extends StatelessWidget {
+  final double availableHeight;
+
+  const ImperialRuler({super.key, required this.availableHeight});
+
+  @override
+  Widget build(BuildContext context) {
+    final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
+    final pixelsPerInch = 160.0 / devicePixelRatio;
+
+    // Calculate how many whole inches fit in the available height
+    final usableHeight = availableHeight - 32;
+    final maxInches = (usableHeight / pixelsPerInch).floor();
+    final rulerInches = maxInches.clamp(1, 12); // Cap at 12 inches max
+
+    return RotatedBox(
+      quarterTurns: 3,
+      child: Container(
+        width: pixelsPerInch * rulerInches,
+        height: 120,
+        decoration: BoxDecoration(
+          color: AppTheme.textWhite,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: CustomPaint(
+          painter: ImperialRulerPainter(pixelsPerInch: pixelsPerInch, totalInches: rulerInches),
         ),
       ),
     );
@@ -204,8 +217,9 @@ class ImperialRuler extends StatelessWidget {
 /// Custom painter for metric ruler
 class MetricRulerPainter extends CustomPainter {
   final double pixelsPerCm;
+  final int totalCm;
 
-  MetricRulerPainter({required this.pixelsPerCm});
+  MetricRulerPainter({required this.pixelsPerCm, required this.totalCm});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -218,14 +232,13 @@ class MetricRulerPainter extends CustomPainter {
       textAlign: TextAlign.center,
     );
 
-    // Draw 25 cm
-    for (int cm = 0; cm <= 25; cm++) {
+    for (int cm = 0; cm <= totalCm; cm++) {
       final x = cm * pixelsPerCm;
 
       // Major tick (cm)
       canvas.drawLine(
         Offset(x, 0),
-        Offset(x, cm % 5 == 0 ? size.height * 0.5 : size.height * 0.35),
+        Offset(x, cm % 5 == 0 ? size.height * 0.45 : size.height * 0.3),
         paint..strokeWidth = cm % 5 == 0 ? 2 : 1,
       );
 
@@ -233,22 +246,22 @@ class MetricRulerPainter extends CustomPainter {
       if (cm % 5 == 0) {
         textPainter.text = TextSpan(
           text: '$cm',
-          style: AppTheme.caption(size: 10, color: AppTheme.textDark),
+          style: AppTheme.caption(size: 12, color: AppTheme.textDark, weight: FontWeight.w600),
         );
         textPainter.layout();
         textPainter.paint(
           canvas,
-          Offset(x - textPainter.width / 2, size.height * 0.55),
+          Offset(x - textPainter.width / 2, size.height * 0.50),
         );
       }
 
       // Minor ticks (mm)
-      if (cm < 25) {
+      if (cm < totalCm) {
         for (int mm = 1; mm < 10; mm++) {
           final mmX = x + (mm * pixelsPerCm / 10);
           canvas.drawLine(
             Offset(mmX, 0),
-            Offset(mmX, mm == 5 ? size.height * 0.25 : size.height * 0.15),
+            Offset(mmX, mm == 5 ? size.height * 0.22 : size.height * 0.12),
             Paint()
               ..color = AppTheme.textMedium
               ..strokeWidth = 0.5,
@@ -257,15 +270,15 @@ class MetricRulerPainter extends CustomPainter {
       }
     }
 
-    // Label
+    // "CM" label at bottom-right
     textPainter.text = TextSpan(
       text: 'CM',
-      style: AppTheme.title(size: 11, color: AppTheme.textDark),
+      style: AppTheme.title(size: 12, color: AppTheme.textDark),
     );
     textPainter.layout();
     textPainter.paint(
       canvas,
-      Offset(size.width - textPainter.width - 10, size.height * 0.65),
+      Offset(size.width - textPainter.width - 10, size.height * 0.70),
     );
   }
 
@@ -276,8 +289,9 @@ class MetricRulerPainter extends CustomPainter {
 /// Custom painter for imperial ruler
 class ImperialRulerPainter extends CustomPainter {
   final double pixelsPerInch;
+  final int totalInches;
 
-  ImperialRulerPainter({required this.pixelsPerInch});
+  ImperialRulerPainter({required this.pixelsPerInch, required this.totalInches});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -290,40 +304,39 @@ class ImperialRulerPainter extends CustomPainter {
       textAlign: TextAlign.center,
     );
 
-    // Draw 10 inches
-    for (int inch = 0; inch <= 10; inch++) {
+    for (int inch = 0; inch <= totalInches; inch++) {
       final x = inch * pixelsPerInch;
 
       // Major tick (inch)
       canvas.drawLine(
         Offset(x, 0),
-        Offset(x, size.height * 0.5),
+        Offset(x, size.height * 0.45),
         paint..strokeWidth = 2,
       );
 
-      // Label
+      // Label every inch
       textPainter.text = TextSpan(
         text: '$inch',
-        style: AppTheme.caption(size: 10, color: AppTheme.textDark),
+        style: AppTheme.caption(size: 12, color: AppTheme.textDark, weight: FontWeight.w600),
       );
       textPainter.layout();
       textPainter.paint(
         canvas,
-        Offset(x - textPainter.width / 2, size.height * 0.55),
+        Offset(x - textPainter.width / 2, size.height * 0.50),
       );
 
       // Minor ticks (1/8 inch)
-      if (inch < 10) {
+      if (inch < totalInches) {
         for (int frac = 1; frac < 8; frac++) {
           final fracX = x + (frac * pixelsPerInch / 8);
           double tickHeight;
 
           if (frac == 4) {
-            tickHeight = size.height * 0.35; // 1/2 inch
+            tickHeight = size.height * 0.32; // 1/2 inch
           } else if (frac % 2 == 0) {
-            tickHeight = size.height * 0.25; // 1/4 inch
+            tickHeight = size.height * 0.22; // 1/4 inch
           } else {
-            tickHeight = size.height * 0.15; // 1/8 inch
+            tickHeight = size.height * 0.12; // 1/8 inch
           }
 
           canvas.drawLine(
@@ -337,15 +350,15 @@ class ImperialRulerPainter extends CustomPainter {
       }
     }
 
-    // Label
+    // "IN" label at bottom-right
     textPainter.text = TextSpan(
       text: 'IN',
-      style: AppTheme.title(size: 11, color: AppTheme.textDark),
+      style: AppTheme.title(size: 12, color: AppTheme.textDark),
     );
     textPainter.layout();
     textPainter.paint(
       canvas,
-      Offset(size.width - textPainter.width - 10, size.height * 0.65),
+      Offset(size.width - textPainter.width - 10, size.height * 0.70),
     );
   }
 

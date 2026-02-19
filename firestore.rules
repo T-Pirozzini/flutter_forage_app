@@ -1,0 +1,214 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ================================================================
+    // HELPER FUNCTIONS
+    // ================================================================
+
+    // Is the request from an authenticated user?
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // Is the authenticated user the owner of this document path?
+    function isOwner(userId) {
+      return isAuth() && request.auth.token.email == userId;
+    }
+
+    // Is the authenticated user an admin?
+    function isAdmin() {
+      return isAuth()
+        && exists(/databases/$(database)/documents/Users/$(request.auth.token.email))
+        && get(/databases/$(database)/documents/Users/$(request.auth.token.email)).data.isAdmin == true;
+    }
+
+    // ================================================================
+    // USERS
+    // ================================================================
+    match /Users/{email} {
+      // Any authenticated user can read user profiles (for search, leaderboard, etc.)
+      allow read: if isAuth();
+      // Only the user themselves can create/update their own profile
+      allow create: if isOwner(email);
+      allow update: if isOwner(email);
+      // Only owner or admin can delete
+      allow delete: if isOwner(email) || isAdmin();
+
+      // --- User Subcollections (private to owner) ---
+
+      match /Notifications/{notifId} {
+        allow read, delete: if isOwner(email);
+        allow update: if isOwner(email); // mark as read
+        // Cloud Functions and the client both create notifications
+        allow create: if isAuth();
+      }
+
+      match /Friends/{friendId} {
+        allow read: if isOwner(email);
+        // Owner manages their own friends list
+        allow write: if isOwner(email);
+      }
+
+      match /FriendRequests/{requestId} {
+        allow read: if isOwner(email);
+        // Any authenticated user can create a friend request (sending to this user)
+        allow create: if isAuth();
+        // Only the owner can update (accept/decline) or delete
+        allow update, delete: if isOwner(email);
+      }
+
+      match /Bookmarks/{bookmarkId} {
+        allow read, write: if isOwner(email);
+      }
+
+      match /Following/{targetEmail} {
+        allow read, write: if isOwner(email);
+      }
+
+      match /ActivityFeed/{activityId} {
+        allow read, delete: if isOwner(email);
+        // Friends' actions can create feed items
+        allow create: if isAuth();
+        allow update: if isOwner(email);
+      }
+
+      match /Collections/{collectionId} {
+        // Owner has full access
+        allow read, write: if isOwner(email);
+        // Other authenticated users can read public collections
+        allow read: if isAuth()
+          && resource.data.isPublic == true;
+      }
+
+      match /Subscriptions/{subId} {
+        allow read, write: if isOwner(email);
+      }
+
+      match /SavedRecipes/{savedId} {
+        allow read, write: if isOwner(email);
+      }
+
+      match /EmergencyNotifications/{notifId} {
+        allow read, write: if isOwner(email);
+        // Emergency contacts can read notifications where they're listed
+        allow read: if isAuth();
+      }
+
+      match /PostDrafts/{draftId} {
+        allow read, write: if isOwner(email);
+      }
+    }
+
+    // ================================================================
+    // MARKERS
+    // ================================================================
+    match /Markers/{markerId} {
+      // Any authenticated user can read markers
+      // (visibility filtering is handled in queries for performance,
+      // but we still require authentication)
+      allow read: if isAuth();
+      // Any authenticated user can create markers
+      allow create: if isAuth();
+      // Only the marker owner can update or delete
+      allow update: if isAuth() && request.auth.token.email == resource.data.markerOwner;
+      allow delete: if isAuth() && request.auth.token.email == resource.data.markerOwner;
+    }
+
+    // ================================================================
+    // POSTS
+    // ================================================================
+    match /Posts/{postId} {
+      // Any authenticated user can read posts
+      allow read: if isAuth();
+      // Any authenticated user can create posts
+      allow create: if isAuth();
+      // Only the post owner can update (or any auth user for likes array)
+      allow update: if isAuth();
+      // Only the post owner can delete
+      allow delete: if isAuth() && request.auth.token.email == resource.data.userEmail;
+
+      match /Comments/{commentId} {
+        allow read: if isAuth();
+        allow create: if isAuth();
+        // Comment author or post owner can delete
+        allow delete: if isAuth();
+      }
+
+      match /Likes/{likeId} {
+        allow read: if isAuth();
+        allow create, delete: if isAuth();
+      }
+    }
+
+    // ================================================================
+    // RECIPES
+    // ================================================================
+    match /Recipes/{recipeId} {
+      allow read: if isAuth();
+      allow create: if isAuth();
+      allow update: if isAuth();
+      allow delete: if isAuth() && request.auth.token.email == resource.data.userEmail;
+
+      match /Likes/{likeId} {
+        allow read: if isAuth();
+        allow create, delete: if isAuth();
+      }
+    }
+
+    // ================================================================
+    // FORAGE REQUESTS
+    // ================================================================
+    match /ForageRequests/{requestId} {
+      allow read: if isAuth();
+      allow create: if isAuth();
+      // Sender or recipient can update/delete
+      allow update, delete: if isAuth();
+    }
+
+    // ================================================================
+    // DIRECT MESSAGES (user → admin)
+    // ================================================================
+    match /DirectMessages/{messageId} {
+      // Any authenticated user can create a message
+      allow create: if isAuth();
+      // Admin can read/update/delete all; author can read their own
+      allow read: if isAdmin() || (isAuth() && request.auth.token.email == resource.data.userEmail);
+      allow update, delete: if isAdmin();
+    }
+
+    // ================================================================
+    // FRIENDSHIP INDEX
+    // ================================================================
+    match /FriendshipIndex/{indexId} {
+      allow read: if isAuth();
+      allow create, delete: if isAuth();
+    }
+
+    // ================================================================
+    // ROADMAP (admin-managed)
+    // ================================================================
+    match /Roadmap/{itemId} {
+      allow read: if isAuth();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ================================================================
+    // CUSTOM MARKER TYPES
+    // ================================================================
+    match /CustomMarkerTypes/{typeId} {
+      allow read: if isAuth();
+      allow create: if isAuth();
+      allow update, delete: if isAuth() && request.auth.token.email == resource.data.userId;
+    }
+
+    // ================================================================
+    // TOOL SUGGESTIONS
+    // ================================================================
+    match /ToolSuggestions/{docId} {
+      allow create: if isAuth();
+      allow read: if isAdmin();
+    }
+  }
+}

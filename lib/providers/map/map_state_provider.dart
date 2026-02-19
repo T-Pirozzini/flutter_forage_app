@@ -92,6 +92,7 @@ class MarkersNotifier extends StateNotifier<Set<Marker>> {
   StreamSubscription? _userMarkersSubscription;
   StreamSubscription? _communityMarkersSubscription;
   StreamSubscription? _friendsSubscription;
+  StreamSubscription? _closeFriendOfSubscription;
 
   // Store raw marker data for re-filtering when visibility changes
   List<_MarkerData> _userMarkerData = [];
@@ -99,6 +100,8 @@ class MarkersNotifier extends StateNotifier<Set<Marker>> {
 
   // Cache friends as Set for O(1) lookup
   Set<String> _friendEmailsCache = {};
+  // Cache: friends who consider the current user a close friend
+  Set<String> _closeFriendOfCache = {};
 
   // Debounce timer to prevent excessive rebuilds
   Timer? _rebuildDebounce;
@@ -111,6 +114,7 @@ class MarkersNotifier extends StateNotifier<Set<Marker>> {
       _userMarkersSubscription?.cancel();
       _communityMarkersSubscription?.cancel();
       _friendsSubscription?.cancel();
+      _closeFriendOfSubscription?.cancel();
       _rebuildDebounce?.cancel();
     });
   }
@@ -147,6 +151,14 @@ class MarkersNotifier extends StateNotifier<Set<Marker>> {
       _scheduleRebuild();
     });
 
+    // 2b. Listen for which friends consider us a close friend (for closeFriends visibility)
+    _closeFriendOfSubscription = friendRepo
+        .streamCloseFriendOf(userId)
+        .listen((closeFriendOfEmails) {
+      _closeFriendOfCache = closeFriendOfEmails;
+      _scheduleRebuild();
+    });
+
     // 3. DEFER community markers by 500ms (let map render with user markers first)
     Future.delayed(const Duration(milliseconds: 500), () {
       if (!mounted) return;
@@ -154,6 +166,7 @@ class MarkersNotifier extends StateNotifier<Set<Marker>> {
           .streamVisibleMarkers(
             viewerEmail: userId,
             friendEmails: _friendEmailsCache.toList(),
+            closeFriendOfViewerEmails: _closeFriendOfCache,
           )
           .listen((markerModels) {
         _communityMarkerData = markerModels

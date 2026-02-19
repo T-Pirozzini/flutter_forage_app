@@ -120,13 +120,15 @@ class PostRepository extends BaseRepository<PostModel> {
     // Firestore whereIn limit is 30
     final limitedEmails = friendEmails.take(30).toList();
 
+    // Avoid orderBy to prevent composite index requirement
     return firestoreService
         .collection(collectionPath)
         .where('userEmail', whereIn: limitedEmails)
-        .orderBy('postTimestamp', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => fromFirestore(doc)).toList();
+      final posts = snapshot.docs.map((doc) => fromFirestore(doc)).toList();
+      posts.sort((a, b) => b.postTimestamp.compareTo(a.postTimestamp));
+      return posts;
     });
   }
 
@@ -142,13 +144,15 @@ class PostRepository extends BaseRepository<PostModel> {
     // Firestore whereIn limit is 30
     final limitedEmails = followingEmails.take(30).toList();
 
+    // Avoid orderBy to prevent composite index requirement
     return firestoreService
         .collection(collectionPath)
         .where('userEmail', whereIn: limitedEmails)
-        .orderBy('postTimestamp', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => fromFirestore(doc)).toList();
+      final posts = snapshot.docs.map((doc) => fromFirestore(doc)).toList();
+      posts.sort((a, b) => b.postTimestamp.compareTo(a.postTimestamp));
+      return posts;
     });
   }
 

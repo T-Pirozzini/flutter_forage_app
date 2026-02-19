@@ -229,34 +229,46 @@ class GamificationRepository {
     }
   }
 
-  /// Get friends leaderboard
+  /// Get friends leaderboard (uses Friends subcollection + includes current user)
   Future<List<UserModel>> getFriendsLeaderboard(String userId) async {
     try {
-      final user = await userRepository.getById(userId);
-      if (user == null) return [];
+      // Query Friends subcollection instead of old user.friends array
+      final friendsSnapshot = await userRepository.firestoreService
+          .collection('Users')
+          .doc(userId)
+          .collection('Friends')
+          .get();
 
-      final friendsList = user.friends;
-      if (friendsList.isEmpty) return [];
+      final friendEmails = friendsSnapshot.docs.map((doc) => doc.id).toList();
+
+      // Start with current user
+      final leaderboard = <UserModel>[];
+      final currentUser = await userRepository.getById(userId);
+      if (currentUser != null) {
+        leaderboard.add(currentUser);
+      }
+
+      if (friendEmails.isEmpty) {
+        return leaderboard;
+      }
 
       // Firestore 'in' query limit is 10, so chunk the requests
-      final friends = <UserModel>[];
-
-      for (var i = 0; i < friendsList.length; i += 10) {
-        final chunk = friendsList.skip(i).take(10).toList();
+      for (var i = 0; i < friendEmails.length; i += 10) {
+        final chunk = friendEmails.skip(i).take(10).toList();
         final snapshot = await userRepository.firestoreService
             .collection(userRepository.collectionPath)
             .where(FieldPath.documentId, whereIn: chunk)
             .get();
 
-        friends.addAll(
+        leaderboard.addAll(
           snapshot.docs.map((doc) => UserModel.fromFirestore(doc)),
         );
       }
 
-      // Sort by points
-      friends.sort((a, b) => b.points.compareTo(a.points));
+      // Sort by points descending
+      leaderboard.sort((a, b) => b.points.compareTo(a.points));
 
-      return friends;
+      return leaderboard;
     } catch (e) {
       rethrow;
     }

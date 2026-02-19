@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_forager_app/data/models/app_notification.dart';
 import 'package:flutter_forager_app/data/models/gamification_constants.dart';
 import 'package:flutter_forager_app/data/repositories/gamification_repository.dart';
+import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
 import 'package:flutter_forager_app/providers/gamification/gamification_provider.dart';
 import 'package:flutter_forager_app/shared/gamification/reward_notification.dart';
 
@@ -302,10 +304,51 @@ class GamificationHelper {
       if (showNotification && result.hasRewards) {
         RewardNotification.showRewards(context, result: result);
       }
+
+      // Store persistent notifications for achievements and level-ups
+      _storeGamificationNotifications(ref, userId, result);
     } catch (e, stackTrace) {
       debugPrint('Error awarding points for user $userId: $e');
       debugPrint('Stack trace: $stackTrace');
       // Log but don't disrupt user experience
+    }
+  }
+
+  /// Store persistent notifications for achievements and level-ups
+  /// so they appear in the notification bell history.
+  static void _storeGamificationNotifications(
+    WidgetRef ref,
+    String userId,
+    GamificationResult result,
+  ) {
+    final notifRepo = ref.read(notificationRepositoryProvider);
+
+    // Notification for each unlocked achievement
+    for (final achievement in result.achievementsUnlocked) {
+      notifRepo.addNotification(
+        userId,
+        AppNotification(
+          id: '',
+          type: NotificationType.achievement,
+          title: 'Achievement Unlocked!',
+          body: '${achievement.title} — +${achievement.pointsReward} XP',
+          createdAt: DateTime.now(),
+        ),
+      );
+    }
+
+    // Notification for level up
+    if (result.leveledUp) {
+      notifRepo.addNotification(
+        userId,
+        AppNotification(
+          id: '',
+          type: NotificationType.levelUp,
+          title: 'Level Up!',
+          body: 'You reached Level ${result.newLevel}!',
+          createdAt: DateTime.now(),
+        ),
+      );
     }
   }
 }

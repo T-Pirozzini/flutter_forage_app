@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/core/utils/forage_type_utils.dart';
 import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
+import 'package:flutter_forager_app/data/services/interstitial_ad_manager.dart';
 import 'package:flutter_forager_app/data/models/ingredient.dart';
 import 'package:flutter_forager_app/data/models/recipe.dart';
 import 'package:flutter_forager_app/data/models/marker.dart';
@@ -259,6 +260,9 @@ class _AddRecipePageState extends ConsumerState<AddRecipePage> {
 
       _clearForm();
       _showSuccess();
+      if (!_isEditing) {
+        InterstitialAdManager.instance.tryShowAd();
+      }
       Navigator.pop(context);
     } catch (e) {
       _showError('Failed to ${_isEditing ? 'update' : 'submit'} recipe: $e');
@@ -389,7 +393,7 @@ class _AddRecipePageState extends ConsumerState<AddRecipePage> {
       appBar: AppBar(
         title: Text(
           _isEditing ? 'Edit Recipe' : 'Share Recipe',
-          style: AppTheme.heading(size: 18, color: AppTheme.textDark),
+          style: AppTheme.heading(size: 18, color: AppTheme.textWhite),
         ),
       ),
       body: SingleChildScrollView(

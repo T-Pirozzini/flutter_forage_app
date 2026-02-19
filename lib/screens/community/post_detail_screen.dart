@@ -1,8 +1,11 @@
+import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter_forager_app/data/models/post.dart';
 import 'package:flutter_forager_app/data/models/post_comment.dart';
 import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
@@ -54,6 +57,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   bool _isFavorite = false;
   bool _isBookmarked = false;
   bool _isVerificationLogExpanded = false;
+  bool _isFollowing = false;
 
   @override
   void initState() {
@@ -63,6 +67,19 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     _isFavorite = widget.isFavorite;
     _isBookmarked = widget.isBookmarked;
     _fetchMarkerId();
+    _checkFollowState();
+  }
+
+  Future<void> _checkFollowState() async {
+    if (widget.post.userEmail == currentUser.email) return;
+    final followingRepo = ref.read(followingRepositoryProvider);
+    final following = await followingRepo.isFollowing(
+      currentUser.email!,
+      widget.post.userEmail,
+    );
+    if (mounted) {
+      setState(() => _isFollowing = following);
+    }
   }
 
   @override
@@ -432,7 +449,24 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 1. Image Carousel (Pictures at top)
-            if (widget.post.imageUrls.isNotEmpty) _buildImageCarousel(),
+            if (widget.post.imageUrls.isNotEmpty)
+              _buildImageCarousel(isOwner: isOwner)
+            else if (isOwner)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: OutlinedButton.icon(
+                  onPressed: _addPhotos,
+                  icon: Icon(Icons.add_photo_alternate, size: 18, color: AppTheme.primary),
+                  label: Text(
+                    'Add Photos',
+                    style: AppTheme.caption(size: 13, color: AppTheme.primary),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: AppTheme.primary.withValues(alpha: 0.4)),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                ),
+              ),
 
             // 2. Combined header (name, date, type badge, likes, bookmarks, following)
             _buildCombinedHeader(),
@@ -459,7 +493,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     );
   }
 
-  Widget _buildImageCarousel() {
+  Widget _buildImageCarousel({bool isOwner = false}) {
     return Stack(
       children: [
         SizedBox(
@@ -496,7 +530,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         if (widget.post.imageUrls.length > 1)
           Positioned(
             bottom: 10,
-            right: 10,
+            right: isOwner ? 50 : 10,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
@@ -506,6 +540,27 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
               child: Text(
                 '${_currentImageIndex + 1}/${widget.post.imageUrls.length}',
                 style: const TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            ),
+          ),
+        // Add More Photos badge for owner
+        if (isOwner)
+          Positioned(
+            bottom: 10,
+            right: 10,
+            child: GestureDetector(
+              onTap: _addPhotos,
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.add_photo_alternate,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
             ),
           ),
@@ -712,8 +767,9 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                       : null,
                   image: profilePic != null
                       ? DecorationImage(
-                          image: CachedNetworkImageProvider(profilePic),
+                          image: AssetImage('lib/assets/images/$profilePic'),
                           fit: BoxFit.cover,
+                          onError: (exception, stackTrace) {},
                         )
                       : null,
                 ),
@@ -770,7 +826,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
 
       if (userDoc.exists) {
         final data = userDoc.data();
-        return data?['photoUrl'] as String?;
+        return data?['profilePic'] as String?;
       }
     } catch (e) {
       debugPrint('Error fetching user profile pic: $e');
@@ -779,19 +835,34 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   }
 
   Widget _buildFollowButton() {
-    // TODO: Implement actual follow state check
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppTheme.primary,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Text(
-        'Follow',
-        style: AppTheme.caption(
-          size: 12,
-          color: Colors.white,
-          weight: FontWeight.w600,
+    return GestureDetector(
+      onTap: () async {
+        final followingRepo = ref.read(followingRepositoryProvider);
+        final newState = await followingRepo.toggleFollow(
+          userId: currentUser.email!,
+          targetEmail: widget.post.userEmail,
+          targetDisplayName: widget.username ?? '',
+        );
+        if (mounted) {
+          setState(() => _isFollowing = newState);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: _isFollowing ? Colors.transparent : AppTheme.primary,
+          borderRadius: BorderRadius.circular(16),
+          border: _isFollowing
+              ? Border.all(color: AppTheme.primary)
+              : null,
+        ),
+        child: Text(
+          _isFollowing ? 'Following' : 'Follow',
+          style: AppTheme.caption(
+            size: 12,
+            color: _isFollowing ? AppTheme.primary : Colors.white,
+            weight: FontWeight.w600,
+          ),
         ),
       ),
     );
@@ -1258,6 +1329,61 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error updating description: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _addPhotos() async {
+    final picker = ImagePicker();
+    final pickedFiles = await picker.pickMultiImage(imageQuality: 80);
+    if (pickedFiles.isEmpty) return;
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Uploading ${pickedFiles.length} photo(s)...')),
+    );
+
+    try {
+      final storage = FirebaseStorage.instance;
+      final newUrls = <String>[];
+
+      for (var i = 0; i < pickedFiles.length; i++) {
+        final file = File(pickedFiles[i].path);
+        final fileName = '${DateTime.now().millisecondsSinceEpoch}_$i.jpg';
+        final ref = storage.ref().child('marker_images/$fileName');
+        await ref.putFile(file);
+        final url = await ref.getDownloadURL();
+        newUrls.add(url);
+      }
+
+      // Append new URLs to existing images
+      final updatedUrls = [...widget.post.imageUrls, ...newUrls];
+
+      // Update Posts collection
+      await FirebaseFirestore.instance
+          .collection('Posts')
+          .doc(widget.post.id)
+          .update({'imageUrls': updatedUrls});
+
+      // Also update the Marker if it exists
+      if (_markerId != null) {
+        await FirebaseFirestore.instance
+            .collection('Markers')
+            .doc(_markerId)
+            .update({'images': updatedUrls});
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${newUrls.length} photo(s) added!')),
+        );
+        setState(() {});
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error uploading photos: $e')),
         );
       }
     }
