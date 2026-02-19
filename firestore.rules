@@ -36,24 +36,27 @@ service cloud.firestore {
       // Only owner or admin can delete
       allow delete: if isOwner(email) || isAdmin();
 
-      // --- User Subcollections (private to owner) ---
+      // --- User Subcollections ---
 
       match /Notifications/{notifId} {
         allow read, delete: if isOwner(email);
         allow update: if isOwner(email); // mark as read
-        // Cloud Functions and the client both create notifications
+        // Cloud Functions and other users can create notifications
         allow create: if isAuth();
       }
 
       match /Friends/{friendId} {
-        allow read: if isOwner(email);
+        // Owner can read their own friends list
+        // Other users can read if they are the friend (for collectionGroup queries)
+        allow read: if isOwner(email)
+          || (isAuth() && resource.data.friendEmail == request.auth.token.email);
         // Owner manages their own friends list
         allow write: if isOwner(email);
       }
 
       match /FriendRequests/{requestId} {
         allow read: if isOwner(email);
-        // Any authenticated user can create a friend request (sending to this user)
+        // Any authenticated user can send a friend request
         allow create: if isAuth();
         // Only the owner can update (accept/decline) or delete
         allow update, delete: if isOwner(email);
@@ -64,7 +67,10 @@ service cloud.firestore {
       }
 
       match /Following/{targetEmail} {
-        allow read, write: if isOwner(email);
+        // Owner has full access
+        allow write: if isOwner(email);
+        // Allow reads for owner + collectionGroup queries (follower counts)
+        allow read: if isAuth();
       }
 
       match /ActivityFeed/{activityId} {
@@ -77,7 +83,7 @@ service cloud.firestore {
       match /Collections/{collectionId} {
         // Owner has full access
         allow read, write: if isOwner(email);
-        // Other authenticated users can read public collections
+        // Other authenticated users can read public collections (collectionGroup query)
         allow read: if isAuth()
           && resource.data.isPublic == true;
       }
@@ -91,25 +97,57 @@ service cloud.firestore {
       }
 
       match /EmergencyNotifications/{notifId} {
+        // Owner has full access
         allow read, write: if isOwner(email);
-        // Emergency contacts can read notifications where they're listed
+        // Other users can read (for collectionGroup queries by emergency contacts)
         allow read: if isAuth();
       }
 
       match /PostDrafts/{draftId} {
         allow read, write: if isOwner(email);
       }
+
+      // Legacy Markers subcollection (deprecated — migrated to root Markers)
+      match /Markers/{markerId} {
+        allow read: if isAuth();
+        allow create: if isOwner(email);
+        allow update, delete: if isOwner(email)
+          || (isAuth() && request.auth.token.email == resource.data.markerOwner);
+      }
     }
 
     // ================================================================
-    // MARKERS
+    // COLLECTION GROUP RULES
+    // collectionGroup() queries need /{path=**}/ wildcard prefix
+    // ================================================================
+
+    // Friends collectionGroup — find who has you as a close friend
+    match /{path=**}/Friends/{friendId} {
+      allow read: if isAuth()
+        && resource.data.friendEmail == request.auth.token.email;
+    }
+
+    // Following collectionGroup — count followers
+    match /{path=**}/Following/{targetEmail} {
+      allow read: if isAuth();
+    }
+
+    // Collections collectionGroup — browse public collections
+    match /{path=**}/Collections/{collectionId} {
+      allow read: if isAuth()
+        && resource.data.isPublic == true;
+    }
+
+    // EmergencyNotifications collectionGroup — emergency contacts
+    match /{path=**}/EmergencyNotifications/{notifId} {
+      allow read: if isAuth();
+    }
+
+    // ================================================================
+    // MARKERS (root collection — current)
     // ================================================================
     match /Markers/{markerId} {
-      // Any authenticated user can read markers
-      // (visibility filtering is handled in queries for performance,
-      // but we still require authentication)
       allow read: if isAuth();
-      // Any authenticated user can create markers
       allow create: if isAuth();
       // Only the marker owner can update or delete
       allow update: if isAuth() && request.auth.token.email == resource.data.markerOwner;
@@ -120,11 +158,9 @@ service cloud.firestore {
     // POSTS
     // ================================================================
     match /Posts/{postId} {
-      // Any authenticated user can read posts
       allow read: if isAuth();
-      // Any authenticated user can create posts
       allow create: if isAuth();
-      // Only the post owner can update (or any auth user for likes array)
+      // Any auth user can update (for likes array)
       allow update: if isAuth();
       // Only the post owner can delete
       allow delete: if isAuth() && request.auth.token.email == resource.data.userEmail;
@@ -132,7 +168,6 @@ service cloud.firestore {
       match /Comments/{commentId} {
         allow read: if isAuth();
         allow create: if isAuth();
-        // Comment author or post owner can delete
         allow delete: if isAuth();
       }
 
@@ -155,6 +190,12 @@ service cloud.firestore {
         allow read: if isAuth();
         allow create, delete: if isAuth();
       }
+
+      match /Comments/{commentId} {
+        allow read: if isAuth();
+        allow create: if isAuth();
+        allow delete: if isAuth();
+      }
     }
 
     // ================================================================
@@ -163,7 +204,6 @@ service cloud.firestore {
     match /ForageRequests/{requestId} {
       allow read: if isAuth();
       allow create: if isAuth();
-      // Sender or recipient can update/delete
       allow update, delete: if isAuth();
     }
 
@@ -171,9 +211,7 @@ service cloud.firestore {
     // DIRECT MESSAGES (user → admin)
     // ================================================================
     match /DirectMessages/{messageId} {
-      // Any authenticated user can create a message
       allow create: if isAuth();
-      // Admin can read/update/delete all; author can read their own
       allow read: if isAdmin() || (isAuth() && request.auth.token.email == resource.data.userEmail);
       allow update, delete: if isAdmin();
     }
@@ -184,6 +222,23 @@ service cloud.firestore {
     match /FriendshipIndex/{indexId} {
       allow read: if isAuth();
       allow create, delete: if isAuth();
+    }
+
+    // ================================================================
+    // FEEDBACK
+    // ================================================================
+    match /Feedback/{feedbackId} {
+      allow read: if isAdmin();
+      allow create: if isAuth();
+    }
+
+    // ================================================================
+    // COMMUNITY MESSAGES
+    // ================================================================
+    match /CommunityMessages/{messageId} {
+      allow read: if isAuth();
+      allow create: if isAuth();
+      allow update, delete: if isAuth();
     }
 
     // ================================================================
