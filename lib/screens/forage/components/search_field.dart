@@ -174,9 +174,17 @@ class _SearchFieldState extends State<SearchField> {
             ),
         ),
 
-        // Suggestions Dropdown - larger when focused for better visibility
+        // Suggestions Dropdown - adapts to available space above keyboard
         if (_suggestions.isNotEmpty)
-          Container(
+          Builder(
+            builder: (context) {
+              final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+              final screenHeight = MediaQuery.of(context).size.height;
+              // Search field is ~130px from top; leave room for keyboard + some padding
+              final availableHeight = keyboardHeight > 0
+                  ? screenHeight - keyboardHeight - 180
+                  : 280.0;
+              return Container(
             margin: const EdgeInsets.only(top: 4),
             decoration: BoxDecoration(
               color: AppTheme.surfaceLight,
@@ -189,7 +197,7 @@ class _SearchFieldState extends State<SearchField> {
                 ),
               ],
             ),
-            constraints: const BoxConstraints(maxHeight: 280),
+            constraints: BoxConstraints(maxHeight: availableHeight.clamp(120, 280)),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: ListView.separated(
@@ -224,6 +232,8 @@ class _SearchFieldState extends State<SearchField> {
                 },
               ),
             ),
+          );
+            },
           ),
       ],
     );

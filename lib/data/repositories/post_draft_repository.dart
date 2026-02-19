@@ -25,12 +25,14 @@ class PostDraftRepository {
 
   /// Stream only unpublished drafts (draft or scheduled status)
   Stream<List<PostDraftModel>> streamUnpublishedDrafts(String userId) {
+    // Avoid orderBy to prevent composite index requirement; sort client-side
     return _draftsCollection(userId)
         .where('status', whereIn: ['draft', 'scheduled'])
-        .orderBy('updatedAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => PostDraftModel.fromFirestore(doc)).toList();
+      final drafts = snapshot.docs.map((doc) => PostDraftModel.fromFirestore(doc)).toList();
+      drafts.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      return drafts;
     });
   }
 

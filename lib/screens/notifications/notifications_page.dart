@@ -111,6 +111,10 @@ class NotificationsPage extends ConsumerWidget {
         // Pop back for now — could deep-link to post in the future
         Navigator.pop(context);
         break;
+      case NotificationType.achievement:
+      case NotificationType.levelUp:
+        // Informational — just mark as read
+        break;
     }
   }
 }
@@ -221,6 +225,10 @@ class _NotificationTile extends StatelessWidget {
         return Icons.favorite;
       case NotificationType.postComment:
         return Icons.comment;
+      case NotificationType.achievement:
+        return Icons.emoji_events;
+      case NotificationType.levelUp:
+        return Icons.arrow_circle_up;
     }
   }
 
@@ -234,6 +242,10 @@ class _NotificationTile extends StatelessWidget {
         return AppTheme.accent;
       case NotificationType.postComment:
         return AppTheme.primary;
+      case NotificationType.achievement:
+        return AppTheme.secondary;
+      case NotificationType.levelUp:
+        return AppTheme.accent;
     }
   }
 

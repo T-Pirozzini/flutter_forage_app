@@ -6,6 +6,7 @@
  * 2. Friend Request Accepted - when your friend request is accepted
  * 3. Post Liked - when someone likes your post
  * 4. Post Comment - when someone comments on your post
+ * 5. Achievement/Level Up - push for gamification notifications written by client
  */
 
 import {
@@ -380,5 +381,48 @@ export const onPostComment = onDocumentCreated(
     }
 
     await sendNotification(token, notifTitle, notifBody, notifData, "normal");
+  }
+);
+
+// ============================================================================
+// 5. GAMIFICATION PUSH (Achievement & Level Up)
+// ============================================================================
+// The client writes achievement/levelUp notifications to Firestore.
+// This function picks them up and sends an FCM push so the user gets
+// notified even if the app is backgrounded before the write completes.
+
+export const onGamificationNotification = onDocumentCreated(
+  "Users/{userId}/Notifications/{notificationId}",
+  async (event) => {
+    const snap = event.data;
+    if (!snap) return;
+
+    const data = snap.data();
+    const type = data.type as string;
+
+    // Only handle gamification types — the other types already send push
+    // from their own Cloud Functions, so skip them to avoid double-push.
+    if (type !== "achievement" && type !== "levelUp" && type !== "level_up") {
+      return;
+    }
+
+    const userEmail = event.params.userId;
+    const title = data.title || "Forager";
+    const body = data.body || "";
+
+    // Send push if enabled
+    const {token, enabled} = await getUserNotificationInfo(userEmail);
+    if (!token || !enabled) {
+      console.log(`Gamification push skipped for ${userEmail} (no token or disabled)`);
+      return;
+    }
+
+    await sendNotification(
+      token,
+      title,
+      body,
+      {type, notificationId: event.params.notificationId},
+      "normal"
+    );
   }
 );

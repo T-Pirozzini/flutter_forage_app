@@ -187,11 +187,6 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
         );
       }
 
-      // TODO: Add video ad here later
-      // if (!isCurrentlyBookmarked && mounted) {
-      //   await Future.delayed(const Duration(seconds: 1));
-      //   AdMobService.showInterstitialAd();
-      // }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -277,12 +272,22 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
 
       case CommunityFilter.following:
         // Get following list and filter posts
+        debugPrint('[CommunityPage] Following filter selected for: ${currentUser.email}');
         return ref.read(followingRepositoryProvider).streamFollowing(currentUser.email!).asyncMap((following) async {
           final followingEmails = following.map((f) => f.followedEmail).toList();
-          if (followingEmails.isEmpty) return <PostModel>[];
+          debugPrint('[CommunityPage] Following emails: $followingEmails');
+          if (followingEmails.isEmpty) {
+            debugPrint('[CommunityPage] No following emails - returning empty');
+            return <PostModel>[];
+          }
 
           // Use the filtered stream
-          return await postRepo.streamFollowingPosts(followingEmails).first;
+          final posts = await postRepo.streamFollowingPosts(followingEmails).first;
+          debugPrint('[CommunityPage] Following posts found: ${posts.length}');
+          for (var p in posts) {
+            debugPrint('[CommunityPage]   - post: ${p.name} by ${p.userEmail}');
+          }
+          return posts;
         });
 
       case CommunityFilter.nearby:
@@ -412,6 +417,7 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
                               ),
                             ],
                           ),
+                          const SizedBox(height: 80),
                         ],
                       ),
                     ),

@@ -6,6 +6,8 @@ enum NotificationType {
   friendAccepted,
   postLike,
   postComment,
+  achievement,
+  levelUp,
 }
 
 /// Model representing a notification stored in Firestore.
@@ -95,6 +97,11 @@ class AppNotification {
       case 'post_comment':
       case 'postComment':
         return NotificationType.postComment;
+      case 'achievement':
+        return NotificationType.achievement;
+      case 'level_up':
+      case 'levelUp':
+        return NotificationType.levelUp;
       default:
         return NotificationType.postLike;
     }

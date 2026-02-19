@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/data/services/ad_mob_service.dart';
+import 'package:flutter_forager_app/data/services/interstitial_ad_manager.dart';
 import 'package:flutter_forager_app/data/services/notification_service.dart';
 import 'package:flutter_forager_app/screens/notifications/notifications_page.dart';
 import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
@@ -70,6 +71,13 @@ class _HomePageState extends ConsumerState<HomePage> {
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) {
           NotificationService.instance.getAndSaveToken();
+        }
+      });
+
+      // Preload interstitial ad and start session clock
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) {
+          InterstitialAdManager.instance.initialize();
         }
       });
     });
@@ -241,98 +249,182 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: currentIndex,
-        onTap: (int i) => setState(() => currentIndex = i),
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: AppTheme.surfaceLight,
-        selectedItemColor: AppTheme.primary,
-        unselectedItemColor: AppTheme.textMedium,
-        selectedLabelStyle: AppTheme.caption(
-          size: 12,
-          weight: FontWeight.w600,
-        ),
-        unselectedLabelStyle: AppTheme.caption(
-          size: 12,
-        ),
-        elevation: 8,
-        // New order: Feed | Profile | EXPLORE (center) | Tools | Feedback
-        items: [
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.dynamic_feed),
-            label: 'Feed',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-          // EXPLORE - Prominent center tab with amber background (oversized)
-          BottomNavigationBarItem(
-            icon: Transform.translate(
-              offset: const Offset(0, -12), // Hang over the nav bar edge
-              child: SizedBox(
-                height: 84, // Increased height to prevent overflow
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(14), // Restored padding
-                      decoration: BoxDecoration(
-                        color: currentIndex == 2
-                            ? AppTheme.secondary
-                            : AppTheme.secondary.withValues(alpha: 0.5),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppTheme.surfaceLight,
-                          width: 3,
-                        ),
-                        boxShadow: currentIndex == 2
-                            ? [
-                                BoxShadow(
-                                  color: AppTheme.secondary.withValues(alpha: 0.5),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ]
-                            : [],
-                      ),
-                      child: Icon(
-                        Icons.explore,
-                        color: currentIndex == 2
-                            ? AppTheme.textWhite
-                            : AppTheme.textWhite.withValues(alpha: 0.6),
-                        size: currentIndex == 2 ? 28 : 24,
-                      ),
-                    ),
-                    const Spacer(), // Push text to bottom
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Text(
-                        'Explore',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: currentIndex == 2 ? FontWeight.w600 : FontWeight.normal,
-                          color: currentIndex == 2 ? AppTheme.primary : AppTheme.textMedium,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            label: '', // Empty - we handle label in icon widget
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.build_outlined),
-            label: 'Tools',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.feedback_outlined),
-            label: 'Feedback',
+      bottomNavigationBar: _buildBottomNavBar(),
+      extendBody: true,
+    );
+  }
+
+  Widget _buildBottomNavBar() {
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    const selectedColor = AppTheme.secondary;
+    const unselectedColor = Color(0xFF8A9A8E); // Muted sage — dim but solid
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.primaryDark,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 12,
+            offset: const Offset(0, -2),
           ),
         ],
       ),
-      extendBody: true,
+      padding: EdgeInsets.only(bottom: bottomPadding),
+      child: SafeArea(
+        top: false,
+        bottom: false,
+        child: SizedBox(
+          height: 60,
+          child: Row(
+            children: [
+              // Feed
+              _buildNavItem(
+                index: 0,
+                icon: Icons.dynamic_feed,
+                label: 'Feed',
+                selectedColor: selectedColor,
+                unselectedColor: unselectedColor,
+              ),
+              // Profile
+              _buildNavItem(
+                index: 1,
+                icon: Icons.person_outline,
+                label: 'Profile',
+                selectedColor: selectedColor,
+                unselectedColor: unselectedColor,
+              ),
+              // EXPLORE — oversized center button (circle protrudes above bar)
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => currentIndex = 2),
+                  behavior: HitTestBehavior.opaque,
+                  child: SizedBox(
+                    height: 60,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      alignment: Alignment.center,
+                      children: [
+                        // Circle — positioned to protrude above
+                        Positioned(
+                          top: -16,
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: currentIndex == 2
+                                  ? AppTheme.secondary
+                                  : AppTheme.primaryLight,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: AppTheme.primaryDark,
+                                width: 4,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: currentIndex == 2
+                                      ? AppTheme.secondary.withValues(alpha: 0.45)
+                                      : Colors.black.withValues(alpha: 0.2),
+                                  blurRadius: currentIndex == 2 ? 14 : 6,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              Icons.explore,
+                              color: currentIndex == 2
+                                  ? Colors.white
+                                  : const Color(0xFFB0C4B1),
+                              size: currentIndex == 2 ? 28 : 26,
+                            ),
+                          ),
+                        ),
+                        // Label — pinned to bottom of bar
+                        Positioned(
+                          bottom: 6,
+                          child: Text(
+                            'Explore',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: currentIndex == 2
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                              color: currentIndex == 2
+                                  ? selectedColor
+                                  : unselectedColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              // Tools
+              _buildNavItem(
+                index: 3,
+                icon: Icons.build_outlined,
+                label: 'Tools',
+                selectedColor: selectedColor,
+                unselectedColor: unselectedColor,
+              ),
+              // Feedback
+              _buildNavItem(
+                index: 4,
+                icon: Icons.feedback_outlined,
+                label: 'Feedback',
+                selectedColor: selectedColor,
+                unselectedColor: unselectedColor,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required int index,
+    required IconData icon,
+    required String label,
+    required Color selectedColor,
+    required Color unselectedColor,
+  }) {
+    final isSelected = currentIndex == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => currentIndex = index),
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? selectedColor : unselectedColor,
+              size: isSelected ? 26 : 24,
+            ),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                color: isSelected ? selectedColor : unselectedColor,
+              ),
+            ),
+            const SizedBox(height: 3),
+            // Active indicator dot
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: isSelected ? 5 : 0,
+              height: isSelected ? 5 : 0,
+              decoration: BoxDecoration(
+                color: selectedColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

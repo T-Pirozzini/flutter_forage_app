@@ -676,11 +676,13 @@ class _PostCardState extends State<PostCard> {
                     children: [
                       // Comments
                       _buildActionButton(
-                        icon: Icons.chat_bubble_outline,
+                        icon: widget.post.commentCount > 0
+                            ? Icons.chat_bubble
+                            : Icons.chat_bubble_outline,
                         count: widget.post.commentCount,
                         onTap: _showCommentDialog,
-                        isActive: false,
-                        activeColor: AppTheme.info,
+                        isActive: widget.post.commentCount > 0,
+                        activeColor: AppTheme.accent,
                       ),
                       // Likes
                       _buildActionButton(
@@ -688,7 +690,7 @@ class _PostCardState extends State<PostCard> {
                         count: widget.post.likeCount,
                         onTap: widget.onToggleFavorite,
                         isActive: widget.isFavorite,
-                        activeColor: AppTheme.accent,
+                        activeColor: AppTheme.error,
                       ),
                       // Bookmarks
                       _buildActionButton(
@@ -696,7 +698,7 @@ class _PostCardState extends State<PostCard> {
                         count: widget.post.bookmarkCount,
                         onTap: widget.onToggleBookmark,
                         isActive: widget.isBookmarked,
-                        activeColor: AppTheme.secondary,
+                        activeColor: const Color(0xFF64B5F6),
                       ),
                       // Share/Map
                       GestureDetector(

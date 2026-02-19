@@ -8,7 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_forager_app/data/models/marker.dart';
 import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
+import 'package:flutter_forager_app/screens/forage/components/friend_picker_dialog.dart';
 import 'package:flutter_forager_app/screens/forage/map_page.dart';
+import 'package:flutter_forager_app/data/services/interstitial_ad_manager.dart';
 import 'package:flutter_forager_app/data/services/marker_service.dart';
 import 'package:flutter_forager_app/screens/forage_locations/components/status_history_dialog.dart';
 import 'package:flutter_forager_app/shared/gamification/gamification_helper.dart';
@@ -51,6 +53,8 @@ class _LocationDetailScreenState extends ConsumerState<LocationDetailScreen> {
   List<Map<String, dynamic>> _comments = [];
   bool _isBookmarked = false;
   bool _isBookmarkLoading = false;
+  late MarkerVisibility _currentVisibility;
+  late List<String> _allowedViewers;
 
   @override
   void initState() {
@@ -59,6 +63,8 @@ class _LocationDetailScreenState extends ConsumerState<LocationDetailScreen> {
     _descriptionController =
         TextEditingController(text: widget.marker.description);
     _isOwner = currentUser.email == widget.marker.markerOwner;
+    _currentVisibility = widget.marker.visibility;
+    _allowedViewers = List.from(widget.marker.allowedViewers);
     _selectedStatus = widget.marker.currentStatus;
     // Convert MarkerStatusUpdate objects to Map<String, dynamic>
     _statusHistory = widget.marker.statusHistory.map((s) => s.toMap()).toList();
@@ -442,6 +448,8 @@ class _LocationDetailScreenState extends ConsumerState<LocationDetailScreen> {
           ref: ref,
           userId: currentUser.email!,
         );
+
+        InterstitialAdManager.instance.tryShowAd();
       }
     } catch (e) {
       if (mounted) {
@@ -1085,10 +1093,205 @@ class _LocationDetailScreenState extends ConsumerState<LocationDetailScreen> {
               'Discovered',
               dateFormat.format(widget.marker.timestamp),
             ),
+            const Divider(height: 16),
+            // Visibility row
+            _buildVisibilityRow(),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildVisibilityRow() {
+    final icon = _getVisibilityIcon(_currentVisibility);
+    final color = _getVisibilityColor(_currentVisibility);
+
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: color),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Visibility',
+                style: AppTheme.caption(size: 11, color: AppTheme.textLight),
+              ),
+              Text(
+                _currentVisibility == MarkerVisibility.specific && _allowedViewers.isNotEmpty
+                    ? '${_currentVisibility.displayName} (${_allowedViewers.length})'
+                    : _currentVisibility.displayName,
+                style: AppTheme.body(size: 13, color: AppTheme.textDark),
+              ),
+            ],
+          ),
+        ),
+        if (_isOwner)
+          GestureDetector(
+            onTap: _showVisibilityPicker,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: color.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Change',
+                    style: AppTheme.caption(size: 11, color: color, weight: FontWeight.w600),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(Icons.edit, size: 12, color: color),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  IconData _getVisibilityIcon(MarkerVisibility v) {
+    switch (v) {
+      case MarkerVisibility.private:
+        return Icons.lock_outline;
+      case MarkerVisibility.closeFriends:
+        return Icons.star_outline;
+      case MarkerVisibility.friends:
+        return Icons.people_outline;
+      case MarkerVisibility.specific:
+        return Icons.person_outline;
+      case MarkerVisibility.public:
+        return Icons.public;
+    }
+  }
+
+  Color _getVisibilityColor(MarkerVisibility v) {
+    switch (v) {
+      case MarkerVisibility.private:
+        return AppTheme.textMedium;
+      case MarkerVisibility.closeFriends:
+        return AppTheme.xp;
+      case MarkerVisibility.friends:
+        return AppTheme.primary;
+      case MarkerVisibility.specific:
+        return AppTheme.info;
+      case MarkerVisibility.public:
+        return AppTheme.accent;
+    }
+  }
+
+  void _showVisibilityPicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                  child: Text(
+                    'Who can see this location?',
+                    style: AppTheme.heading(size: 16, color: AppTheme.textDark),
+                  ),
+                ),
+                const Divider(),
+                ...MarkerVisibility.values.map((v) {
+                  final isSelected = v == _currentVisibility;
+                  final icon = _getVisibilityIcon(v);
+                  final color = _getVisibilityColor(v);
+                  return ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(icon, size: 20, color: color),
+                    ),
+                    title: Text(
+                      v.displayName,
+                      style: TextStyle(
+                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                        color: isSelected ? color : AppTheme.textDark,
+                      ),
+                    ),
+                    subtitle: Text(
+                      v.description,
+                      style: AppTheme.caption(size: 11, color: AppTheme.textMedium),
+                    ),
+                    trailing: isSelected
+                        ? Icon(Icons.check_circle, color: color)
+                        : null,
+                    onTap: () async {
+                      Navigator.pop(sheetContext);
+                      if (v != _currentVisibility) {
+                        await _updateVisibility(v);
+                      }
+                    },
+                  );
+                }),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _updateVisibility(MarkerVisibility newVisibility) async {
+    List<String> viewers = [];
+
+    // If "specific", show friend picker first
+    if (newVisibility == MarkerVisibility.specific) {
+      final selected = await FriendPickerDialog.show(
+        context,
+        initialSelection: _allowedViewers,
+      );
+      if (selected == null) return; // User cancelled
+      viewers = selected;
+    }
+
+    try {
+      final markerRepo = ref.read(markerRepositoryProvider);
+      await markerRepo.updateVisibility(
+        markerId: widget.marker.id,
+        visibility: newVisibility,
+        allowedViewers: viewers,
+      );
+      setState(() {
+        _currentVisibility = newVisibility;
+        _allowedViewers = viewers;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Visibility updated to ${newVisibility.displayName}'),
+            backgroundColor: AppTheme.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update visibility: $e'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildDetailRow(IconData icon, String label, String value) {

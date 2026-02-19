@@ -20,16 +20,24 @@ class FollowingRepository {
 
   /// Stream all users that the current user is following
   Stream<List<FollowingModel>> streamFollowing(String userId) {
+    debugPrint('[FollowingRepo] streamFollowing called for: $userId');
     return firestoreService
         .collection('Users')
         .doc(userId)
         .collection('Following')
-        .orderBy('followedAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
+      debugPrint(
+          '[FollowingRepo] Following snapshot: ${snapshot.docs.length} docs');
+      for (var doc in snapshot.docs) {
+        debugPrint(
+            '[FollowingRepo]   - doc.id: ${doc.id}, data: ${doc.data()}');
+      }
+      final results = snapshot.docs
           .map((doc) => FollowingModel.fromFirestore(doc))
           .toList();
+      results.sort((a, b) => b.followedAt.compareTo(a.followedAt));
+      return results;
     });
   }
 

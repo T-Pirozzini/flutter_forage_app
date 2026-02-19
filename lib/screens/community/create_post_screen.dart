@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/core/utils/forage_type_utils.dart';
 import 'package:flutter_forager_app/data/models/gamification_constants.dart';
+import 'package:flutter_forager_app/data/services/interstitial_ad_manager.dart';
 import 'package:flutter_forager_app/data/models/marker.dart';
 import 'package:flutter_forager_app/data/models/post.dart';
 import 'package:flutter_forager_app/data/models/post_draft.dart';
@@ -237,6 +238,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
             backgroundColor: AppTheme.success,
           ),
         );
+        InterstitialAdManager.instance.tryShowAd();
         Navigator.pop(context, true); // Return true to indicate success
       }
     } catch (e) {
@@ -272,6 +274,9 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Drafts & Scheduled section
+                  _buildDraftsSection(),
+
                   // Points preview banner
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -548,6 +553,121 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                 ],
               ),
             ),
+    );
+  }
+
+  Widget _buildDraftsSection() {
+    return StreamBuilder<List<PostDraftModel>>(
+      stream: ref
+          .read(postDraftRepositoryProvider)
+          .streamUnpublishedDrafts(_currentUser.email!),
+      builder: (context, snapshot) {
+        final drafts = snapshot.data ?? [];
+        if (drafts.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'My Drafts & Scheduled',
+              style: AppTheme.body(
+                size: 16,
+                weight: FontWeight.w600,
+                color: AppTheme.textWhite,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...drafts.map((draft) => _buildDraftTile(draft)),
+            const SizedBox(height: 16),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDraftTile(PostDraftModel draft) {
+    final isScheduled = draft.isScheduled;
+    final dateStr = isScheduled && draft.scheduledFor != null
+        ? 'Scheduled: ${DateFormat('MMM d, h:mm a').format(draft.scheduledFor!)}'
+        : 'Draft · ${DateFormat('MMM d').format(draft.updatedAt)}';
+
+    return Card(
+      color: AppTheme.backgroundDark,
+      margin: const EdgeInsets.only(bottom: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: ListTile(
+        leading: Icon(
+          isScheduled ? Icons.schedule : Icons.edit_note,
+          color: isScheduled ? AppTheme.accent : AppTheme.textLight,
+        ),
+        title: Text(
+          draft.markerName ?? 'Untitled',
+          style: TextStyle(color: AppTheme.textWhite, fontSize: 14),
+        ),
+        subtitle: Text(
+          dateStr,
+          style: TextStyle(color: AppTheme.textLight, fontSize: 12),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Load draft into form
+            IconButton(
+              icon: Icon(Icons.open_in_new, size: 20, color: AppTheme.accent),
+              tooltip: 'Load into form',
+              onPressed: () => _loadDraft(draft),
+            ),
+            // Delete draft
+            IconButton(
+              icon: Icon(Icons.delete_outline, size: 20, color: AppTheme.textLight),
+              tooltip: 'Delete',
+              onPressed: () => _confirmDeleteDraft(draft),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _loadDraft(PostDraftModel draft) {
+    // Try to find the marker in the loaded list
+    final marker = _userMarkers.where((m) => m.id == draft.markerId).firstOrNull;
+    setState(() {
+      if (marker != null) {
+        _selectedMarker = marker;
+      }
+      _descriptionController.text = draft.communityDescription ?? '';
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Loaded draft: ${draft.markerName ?? "Untitled"}')),
+    );
+  }
+
+  void _confirmDeleteDraft(PostDraftModel draft) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Draft?'),
+        content: Text(
+          'Delete "${draft.markerName ?? "Untitled"}"? This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              await ref
+                  .read(postDraftRepositoryProvider)
+                  .deleteDraft(_currentUser.email!, draft.id);
+              if (mounted) Navigator.pop(context);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -10,7 +10,7 @@ class AdMobService {
       return 'ca-app-pub-8699226690238380/2859427622'; // production ad unit ID
     } else if (Platform.isIOS) {
       // return 'ca-app-pub-8699226690238380/8111754306';
-      return ' ca-app-pub-8699226690238380/8111754306'; // production ad unit ID
+      return 'ca-app-pub-8699226690238380/8111754306'; // production ad unit ID
     }
     return null;
   }

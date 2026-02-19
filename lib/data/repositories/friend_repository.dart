@@ -215,6 +215,28 @@ class FriendRepository {
     });
   }
 
+  /// Stream emails of friends who consider the viewer a close friend.
+  ///
+  /// This checks each friend's Friends subcollection to see if they
+  /// have marked [viewerEmail] as a close friend. Used for visibility
+  /// filtering — closeFriends-visibility markers are shown when the
+  /// marker owner considers the viewer a close friend.
+  Stream<Set<String>> streamCloseFriendOf(String viewerEmail) {
+    // Use collectionGroup to find all Friends docs where friendEmail == viewer
+    // and closeFriend == true. The parent user is the one who considers us close.
+    return firestoreService
+        .collectionGroup('Friends')
+        .where('friendEmail', isEqualTo: viewerEmail)
+        .where('closeFriend', isEqualTo: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        // Parent path: Users/{ownerEmail}/Friends/{viewerEmail}
+        return doc.reference.parent.parent!.id;
+      }).toSet();
+    });
+  }
+
   // ============ FRIEND REQUESTS ============
 
   /// Stream incoming friend requests for a user

@@ -77,6 +77,14 @@ class _FeedPageState extends State<FeedPage>
                   _buildStep('2', 'Open your location details'),
                   const SizedBox(height: 4),
                   _buildStep('3', 'Tap "Share with Community"'),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Or use the + Post button to quickly share any of your saved locations.',
+                    style: AppTheme.caption(
+                      size: 12,
+                      color: AppTheme.textMedium,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -113,8 +121,13 @@ class _FeedPageState extends State<FeedPage>
             ),
             const SizedBox(height: 12),
             Text(
-              'Save your favorite recipes and share your own creations with the community.',
+              'Browse recipes shared by the community, save your favorites, and create your own from your Profile > Recipes.',
               style: AppTheme.body(size: 14, color: AppTheme.textMedium),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Tip: Tap on any recipe to see full ingredients, directions, and cooking tips.',
+              style: AppTheme.caption(size: 13, color: AppTheme.textLight),
             ),
           ],
         ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_forager_app/data/models/user.dart';
 import 'package:flutter_forager_app/data/repositories/repository_providers.dart';
 import 'package:flutter_forager_app/screens/admin/admin_messages_page.dart';
+import 'package:flutter_forager_app/screens/admin/admin_tool_suggestions_page.dart';
 import 'package:flutter_forager_app/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -181,19 +182,38 @@ class CustomDrawer extends ConsumerWidget {
                       final isAdmin = snapshot.data?.isAdmin ?? false;
                       if (!isAdmin) return const SizedBox.shrink();
 
-                      return _DrawerMenuItem(
-                        icon: Icons.admin_panel_settings,
-                        label: 'Admin Messages',
-                        iconColor: AppTheme.secondary,
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AdminMessagesPage(),
-                            ),
-                          );
-                        },
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _DrawerMenuItem(
+                            icon: Icons.admin_panel_settings,
+                            label: 'Admin Messages',
+                            iconColor: AppTheme.secondary,
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const AdminMessagesPage(),
+                                ),
+                              );
+                            },
+                          ),
+                          _DrawerMenuItem(
+                            icon: Icons.lightbulb_outline,
+                            label: 'Tool Suggestions',
+                            iconColor: AppTheme.secondary,
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const AdminToolSuggestionsPage(),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
                       );
                     },
                   ),
